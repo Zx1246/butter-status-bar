@@ -1450,7 +1450,7 @@ h5.section-subtitle {
   #butter-root-container #butter-page-title-tag {
     top: 74px !important;
     left: 68px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
-    width: 110px !important;
+    width: 140px;
     height: 38px;
     font-size: 12px;
     padding: 2px 25px 15px 15px;
