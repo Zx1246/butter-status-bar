@@ -1347,16 +1347,9 @@ h5.section-subtitle {
     position: fixed; /* 💡 核心修复一：显式指定固定定位，强行脱离手机端高度塌陷的父容器，改用全屏视口定位 */
     display: flex; /* 启用弹性布局，让内部的网格和元素能正常伸缩 */
     width: 72vw; /* 📐 宽度：占手机屏幕总宽度的 72% */
-    height: 74vh; /* 📐 高度：占手机屏幕总高度 of 74% */
+    height: 65vh; /* 📐 高度：占手机屏幕总高度 of 74% */
     max-width: 92vw; /* 🚨 横屏安全阀 */
     max-height: 85vh; /* 🚨 竖屏安全阀 */
-
-    /* 💡 核心修复二：放弃 transform 居中方案（因为它会跟拖拽 JS 的 top/left 像素值疯狂打架）
-       【极致数学逻辑】：
-       - 既然宽度(width)是 72vw，那剩余空间就是 28vw，左右各分 14vw 即可完美水平居中！
-       - 既然高度(height)是 74vh，那剩余空间就是 26vh，上下各分 13vh 即可完美垂直居中！ */
-    top: 13vh;
-    left: 14vw;
 
     /* transform: translate(-50%, -50%); ❌ 这一行必须彻底删掉或注释掉！否则会死锁拖拽坐标 */
 
@@ -1430,7 +1423,7 @@ h5.section-subtitle {
      * 6. 右下角精致底栏与五个核心控制按钮
      * ---------------------------------------------------- */
   #butter-root-container .butter-bottom-nav {
-    height: 55px; /* 📐 底栏高度：手机端底栏缩减到 75px */
+    height: 75px; /* 📐 底栏高度：手机端底栏缩减到 75px */
     padding: 10px 0 0 0; /* 📦 内边距：只在顶部留出 10px 间距，让里面的小图标不要贴顶 */
   }
   #butter-root-container .butter-nav-btn {

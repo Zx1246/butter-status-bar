@@ -113,10 +113,12 @@ const uiManager = {
 // 2. 核心功能组件 (拖拽与响应式)
 // 【已修复手机移动端触屏拖拽锁定问题】
 // ==========================================
+// ==========================================
+// 2. 核心功能组件 (拖拽与响应式) - 【移动端抗干扰完美修复版】
+// ==========================================
 function makeDraggable(triggerEl, targetEl) {
   if (!triggerEl || !targetEl) return;
 
-  // 【核心修复】禁用移动端触屏原生的页面滚动与下拉刷新行为，防止手势冲突导致组件锁死在顶端
   triggerEl.style.touchAction = "none";
 
   let pos = { x: 0, y: 0, startX: 0, startY: 0 };
@@ -166,9 +168,21 @@ function makeDraggable(triggerEl, targetEl) {
       let newTop = pos.y + dy;
       const rect = targetEl.getBoundingClientRect();
 
-      // 边缘碰撞边界处理
-      newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - rect.width));
-      newTop = Math.max(0, Math.min(newTop, window.innerHeight - rect.height));
+      // 【核心优化】移动端自适应边界流溢处理，防止大组件在小视口中计算出 0 导致死锁
+      const maxLeft = window.innerWidth - rect.width;
+      const maxTop = window.innerHeight - rect.height;
+
+      if (maxLeft > 0) {
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      } else {
+        newLeft = Math.max(maxLeft, Math.min(newLeft, 0)); // 允许超宽组件全屏错位滑动查看
+      }
+
+      if (maxTop > 0) {
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+      } else {
+        newTop = Math.max(maxTop, Math.min(newTop, 0)); // 允许超高组件上下滑动，绝不死锁在0
+      }
 
       targetEl.style.left = `${newLeft}px`;
       targetEl.style.top = `${newTop}px`;
@@ -199,6 +213,47 @@ function makeDraggable(triggerEl, targetEl) {
   triggerEl.style.cursor = "grab";
   triggerEl.addEventListener("pointerdown", onPointerDown);
 }
+
+// 【核心优化】规避移动端软键盘唤起、手机工具栏缩进导致的强制吸顶误杀
+window.addEventListener("resize", () => {
+  // 移动端若检测到输入框正在聚焦（证明键盘拉起），直接跳过防止布局踩踏吸顶
+  if (
+    (/Mobi|Android|iPhone/i.test(navigator.userAgent) &&
+      document.activeElement.tagName === "INPUT") ||
+    document.activeElement.tagName === "TEXTAREA"
+  ) {
+    return;
+  }
+
+  const modal = document.getElementById(ROOT_CONTAINER_ID);
+  if (!modal || modal.style.display === "none") return;
+  const rect = modal.getBoundingClientRect();
+  if (modal.style.margin && modal.style.margin !== "0px") {
+    return;
+  }
+
+  let currentLeft = rect.left;
+  let currentTop = rect.top;
+  let changed = false;
+
+  const maxLeft = window.innerWidth - rect.width - 10;
+  const maxTop = window.innerHeight - rect.height - 10;
+
+  if (currentLeft + rect.width > window.innerWidth) {
+    currentLeft = Math.max(0, maxLeft);
+    changed = true;
+  }
+  // 只有在屏幕仍有富余空间（maxTop > 0）时才进行溢出修正，否则放行
+  if (maxTop > 0 && currentTop + rect.height > window.innerHeight) {
+    currentTop = Math.max(0, maxTop);
+    changed = true;
+  }
+
+  if (changed) {
+    modal.style.left = `${(currentLeft / window.innerWidth) * 100}%`;
+    modal.style.top = `${(currentTop / window.innerHeight) * 100}%`;
+  }
+});
 
 window.addEventListener("resize", () => {
   const modal = document.getElementById(ROOT_CONTAINER_ID);
