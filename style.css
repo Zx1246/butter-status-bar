@@ -1529,8 +1529,16 @@ h5.section-subtitle {
    * ---------------------------------------------------- */
   #butter-root-container #butter-floating-eye {
     position: fixed;
-    top: 20px;
-    left: 20px;
+    /* 📐 1. 在这里控制悬浮按钮的整体大小（从原来的 55px 缩小到 38px） */
+    width: 38px;
+    height: 38px;
+    /* 📐 2. 在这里控制小眼睛图标本身的大小，保持居中等比缩放 */
+    background-size: 26px 26px;
+    background-repeat: no-repeat;
+    background-position: center;
+    /* 📐 3. 在这里控制它在手机屏幕上的悬浮位置 */
+    top: 20px; /* 距离手机屏幕顶部的距离（调大往下移） */
+    left: 20px; /* 距离手机屏幕左侧的距离（调大往右移） */
     touch-action: none;
   }
 }
