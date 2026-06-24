@@ -1,0 +1,810 @@
+<!doctype html>
+<!--
+  Butter Status Bar - 华丽复刻版 UI (重构核心)
+  设计思想: 严格遵循主人提供的视觉稿，重构HTML结构以匹配精致的边框、布局与装饰。
+  由您的专属AI char为您从零构建。
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Butter Status</title>
+</head>
+<body>
+<!--
+  ==============================================================
+  根容器: #butter-root-container
+  这是插件所有UI元素的唯一沙盒，将被注入到<body>中。
+  包含“全视之眼”按钮和主面板模态框。
+  ==============================================================
+-->
+<div id="butter-root-container">
+
+  <!-- 悬浮按钮：全视之眼 -->
+  <div id="butter-floating-eye" title="Butter Status 全视之眼"></div>
+
+  <!--
+    主面板模态框 (#butter-status-modal)
+    - 负责在屏幕上定位和居中。
+    - 内部包含唯一的画框容器。
+  -->
+  <div id="butter-status-modal" style="display: none;">
+
+    <!--
+      【【【核心重构】】】
+      画框容器 (.butter-mobile-frame)
+      - 它现在是所有可见UI元素的真正父容器。
+      - CSS将在此容器上设置精确的内边距(padding)，以将内容推入画框的透明区域。
+    -->
+    <div class="butter-mobile-frame">
+
+      <!-- 内容容器：所有UI元素现在都放在这个新容器里 -->
+      <div class="butter-content-wrapper">
+        <!-- 顶栏 -->
+        <div class="butter-top-bar" id="butter-top-bar">
+          <span id="bs-user-title">{{user}}@秘密花园</span>
+          <span id="bs-date-time">XXXX年XX月XX日 星期X XX:XX</span>
+        </div>
+
+        <!--
+          中段主体 (.butter-middle-body)
+          - 采用Flex布局，分为左侧边栏和右侧主内容区。
+          - 结构被简化，移除了不必要的嵌套。
+        -->
+
+        <div class="butter-content-grid">
+          <!--
+            左侧导航栏 (.butter-sidebar)
+            - 包含所有主要功能页面的切换标签。
+            - JS将处理点击事件，实现单页切换效果。
+          -->
+          <div class="butter-sidebar">
+            <div class="butter-tab active" data-target="butter-tab-home"><div class="butter-tab-icon" id="butter-icon-home"></div><span>首页</span></div>
+            <div class="butter-tab" data-target="butter-tab-overview"><div class="butter-tab-icon" id="butter-icon-overview"></div><span>{{user}}概览</span></div>
+            <div class="butter-tab" data-target="butter-tab-body"><div class="butter-tab-icon" id="butter-icon-body"></div><span>身体开发</span></div>
+            <div class="butter-tab" data-target="butter-tab-history"><div class="butter-tab-icon" id="butter-icon-history"></div><span>经历</span></div>
+            <div class="butter-tab" data-target="butter-tab-special"><div class="butter-tab-icon" id="butter-icon-special"></div><span>特殊设定</span></div>
+            <div class="butter-tab" data-target="butter-tab-skills"><div class="butter-tab-icon" id="butter-icon-skills"></div><span>特殊技能</span></div>
+            <div class="butter-tab" data-target="butter-tab-succubus" id="butter-tab-succubus-nav" style="display: none;"><div class="butter-tab-icon" id="butter-icon-succubus"></div><span>魅魔状态</span></div>
+          </div>
+
+          <!--
+            右侧主内容容器 (.butter-main-content)
+            - 包含所有可切换的“页面”内容。
+            - 每个页面都是一个 .butter-tab-content 元素，默认隐藏。
+          -->
+          <div class="butter-main-content">
+            <div id="butter-page-title-tag">系统首页</div>
+
+            <!-- ==================== 页面1: 首页 ==================== -->
+            <div id="butter-tab-home" class="butter-tab-content">
+              <div class="butter-content-title"><h4>首页</h4></div>
+
+              <!-- 情欲值进度条 -->
+              <div class="butter-lust-container">
+                <div class="lust-bar-track">
+                  <div class="lust-bar-fill" id="bs-lust-fill"></div>
+                </div>
+                <span id="bs-lust-value" class="lust-text-value">情欲值 0/100</span>
+              </div>
+
+              <!-- 子宫状态核心展示区 -->
+              <div class="butter-womb-section">
+                  <div class="home-womb-img"><img id="bs-womb-image" src="" alt="子宫状态" /></div>
+                  <div class="home-womb-stats">
+                      <div class="stat-item">
+                          <div class="stat-icon" id="butter-icon-stat-semen"></div>
+                          <div class="stat-text">
+                              <span>当前子宫内精液含量</span>
+                              <b><span id="bs-womb-volume">0.0</span> ml</b>
+                          </div>
+                      </div>
+                      <div class="stat-item">
+                          <div class="stat-icon" id="butter-icon-stat-cycle"></div>
+                          <div class="stat-text">
+                              <span>当前生理周期</span>
+                              <b id="bs-menstrual-phase">--</b>
+                          </div>
+                      </div>
+                      <div class="stat-item">
+                          <div class="stat-icon" id="butter-icon-stat-egg"></div>
+                          <div class="stat-text">
+                              <span>当前卵子状态</span>
+                              <b id="bs-egg-status">--</b>
+                          </div>
+                      </div>
+                      <div class="stat-item">
+                          <div class="stat-icon" id="butter-icon-stat-estrus"></div>
+                          <div class="stat-text">
+                              <span>当前发情状态</span>
+                              <b id="bs-estrus-status">--</b>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 额外状态：穴口与积乳 -->
+              <div class="butter-additional-stats">
+                  <div class="additional-stat-item">
+                      <b>穴口闭合状态：</b>
+                      <span id="bs-womb-plug-status">...</span>
+                  </div>
+                    <div class="additional-stat-item">
+                      <b>当前积乳状态：</b>
+                      <span id="bs-lactation-status">...</span>
+                  </div>
+              </div>
+
+              <hr class="sysHR" />
+
+              <!-- 近期播种来源记录 -->
+              <div id="bs-womb-sources">
+              <!-- 此处内容由 renderer.js 动态注入 -->
+              </div>
+            </div>
+
+            <!-- ==================== 页面2: {{user}}概览 ==================== -->
+            <div id="butter-tab-overview" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-address-card"></i> 基本身份</h4></div>
+
+              <div class="bs-grid bs-grid-three-column">
+                <div class="bs-g-item stack">
+                  <span>种族</span>
+                  <code id="bs-race">...</code>
+                </div>
+                <div class="bs-g-item stack">
+                  <span>性别</span>
+                  <code id="bs-gender">...</code>
+                </div>
+                <div class="bs-g-item stack">
+                  <span>生日</span>
+                  <code id="bs-birthday">...</code>
+                </div>
+              </div>
+
+              <div class="butter-content-title" style="margin-top: 20px;"><h4>生理需求</h4></div>
+              <div class="butter-stats-grid">
+                <!-- 饥饿 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-hunger"></div>
+                    <i class="fa-solid fa-utensils butter-fill-icon"></i>
+                  </div>
+                  <span>饥饿 <small id="val-hunger">100</small></span>
+                </div>
+                <!-- 清洁 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-cleanliness"></div>
+                    <i class="fa-solid fa-bath butter-fill-icon"></i>
+                  </div>
+                  <span>清洁 <small id="val-cleanliness">100</small></span>
+                </div>
+                <!-- 精力 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-energy"></div>
+                    <i class="fa-solid fa-bolt butter-fill-icon"></i>
+                  </div>
+                  <span>精力 <small id="val-energy">100</small></span>
+                </div>
+                <!-- 排泄 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-excretion"></div>
+                    <i class="fa-solid fa-toilet butter-fill-icon"></i>
+                  </div>
+                  <span>排泄 <small id="val-excretion">100</small></span>
+                </div>
+                <!-- 积乳 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-lactation"></div>
+                    <i class="fa-solid fa-droplet butter-fill-icon"></i>
+                  </div>
+                  <span>积乳 <small id="val-lactation">0</small></span>
+                </div>
+                <!-- 社交 -->
+                <div class="butter-grid-item">
+                  <div class="butter-fill-box">
+                    <div class="butter-fill-inner" id="fill-social"></div>
+                    <i class="fa-solid fa-users butter-fill-icon"></i>
+                  </div>
+                  <span>社交 <small id="val-social">50</small></span>
+                </div>
+              </div>
+
+              <!-- 底层生存特征 -->
+              <div class="bs-data-group">
+                  <div class="butter-content-title" style="margin-top: 20px;">
+                      <h4><i class="fa-solid fa-tags"></i> 底层生存特征 (影响生理代谢)</h4>
+                  </div>
+                <div class="settings_section">
+                  <input
+                    type="text"
+                    id="bs-setting-traits"
+                    class="text_pole"
+                    placeholder="例如：内向, 贫穷, 娇气 (用逗号分隔)"
+                  />
+                  <small>修改后自动生效，系统将据此判定精力与社交流失规则。</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- ==================== 页面3: 身体开发 ==================== -->
+            <div id="butter-tab-body" class="butter-tab-content" style="display: none;">
+              <div class="butter-content-title"><h4>经验与敏感度量化</h4></div>
+              <div class="bs-grid bs-grid-two-column">
+                <!-- 左列: 开发履历 -->
+                <div>
+                  <h5 class="section-subtitle">开发履历</h5>
+                  <div class="bs-data-pair"><span>露出经验</span><span id="bs-exp-exposure">0</span></div>
+                  <div class="bs-data-pair"><span>口经验</span><span id="bs-exp-oral">0</span></div>
+                  <div class="bs-data-pair"><span>胸经验</span><span id="bs-exp-breast">0</span></div>
+                  <div class="bs-data-pair"><span>乳头经验</span><span id="bs-exp-nipple">0</span></div>
+                  <div class="bs-data-pair"><span>小穴经验</span><span id="bs-exp-pussy">0</span></div>
+                  <div class="bs-data-pair"><span>阴蒂经验</span><span id="bs-exp-clitoris">0</span></div>
+                  <div class="bs-data-pair"><span>臀部经验</span><span id="bs-exp-butt">0</span></div>
+                  <div class="bs-data-pair"><span>肛交经验</span><span id="bs-exp-anal">0</span></div>
+                  <hr class="sysHR_half" />
+                  <div class="bs-data-pair"><span>经验人数</span><span id="bs-partners-count">0</span></div>
+                  <div class="bs-data-pair"><span>自慰次数</span><span id="bs-masturbation-count">0</span></div>
+                  <div class="bs-data-pair"><span>中出次数</span><span id="bs-creampie-count">0</span></div>
+                  <div class="bs-data-pair"><span>精浴次数</span><span id="bs-semen-bath-count">0</span></div>
+                  <div class="bs-data-pair"><span>怀孕次数</span><span id="bs-pregnancy-count">0</span></div>
+                  <div class="bs-data-pair"><span>高潮次数</span><span id="bs-orgasm-count">0</span></div>
+                </div>
+                <!-- 右列: 纯洁状态与敏感度 -->
+                <div class="dev-right-col">
+                  <div class="virgin-status-wrapper">
+                    <div class="virgin-icon"></div>
+                    <h5 class="section-subtitle">纯洁状态</h5>
+                    <code id="bs-virgin-status" class="virgin">纯洁</code>
+                  </div>
+                  <h5 class="section-subtitle">各部敏感度</h5>
+                  <div class="bs-data-pair"><span>性器敏感度</span><span id="bs-sens-genital">0</span></div>
+                  <div class="bs-data-pair"><span>口敏感度</span><span id="bs-sens-oral">0</span></div>
+                  <div class="bs-data-pair"><span>胸敏感度</span><span id="bs-sens-breast">0</span></div>
+                  <div class="bs-data-pair"><span>臀部敏感度</span><span id="bs-sens-butt">0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ==================== 页面4: 经历 ==================== -->
+            <div id="butter-tab-history" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-hand-holding-heart"></i> 羁绊与情史</h4></div>
+
+              <div class="bs-data-pair thick">
+                <span>初次对象</span><span id="bs-rel-first">无人采撷</span>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>最近对象</span><span id="bs-rel-recent">尚无痕迹</span>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>情感对象</span><span id="bs-rel-romance">[空缺]</span>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>婚姻对象</span><span id="bs-rel-marriage">[空缺]</span>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>灵魂契约</span><span id="bs-rel-soul">无</span>
+              </div>
+              <!-- 繁衍记录将由JS动态追加到这里 -->
+              <div id="bs-children-container"></div>
+            </div>
+
+            <!-- ==================== 页面5: 特殊设定 ==================== -->
+            <div id="butter-tab-special" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-gears"></i> 深度改造设定</h4></div>
+
+              <div class="settings_section flex-gap">
+                <label for="bs-setting-pronoun">专属人称代词</label>
+                <select id="bs-setting-pronoun" class="text_pole">
+                  <option value="她">她</option>
+                  <option value="他">他</option>
+                  <option value="它">它</option>
+                </select>
+              </div>
+
+              <div class="settings_section flex-gap">
+                <label for="bs-setting-custom-sens">专属敏感弱点</label>
+                <input
+                  type="text"
+                  id="bs-setting-custom-sens"
+                  class="text_pole"
+                  placeholder="如：耳垂、尾尖等"
+                />
+              </div>
+
+              <div class="settings_section flex-gap">
+                <label for="bs-setting-sensitivity-mode">敏感度提升模式</label>
+                <select id="bs-setting-sensitivity-mode" class="text_pole">
+                  <option value="0">永远纯洁 (永远为0)</option>
+                  <option value="1">正常开发 (每次+1)</option>
+                  <option value="5">加速开发 (每次+5)</option>
+                  <option value="10">极速开发 (每次+10)</option>
+                  <option value="100">堕落开局 (锁死上限100)</option>
+                </select>
+              </div>
+              <hr class="sysHR_half" />
+
+              <div class="butter-content-title" style="margin-top: 20px;"><h5 style="color: #ffb6c1">繁衍法则</h5></div>
+
+              <div class="settings_section flex-container" style="color: #ff6347">
+                <input type="checkbox" id="bs-disable-pregnancy" />
+                <label for="bs-disable-pregnancy">强制绝育 (关闭怀孕推导)</label>
+              </div>
+              <div class="settings_section flex-gap">
+                <label for="bs-setting-repro">繁衍方式</label>
+                <select id="bs-setting-repro" class="text_pole">
+                  <option value="胎生">胎生</option>
+                  <option value="卵生">卵生</option>
+                </select>
+              </div>
+              <div class="settings_section flex-gap">
+                <label for="bs-setting-gestation">孕期长度(月)</label>
+                <input
+                  type="number"
+                  id="bs-setting-gestation"
+                  class="text_pole"
+                  value="10"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <!-- ==================== 页面6: 特殊技能 (动态内容) ==================== -->
+            <div id="butter-tab-skills" class="butter-tab-content" style="display: none">
+              <!-- JS将根据种族动态显示/隐藏以下内容 -->
+
+              <!-- 魅魔专属部分 -->
+              <div id="bs-skills-succubus-section">
+                <div class="butter-content-title"><h4><i class="fa-solid fa-fire-flame-curved"></i> 魅魔种族技能矩阵</h4></div>
+
+                <div class="settings_section">
+                  <label for="bs-skill-race-appearance">种族特化外貌:</label>
+                  <textarea
+                    id="bs-skill-race-appearance"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：头上的角会根据情绪变化颜色..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-race-body-state">种族特化身体状态:</label>
+                  <textarea
+                    id="bs-skill-race-body-state"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：体温恒定偏低，但性兴奋时会急剧升高..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-race-core-mechanic">种族核心特异机制:</label>
+                  <textarea
+                    id="bs-skill-race-core-mechanic"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：通过皮肤接触吸收少量精气..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-aphrodisiac-mechanic" style="color:hotpink;">催淫机制:</label>
+                  <textarea
+                    id="bs-skill-aphrodisiac-mechanic"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：魔力过低时，尾巴会不受控制地自慰..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-crest-system" style="color:hotpink;">淫纹系统:</label>
+                  <textarea
+                    id="bs-skill-crest-system"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：位于小腹的玫瑰淫纹，高潮时会绽放..."
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- 自设种族专属部分 -->
+              <div id="bs-skills-custom-section" style="display: none">
+                <div class="butter-content-title"><h4><i class="fa-solid fa-feather-pointed"></i> 自设种族技能矩阵</h4></div>
+
+                <div class="settings_section">
+                  <label for="bs-skill-custom-race-appearance">种族特化外貌:</label>
+                  <textarea
+                    id="bs-skill-custom-race-appearance"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：精灵的耳朵、兽人的獠牙..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-custom-race-body-state">种族特化身体状态:</label>
+                  <textarea
+                    id="bs-skill-custom-race-body-state"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：夜间视力极佳，但畏光..."
+                  ></textarea>
+                </div>
+                <div class="settings_section">
+                  <label for="bs-skill-custom-race-core-mechanic">种族核心特异机制:</label>
+                  <textarea
+                    id="bs-skill-custom-race-core-mechanic"
+                    class="text_pole"
+                    rows="3"
+                    placeholder="例如：可以与植物进行精神沟通..."
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- 无特殊技能时的提示 -->
+              <div
+                id="bs-skills-none-section"
+                class="centered-message"
+                style="display: none"
+              >
+                当前种族无特殊技能可供设定。
+              </div>
+            </div>
+            <!-- ==================== 页面7: 魅魔专属面板 ==================== -->
+            <div id="butter-tab-succubus" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-fire-flame-curved"></i> 深渊生态监控</h4></div>
+
+              <div class="bs-grid bs-grid-two-column">
+                <div class="bs-g-item stack">
+                  <span style="color: #ff69b4">魔力饥饿度</span>
+                  <code id="bs-suc-hunger-val" style="font-size: 1.5em">100%</code>
+                  <small id="bs-suc-hunger-desc">饱足</small>
+                </div>
+                <div class="bs-g-item stack">
+                  <span style="color: #ff69b4">发情倒计时</span>
+                  <code id="bs-suc-estrus-days" style="font-size: 1.5em">5天</code>
+                  <small id="bs-suc-estrus-status">安全期</small>
+                </div>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>增益状态(Buffs)</span><span id="bs-suc-buffs">无</span>
+              </div>
+              <div class="bs-data-pair thick">
+                <span>负面状态(Debuffs)</span><span id="bs-suc-debuffs">无</span>
+              </div>
+              <hr class="sysHR" />
+
+              <div class="butter-content-title" style="margin-top: 20px;"><h4><i class="fa-solid fa-satellite-dish"></i> 魔界通讯</h4></div>
+              <div class="bs-g-item stack">
+                <span id="bs-suc-msg-src" style="color: #aaa">魔界棱镜观测系统</span>
+                <p id="bs-suc-msg-content" style="margin: 5px 0">
+                  一切平稳，暂无新消息...
+                </p>
+              </div>
+            </div>
+
+            <!--
+              ==============================================================
+              底部导航栏对应的功能性页面
+              ==============================================================
+            -->
+
+            <!-- ==================== 页面8: 注入设置 (记忆重塑与滤网) ==================== -->
+            <div id="butter-tab-inject" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-syringe"></i> 注入设置</h4></div>
+
+              <!-- 预设选择模块 -->
+              <div class="bs-inject-group">
+                <h5>当前使用预设</h5>
+                <select id="bs-inject-preset" class="text_pole">
+                  <option value="default">跟随酒馆当前预设</option>
+                  <!-- JS将动态遍历并填入酒馆内的所有预设 -->
+                </select>
+              </div>
+
+              <!-- 世界书传输模式模块 -->
+              <div class="bs-inject-group">
+                <h5>世界书传输模式</h5>
+                <select id="bs-inject-mode" class="text_pole">
+                  <option value="normal">
+                    正常模式: 传输启用条目，可手动排除
+                  </option>
+                  <option value="mainstream">
+                    优先模式: 优先采用ST已启用，无解析则按关键字
+                  </option>
+                  <option value="reference">
+                    参考模式: 仅传输手动指定的白名单条目
+                  </option>
+                </select>
+              </div>
+
+              <!-- 世界书排除/选择列表模块 -->
+              <div class="bs-inject-group">
+                <div class="bs-wi-tabs">
+                  <div class="bs-wi-tab-btn active" data-type="character">
+                    角色世界书
+                  </div>
+                  <div class="bs-wi-tab-btn" data-type="global">全域世界书</div>
+                </div>
+                <h5 id="bs-wi-list-title">角色世界书条目</h5>
+                <input
+                  type="text"
+                  id="bs-wi-search"
+                  class="text_pole"
+                  placeholder="搜索条目名..."
+                />
+                <div id="bs-wi-list-container" class="bs-wi-list-container">
+                  <div class="centered-message">正在从潜意识深处提取设定...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ==================== 页面9: user注册 ==================== -->
+            <div id="butter-tab-register" class="butter-tab-content" style="display: none">
+              <!-- 全局预设提取区 -->
+              <div class="settings_section preset-loader-section">
+                <label for="b-reg-preset-loader"><i class="fa-solid fa-flask"></i> 提取全局克隆预设 (直接覆盖并开始):</label>
+                <div class="flex-container">
+                  <select id="b-reg-preset-loader" class="text_pole"></select>
+                  <div id="b-reg-load-preset-btn" class="menu_button">
+                    提取烙印
+                  </div>
+                </div>
+              </div>
+              <hr class="sysHR" />
+
+              <div class="butter-content-title"><h4><i class="fa-solid fa-file-signature"></i> 烙印初结：{{user}}重塑</h4></div>
+
+              <div class="settings_section flex-gap">
+                <label>user名称</label>
+                <input type="text" id="b-reg-name" class="text_pole" placeholder="留空默认使用系统user名"/>
+              </div>
+              <div class="settings_section flex-gap">
+                <label>user性别</label>
+                <select id="b-reg-gender" class="text_pole">
+                  <option value="女">女</option>
+                  <option value="双性">双性</option>
+                </select>
+              </div>
+              <div class="settings_section flex-gap">
+                <label>人称代词</label>
+                <select id="b-reg-pronoun" class="text_pole">
+                  <option value="她">她</option>
+                  <option value="他">他</option>
+                  <option value="你">你</option>
+                  <option value="我">我</option>
+                </select>
+              </div>
+
+              <div class="settings_section flex-gap">
+                  <label for="bs-reg-birthday">user生日</label>
+                  <input type="text" id="bs-reg-birthday" class="text_pole" placeholder="例如：1093年10月24日">
+              </div>
+
+              <div class="settings_section">
+                <label>自订补充设置 (当前user人设):</label>
+                <textarea id="b-reg-custom-extra" class="text_pole" rows="3" placeholder="例如：她是一个贫穷但坚强的内向学生..."></textarea>
+              </div>
+              <hr class="sysHR" />
+
+              <div class="butter-content-title"><h4><i class="fa-solid fa-calendar-days"></i> 生理周期</h4></div>
+              <div class="settings_section">
+                <label>生理期日期 (在下方日历中点选):</label>
+                <div id="b-reg-calendar-container" class="butter-calendar-grid">
+                  <!-- JS将在这里动态生成1-31天的格子 -->
+                </div>
+              </div>
+              <div class="settings_section flex-gap">
+                <label for="b-reg-avg-cycle">平均周期天数:</label>
+                <input type="number" id="b-reg-avg-cycle" class="text_pole" value="28" min="20" max="45"/>
+              </div>
+              <hr class="sysHR" />
+
+              <div class="butter-content-title"><h4><i class="fa-solid fa-dna"></i> 种族与繁衍</h4></div>
+              <div class="settings_section flex-gap">
+                <label>user种族</label>
+                <select id="b-reg-race" class="text_pole">
+                  <option value="人类">人类</option>
+                  <option value="魅魔">魅魔</option>
+                  <option value="自设">自设</option>
+                </select>
+              </div>
+              <div id="b-reg-nonhuman-repro-section" style="display: none;">
+                <div class="settings_section flex-gap">
+                    <label for="b-reg-repro">繁衍方式</label>
+                    <select id="b-reg-repro" class="text_pole">
+                        <option value="胎生">胎生</option>
+                        <option value="卵生">卵生</option>
+                    </select>
+                </div>
+                <div class="settings_section flex-gap">
+                    <label for="b-reg-gestation">孕期长度(月)</label>
+                    <input type="number" id="b-reg-gestation" class="text_pole" value="10" min="1">
+                </div>
+              </div>
+              <hr class="sysHR_half"/>
+
+              <!-- 魅魔专属设定灌输区 -->
+              <div id="b-reg-succubus-lore-section" style="display: none">
+                <h5 style="color: purple"><i class="fa-solid fa-book-journal-whills"></i> 设定矩阵: 魅魔</h5>
+                <div class="settings_section"><label>生成指令:</label><textarea id="b-reg-suc-prompt" class="text_pole" rows="6"></textarea></div>
+                <div class="settings_section"><label>基本世界观:</label><textarea id="b-reg-suc-world" class="text_pole" rows="5"></textarea></div>
+                <div class="settings_section"><label>摄食指南:</label><textarea id="b-reg-suc-diet" class="text_pole" rows="4"></textarea></div>
+                <div class="settings_section"><label>种族设定参考:</label><textarea id="b-reg-suc-race" class="text_pole" rows="4"></textarea></div>
+                <div class="settings_section"><label>淫纹设定参考:</label><textarea id="b-reg-suc-crest" class="text_pole" rows="4"></textarea></div>
+                <div class="settings_section"><label>催淫机制:</label><textarea id="b-reg-suc-mech" class="text_pole" rows="4"></textarea></div>
+                <div class="settings_section"><label>灵魂契约:</label><textarea id="b-reg-suc-soul" class="text_pole" rows="4"></textarea></div>
+              </div>
+
+              <!-- 自设种族设定灌输区 -->
+              <div id="b-reg-custom-race-section" style="display: none">
+                <h5 style="color: skyblue"><i class="fa-solid fa-feather-pointed"></i> 创世矩阵: 自定义</h5>
+                <div class="settings_section">
+                  <label for="b-reg-custom-name">新种族命名:</label>
+                  <input type="text" id="b-reg-custom-name" class="text_pole" placeholder="例如：晶翼妖..."/>
+                </div>
+                <div class="settings_section">
+                  <label>种族基本世界观 (生理/生态/习性):</label>
+                  <textarea id="b-reg-custom-world" class="text_pole" rows="5" placeholder="它们是如何诞生的？..."></textarea>
+                </div>
+                <!-- 更多自设种族的textarea... -->
+              </div>
+              <hr class="sysHR" />
+
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="b-reg-obscene-toggle" />
+                <label for="b-reg-obscene-toggle" style="color: hotpink; font-weight: bold">【危险】开启恶俗与深度生殖设定?</label>
+              </div>
+              <div id="b-reg-obscene-section" style="display: none">
+                <div class="settings_section">
+                  <label for="b-reg-obs-sens">敏感度提升规则:</label>
+                  <select id="b-reg-obs-sens" class="text_pole">
+                    <option value="0">永远纯洁 (永远为0)</option>
+                    <option value="1">正常开发 (每次+1)</option>
+                    <option value="5">加速开发 (每次+5)</option>
+                    <option value="10">极速开发 (每次+10)</option>
+                    <option value="100">堕落开局 (初始满值)</option>
+                  </select>
+                </div>
+                <div class="settings_section">
+                  <label for="b-reg-obs-lac">泌乳干涉规则:</label>
+                  <select id="b-reg-obs-lac" class="text_pole">
+                    <option value="孕后哺乳期产乳">孕后哺乳期产乳</option>
+                    <option value="发情期产乳">发情期强制产乳</option>
+                    <option value="高潮后产乳">高潮后泌乳失禁</option>
+                    <option value="随胸部开发度产乳">随胸部开发度恒定产乳</option>
+                  </select>
+                </div>
+                <div class="settings_section">
+                  <label for="b-reg-obs-preg">受孕与做爱规则:</label>
+                  <select id="b-reg-obs-preg" class="text_pole">
+                    <option value="正常孕期">正常孕期 (孕期做爱可能流产)</option>
+                    <option value="特殊孕期">特殊孕期 (孕期可任意做爱无损)</option>
+                  </select>
+                </div>
+              </div>
+              <hr class="sysHR" />
+
+              <div class="settings_section flex-container preset-save-section">
+                <input type="checkbox" id="b-reg-save-preset-check" />
+                <label for="b-reg-save-preset-check">将本次生成的user档案存档为【全局通用预设】</label>
+                <input type="text" id="b-reg-preset-name" class="text_pole" placeholder="预设命名 (如：魅魔_01)"/>
+              </div>
+
+              <div style="text-align: center; margin-top: 20px">
+                <button id="b-reg-submit-btn" class="menu_button submit-button">确认烙印</button>
+              </div>
+            </div>
+
+            <!-- ==================== 页面10: API设置 (神枢控制台) ==================== -->
+            <div id="butter-tab-api" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-server"></i> 神枢控制台</h4></div>
+
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="bs-api-enable-plugin" />
+                <label for="bs-api-enable-plugin" style="font-weight: bold">启用 Butter Status 引擎</label>
+              </div>
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="bs-api-use-external" />
+                <label for="bs-api-use-external">强制引流：使用独立外部 API</label>
+              </div>
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="bs-api-stream-toggle" />
+                <label for="bs-api-stream-toggle">开启流式接收 (Stream 模式)</label>
+              </div>
+              <hr class="sysHR_half" />
+
+              <div id="bs-api-settings-group">
+                <div class="settings_section flex-gap">
+                  <label>独立 API Base URL</label>
+                  <input type="text" id="bs-api-url" class="text_pole" placeholder="https://api.openai.com/v1"/>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>API Key</label>
+                  <input type="password" id="bs-api-key" class="text_pole" placeholder="填入您的Sk-开头的Key"/>
+                </div>
+                <div class="settings_section flex-gap">
+                  <button id="bs-api-fetch-models" class="menu_button"><i class="fa-solid fa-rotate"></i> 连接并拉取模型</button>
+                  <select id="bs-api-model-list" class="text_pole">
+                    <option value="">-- 请先拉取模型列表 --</option>
+                  </select>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>当前模型名称</label>
+                  <input type="text" id="bs-api-model-name" class="text_pole" placeholder="从上方选择或手动填入"/>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>送入分析的消息数</label>
+                  <input type="number" id="bs-api-history-count" class="text_pole" value="10" min="1" max="20">
+                </div>
+                <hr class="sysHR_half">
+                <div class="settings_section">
+                    <label for="bs-api-regex-filter">聊天记录正则裁剪规则 (发送给AI前)</label>
+                    <textarea id="bs-api-regex-filter" class="text_pole" rows="3" placeholder="输入一个正则表达式，用于清洗聊天记录。例如：/<[^>]*>/g"></textarea>
+                    <small>留空则不进行裁剪。该规则将在把聊天记录发送给追踪器API分析前执行，以剔除状态栏注入等无关内容。</small>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="bs-api-save-btn" class="menu_button submit-button" style="background-color: #2ed573;">覆写 API 设定</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ==================== 页面11: 主题调试 ==================== -->
+            <div id="butter-tab-theme" class="butter-tab-content centered-message" style="display: none">
+              此面板用于主题切换... 施工中。
+            </div>
+
+            <!-- ==================== 页面12: 全视之眼监控 ==================== -->
+            <div id="butter-tab-debug" class="butter-tab-content" style="display: none">
+              <div class="butter-content-title"><h4><i class="fa-solid fa-microchip"></i> 系统底层监控枢纽 (Debug)</h4></div>
+
+              <div class="bs-inject-group">
+                <div class="flex-container" style="justify-content: space-between">
+                  <div style="color: var(--butter-warning-color); font-weight: bold">
+                    <i class="fa-solid fa-coins"></i> 预估消耗:
+                    <span id="bs-debug-token-count">0</span> Tokens
+                  </div>
+                </div>
+                <textarea id="bs-debug-prompt-content" class="text_pole debug-textarea" readonly></textarea>
+              </div>
+
+              <div class="bs-inject-group debug-io-group">
+                <h4>追踪器暗网心跳日志</h4>
+                <div style="display: flex; gap: 10px">
+                  <div style="flex: 1">
+                    <label>[TX] 发送给 AI 的审视指令:</label>
+                    <textarea id="bs-debug-api-input" class="text_pole debug-textarea io-tx" readonly></textarea>
+                  </div>
+                  <div style="flex: 1">
+                    <label>[RX] AI 返回的原始处刑判决:</label>
+                    <textarea id="bs-debug-api-output" class="text_pole debug-textarea io-rx" readonly></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- End .butter-main-content -->
+
+          <!--
+          底栏导航栏 (.butter-bottom-nav)
+          - 包含所有功能性面板的切换按钮。
+          -->
+          <div class="butter-bottom-nav">
+              <div class="butter-nav-btn" data-target="butter-tab-inject"><div class="butter-nav-icon-wrapper"><div class="butter-nav-icon" id="butter-icon-inject"></div></div><span>注入设置</span></div>
+              <div class="butter-nav-btn" data-target="butter-tab-register"><div class="butter-nav-icon-wrapper"><div class="butter-nav-icon" id="butter-icon-register"></div></div><span>user注册</span></div>
+              <div class="butter-nav-btn" data-target="butter-tab-api"><div class="butter-nav-icon-wrapper"><div class="butter-nav-icon" id="butter-icon-api"></div></div><span>API设置</span></div>
+              <div class="butter-nav-btn" data-target="butter-tab-debug"><div class="butter-nav-icon-wrapper"><div class="butter-nav-icon" id="butter-icon-debug"></div></div><span>状态监控</span></div>
+              <div class="butter-nav-btn" data-target="butter-tab-theme"><div class="butter-nav-icon-wrapper"><div class="butter-nav-icon" id="butter-icon-theme"></div></div><span>主题调试</span></div>
+          </div>
+
+
+        </div> <!-- End .butter-content-grid -->
+      </div><!-- End .butter-content-wrapper -->
+
+      <!-- 2. 边框覆盖层：它现在独立于内容，专门负责显示透明边框 -->
+      <div class="butter-frame-overlay"></div>
+
+    </div> <!-- End .butter-mobile-frame -->
+  </div> <!-- End #butter-status-modal -->
+</div> <!-- End #butter-root-container -->
+</body>
+</html>

@@ -1,0 +1,1507 @@
+/* ====================================================
+ * 【UI最终复刻版 - 高性能重构高兼容版】 style.css
+ * 设计师: char, 灵感来源: 主人提供的华丽UI图
+ *
+ * 已深度修复三大隐藏暗坑：
+ * 1. 修复选择器过于死板问题：解绑 .text_pole 类名依赖，全面覆盖插件容器内所有 input/textarea/select，确保新加表单绝不漏网。
+ * 2. 修复多处样式穿透冲突：精简并统合下拉框（Select）重构代码，全线加上 !important 彻底封杀酒馆原生主题对表单的霸道干扰。
+ * 3. 修复大括号漏闭合惊天巨坑：完美闭合了第 XIII 部分的 @media 移动端适配，彻底解放被意外吞掉的第 XIV、XV 部分（电脑端图标与标题得以正常显示）。
+ * ====================================================*/
+
+/* ==========================================
+ * I. 核心变量与全新华丽字体导入
+ * ==========================================
+ */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght=400;500;700&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap");
+
+:root {
+    /* 从图片吸取的配色方案 */
+    --butter-frame-bg: #fdf7f8;
+    --butter-frame-border-light: #ead8da;
+    --butter-frame-border-dark: #d3b8bb;
+    --butter-frame-shadow: rgba(186, 150, 155, 0.3);
+
+    --butter-deco-pink: #e8c8cb;
+    --butter-deco-blue: #c5d9e8;
+
+    --butter-text-dark: #6c5458;
+    --butter-text-light: #8b7377;
+    --butter-text-title: #594448;
+
+    --butter-lust-bar-bg: #ead3d6;
+    --butter-lust-bar-fill: #d98197;
+    --butter-lust-bar-thumb: white;
+
+    --butter-tab-icon-bg: #f8e9ec;
+    --butter-tab-icon-border: #e8c8cb;
+    --butter-tab-active-bg: #f5e5e7;
+    --butter-tab-active-text: #b4737a;
+
+    --butter-bottom-nav-icon-bg: #617a94;
+    --butter-bottom-nav-icon-border: #4e6277;
+    --butter-bottom-nav-icon-shadow: rgba(0, 0, 0, 0.3);
+
+    --butter-success-color: #5a9e7a;
+    --butter-warning-color: #d4a26a;
+    --butter-danger-color: #c76b7c;
+    --butter-info-color: #7aa2c3;
+}
+
+/* ==================================================
+ * 🎯 全局字体与基础重置（依靠ID选择器天然提升权重）
+ * ================================================== */
+
+#butter-root-container,
+#butter-root-container * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+#butter-root-container,
+#butter-root-container input,
+#butter-root-container textarea,
+#butter-root-container select,
+#butter-root-container button {
+    font-family: "ZCOOL KuaiLe", "Noto Serif SC", "Microsoft YaHei", serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * ==========================================
+ * II. 悬浮按钮“全视之眼”
+ * ==========================================
+ */
+#butter-floating-eye {
+    position: fixed;
+    top: 150px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: white;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
+    z-index: 100001;
+    cursor: pointer;
+    user-select: none;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition:
+        transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        box-shadow 0.3s ease;
+    animation: eye-breathe 4s infinite ease-in-out;
+}
+
+#butter-floating-eye:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
+}
+
+#butter-floating-eye:active {
+    transform: scale(0.95);
+}
+
+@keyframes eye-breathe {
+    0%,
+    100% {
+        box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
+    }
+}
+
+/*
+ * ==========================================
+ * III. 模态框与画框布局核心 (依靠级联与特异性替代 !important)
+ * ==========================================
+ */
+
+#butter-status-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100000;
+    width: 504px;
+    max-width: 92vw;
+    height: 563px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#butter-root-container .butter-mobile-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_transparent.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#butter-root-container .butter-content-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#butter-root-container .butter-frame-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png");
+    background-size: 100% 100%;
+    pointer-events: none;
+    z-index: 500;
+}
+
+.butter-frame-decoration {
+    display: none;
+}
+
+/*
+ * ==========================================
+ * IV. 顶栏、中段、底栏布局
+ * ==========================================
+ */
+
+.butter-top-bar {
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    height: 85px;
+    cursor: grab;
+}
+
+.butter-top-bar span {
+    position: absolute;
+    top: 60%;
+    transform: translateY(-50%);
+    font-family: "Noto Serif SC", "Microsoft YaHei", serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--butter-text-light);
+}
+
+#bs-user-title {
+    left: 75px;
+}
+
+#bs-date-time {
+    right: 75px;
+}
+
+#butter-root-container .butter-content-grid {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 86px 1fr;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+        "sidebar main"
+        "sidebar footer";
+    overflow: hidden;
+    padding: 5px 5px 10px 12px;
+    min-height: 0;
+}
+
+#butter-root-container .butter-sidebar {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    align-items: center;
+    padding: 5px 1px 28px 5px;
+    border-bottom-left-radius: 90px;
+}
+
+#butter-root-container .butter-main-content {
+    grid-area: main;
+    overflow-y: auto;
+    padding: 5px 15px 5px 15px;
+}
+
+#butter-root-container .butter-bottom-nav {
+    grid-area: footer;
+    height: 92px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 15px 0px 0px 0px;
+    margin-bottom: 2px;
+    border-bottom-right-radius: 90px;
+    overflow: hidden;
+}
+
+/*
+ * ==========================================
+ * V. 古典滚动条样式 (高性能隐藏)
+ * ==========================================
+ */
+
+#butter-root-container ::-webkit-scrollbar,
+#butter-root-container .butter-mobile-frame ::-webkit-scrollbar,
+#butter-root-container .butter-main-content::-webkit-scrollbar,
+#butter-root-container .butter-sidebar::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    background: transparent;
+    display: none;
+}
+
+#butter-root-container,
+#butter-root-container .butter-main-content,
+#butter-root-container .butter-sidebar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+/*
+ * ==========================================
+ * VI. 侧边栏与底部导航按钮
+ * ==========================================
+ */
+
+.butter-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.butter-tab-icon {
+    width: 48px;
+    height: 48px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.butter-tab span {
+    font-size: 12px;
+    color: var(--butter-text-light);
+    font-weight: 500;
+    font-family: "ZCOOL XiaoWei", serif;
+}
+
+.butter-tab:hover .butter-tab-icon {
+    transform: scale(1.08);
+}
+
+.butter-tab.active .butter-tab-icon {
+    filter: drop-shadow(0 0 5px var(--butter-tab-active-text));
+}
+
+.butter-tab.active span {
+    color: var(--butter-tab-active-text);
+    font-weight: 700;
+}
+
+/* --- 底栏按钮 --- */
+.butter-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    width: 60px;
+    user-select: none;
+}
+
+.butter-nav-icon-wrapper {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background-color: var(--butter-bottom-nav-icon-bg);
+    border: 1px solid var(--butter-bottom-nav-icon-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 2px 3px var(--butter-bottom-nav-icon-shadow);
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.butter-nav-icon {
+    width: 85%;
+    height: 85%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: transform 0.2s ease;
+}
+
+.butter-nav-btn span {
+    font-size: 11px;
+    color: var(--butter-text-light);
+    font-weight: 500;
+    font-family: "ZCOOL XiaoWei", serif;
+}
+
+.butter-nav-btn:hover .butter-nav-icon-wrapper {
+    background-color: #7d96b1;
+    box-shadow:
+        inset 0 2px 3px var(--butter-bottom-nav-icon-shadow),
+        0 0 10px #7d96b1;
+}
+
+.butter-nav-btn:hover .butter-nav-icon {
+    transform: scale(1.05);
+}
+
+.butter-nav-btn:active .butter-nav-icon-wrapper {
+    transform: translateY(1px);
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * ==========================================
+ * VII. 内容面板通用样式与精准显示控制
+ * ==========================================
+ */
+
+.butter-tab-content {
+    display: none;
+    padding-top: 5px;
+}
+
+#butter-tab-home {
+    display: block;
+}
+
+#butter-root-container .butter-content-title h4 {
+    font-family: "ZCOOL XiaoWei", serif;
+    font-size: 16px;
+    color: #b4737a;
+    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+#butter-root-container .butter-tab-content .butter-content-title {
+    display: none;
+}
+
+#butter-root-container
+    .butter-tab-content
+    .butter-content-title:has(h4:contains("生理需求")),
+#butter-root-container .butter-tab-content .butter-content-title:first-of-type,
+#butter-root-container .bs-data-group .butter-content-title {
+    display: flex;
+}
+
+#butter-root-container .butter-content-title::before {
+    display: none;
+}
+
+/*
+ * ==========================================
+ * VIII. 首页专属样式
+ * ==========================================
+ */
+
+.butter-lust-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 5px;
+    margin-bottom: 20px;
+}
+
+.lust-bar-track {
+    flex-grow: 1;
+    height: 28px;
+    position: relative;
+    padding: 6px 18px;
+    border-style: solid;
+    border-width: 12px 28px;
+    border-image-source: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
+    border-image-slice: 28 50 fill;
+    border-image-repeat: stretch;
+}
+
+.lust-bar-fill {
+    width: 0%;
+    height: 100%;
+    background-image: linear-gradient(to right, #f9dde2, #e6a2b3);
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+    position: relative;
+    z-index: 1;
+}
+
+.lust-bar-fill::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+    width: 6px;
+    height: 24px;
+    border-radius: 2px;
+    background: linear-gradient(
+        to bottom,
+        #ffeacc 0%,
+        #dca75e 50%,
+        #a87635 100%
+    );
+    border: 1px solid #7c5523;
+    box-shadow:
+        0 0 5px rgba(220, 167, 94, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    z-index: 2;
+}
+
+.lust-text-value {
+    font-size: 12px;
+    color: var(--butter-text-dark);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.butter-womb-section {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    position: relative;
+    margin-bottom: 25px;
+}
+
+#butter-root-container .butter-womb-section {
+    padding-bottom: 15px;
+}
+
+.home-womb-img {
+    width: 165px;
+    height: 185px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.home-womb-img::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.home-womb-img img {
+    position: relative;
+    max-width: 75%;
+    max-height: 75%;
+    top: 4px;
+}
+
+.home-womb-stats {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.stat-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-text span {
+    font-size: 12px;
+    color: var(--butter-text-light);
+}
+
+.stat-text b {
+    font-size: 13px;
+    color: var(--butter-text-dark);
+    font-weight: 500;
+}
+
+.butter-additional-stats {
+    display: flex;
+    justify-content: space-around;
+    font-size: 12px;
+    margin-top: 25px;
+    color: var(--butter-text-light);
+}
+
+#butter-root-container
+    .butter-tab-content
+    > div:has(+ .butter-additional-stats),
+#butter-root-container .home-womb-stats + div,
+#butter-root-container .butter-additional-stats + div {
+    margin-top: 15px;
+}
+
+.additional-stat-item b {
+    color: var(--butter-text-dark);
+}
+
+/*
+ * ==========================================
+ * IX. 概览、开发、经历等其他面板样式
+ * ==========================================
+ */
+
+.bs-grid {
+    gap: 10px 12px;
+    margin-top: 20px;
+}
+
+.bs-grid.bs-grid-two-column {
+    grid-template-columns: 1fr 1fr;
+}
+
+.bs-grid.bs-grid-three-column {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.bs-g-item.stack {
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--butter-frame-bg);
+    border: 1px solid var(--butter-frame-border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+}
+
+.bs-g-item.stack > span {
+    font-size: 12px;
+    color: var(--butter-text-light);
+}
+
+.bs-g-item.stack code {
+    font-size: 14px;
+    color: var(--butter-text-dark);
+    font-weight: 500;
+    background: none;
+    padding: 0;
+}
+
+#butter-root-container .butter-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px 10px;
+    margin-top: 35px;
+}
+
+.butter-grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+}
+
+.butter-fill-box {
+    width: 65px;
+    height: 65px;
+    border: 1px solid var(--butter-frame-border-dark);
+    border-radius: 8px;
+    position: relative;
+    background-color: #f8e9ec;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.butter-fill-inner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    transition:
+        height 0.4s ease,
+        background-color 0.4s ease;
+    z-index: 1;
+}
+
+.butter-fill-icon {
+    position: relative;
+    z-index: 2;
+    font-size: 30px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+#butter-root-container .butter-grid-item span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--butter-text-light);
+    margin-top: 2px;
+}
+
+.butter-grid-item small {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--butter-text-dark);
+}
+
+.virgin-status-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.virgin-icon {
+    width: 48px;
+    height: 48px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-bottom: 5px;
+}
+
+h5.section-subtitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--butter-text-title);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+#butter-root-container code#bs-virgin-status.virgin {
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--butter-info-color);
+    background-color: rgba(122, 162, 195, 0.1);
+    border: 1px solid rgba(122, 162, 195, 0.4);
+    font-family: "ZCOOL KuaiLe", sans-serif;
+}
+
+#butter-root-container code#bs-virgin-status.not-virgin {
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--butter-danger-color);
+    background-color: rgba(199, 107, 124, 0.1);
+    border: 1px solid rgba(199, 107, 124, 0.4);
+    font-family: "ZCOOL KuaiLe", sans-serif;
+}
+
+.bs-data-pair {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    border-bottom: 1px dashed var(--butter-frame-border-light);
+    font-size: 15px;
+}
+
+.bs-data-pair.thick {
+    padding: 12px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--butter-frame-border-light);
+}
+
+#butter-root-container .bs-data-pair span:first-child {
+    font-family: "Ma Shan Zheng", cursive;
+    color: var(--butter-text-light);
+}
+
+#butter-root-container .bs-data-pair span:last-child {
+    font-family: "Cinzel", serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--butter-text-dark);
+}
+
+.dev-right-col {
+    padding-left: 20px;
+    border-left: 1px dashed var(--butter-frame-border-light);
+}
+
+#bs-children-container {
+    margin-top: 25px;
+    border-top: 1px solid var(--butter-frame-border-light);
+    padding-top: 20px;
+}
+
+.bs-child-record {
+    border-left: 3px solid var(--butter-info-color);
+    padding-left: 15px;
+    margin-bottom: 10px;
+}
+
+.bs-child-record.pregnant {
+    border-left-color: var(--butter-lust-bar-fill);
+}
+
+.bs-child-record .bs-data-pair {
+    border-bottom: none;
+    padding: 4px 0;
+}
+
+.bs-child-record .bs-data-pair span:first-child {
+    color: var(--butter-text-dark);
+}
+
+/*
+ * ==========================================
+ * X. 表单与输入元素样式 (全面降维打击强控防卡顿版)
+ * ==========================================
+ */
+
+#butter-root-container .settings_section {
+    margin-bottom: 15px;
+}
+#butter-root-container .settings_section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--butter-text-light);
+    font-size: 13px;
+}
+#butter-root-container .settings_section.flex-gap {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: space-between;
+}
+#butter-root-container .settings_section.flex-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#butter-root-container .settings_section small {
+    display: block;
+    font-size: 11px;
+    color: var(--butter-text-light);
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+/* --- 1. 单行输入框（升级通用覆盖版：不依赖任何class，凡是容器内的input一律全控） --- */
+#butter-root-container input,
+#butter-root-container input.text_pole,
+#butter-root-container input[type="text"] {
+    width: 100% !important;
+    background: rgba(245, 235, 237, 0.6) !important; /* 强制粉色天鹅绒 */
+    border: 1px solid #d3b8bb !important; /* 强制玫瑰金边框 */
+    color: #6c5458 !important; /* 强制暗蔷薇木字 */
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    font-family: "Noto Serif SC", serif !important;
+    box-shadow:
+        inset 2px 2px 5px rgba(186, 150, 155, 0.2),
+        inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
+
+    /* ⚡ 性能优化核心：绝对不用 all！只对特定颜色属性做过渡，打字极速响应 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* 单行输入框聚焦 */
+#butter-root-container input:focus,
+#butter-root-container input.text_pole:focus,
+#butter-root-container input[type="text"]:focus {
+    outline: none !important;
+    background: #f2ddeae8 !important; /* 呼吸灯变白 */
+    border-color: #b4737a !important; /* 边框加深 */
+    box-shadow:
+        0 0 8px rgba(180, 115, 122, 0.4),
+        inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+}
+
+/* --- 2. 多行输入框（升级通用覆盖版：强制锁定所有新老多行输入区域） --- */
+#butter-root-container textarea,
+#butter-root-container textarea.text_pole {
+    width: 100% !important;
+    background: rgba(245, 235, 237, 0.6) !important;
+    border: 1px solid #d3b8bb !important;
+    color: #6c5458 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    font-family: "Noto Serif SC", serif !important;
+    box-shadow:
+        inset 2px 2px 5px rgba(186, 150, 155, 0.2),
+        inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
+
+    /* 多行版型微调 */
+    height: auto !important;
+    min-height: 80px !important;
+    line-height: 1.5 !important;
+    resize: vertical !important;
+
+    /* ⚡ 同样拒绝 transition: all，防止长文本滚动或打字时卡顿 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* 多行输入框聚焦 */
+#butter-root-container textarea:focus,
+#butter-root-container textarea.text_pole:focus {
+    outline: none !important;
+    background: #f2ddeae8 !important;
+    border-color: #b4737a !important;
+    box-shadow:
+        0 0 8px rgba(180, 115, 122, 0.4),
+        inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+}
+
+/* --- 3. 下拉选择框（Select - 升级全局统领强控版，防止被任何后写样式洗掉） --- */
+#butter-root-container select,
+#butter-root-container .butter-tab-content select,
+#butter-root-container .preset-loader-section select,
+#butter-root-container .preset-save-section select,
+#butter-root-container .settings_section select {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-color: rgba(245, 235, 237, 0.6) !important;
+    border: 1px solid #d3b8bb !important;
+    color: #6c5458 !important;
+    border-radius: 6px !important;
+    font-family: "Noto Serif SC", serif !important;
+    font-size: 13px !important;
+    padding: 6px 30px 6px 12px !important;
+    cursor: pointer !important;
+
+    /* 自定义古典小箭头 */
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%238b666d" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 16px !important;
+    box-shadow: inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+
+    /* ⚡ 移除全开销全局动画 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* 下拉框聚焦与兼容消除 */
+#butter-root-container select:focus,
+#butter-root-container .butter-tab-content select:focus,
+#butter-root-container .preset-loader-section select:focus {
+    outline: none !important;
+    background-color: #f2ddeae8 !important;
+    border-color: #b4737a !important;
+    box-shadow: 0 0 6px rgba(180, 115, 122, 0.2) !important;
+}
+
+#butter-root-container select::-ms-expand {
+    display: none !important;
+}
+
+#butter-root-container input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--butter-lust-bar-fill);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+#butter-root-container .settings_section.flex-container label {
+    margin-bottom: 0;
+}
+
+#butter-root-container .menu_button {
+    background-color: var(--butter-tab-active-text);
+    color: white;
+    padding: 8px 15px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+#butter-root-container .menu_button:hover {
+    background-color: #a4656d;
+}
+#butter-root-container .menu_button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+#butter-root-container .submit-button {
+    padding: 10px 30px;
+    font-size: 14px;
+}
+
+/*
+ * ==========================================
+ * XI. 特定面板高精度复刻与皮肤样式
+ * ==========================================
+ */
+
+.centered-message {
+    text-align: center;
+    color: var(--butter-text-light);
+    padding: 40px 20px;
+    font-size: 13px;
+    border-radius: 8px;
+    background: rgba(186, 150, 155, 0.05);
+}
+
+/* 🟢 注入设置面板 */
+#butter-tab-inject .butter-content-title h4,
+#butter-tab-inject h5,
+#butter-tab-inject .bs-wi-tab-btn.active {
+    color: #521808;
+}
+
+#butter-tab-inject .butter-content-title::before {
+    background-color: #521808;
+    border-color: #76311e;
+}
+
+#butter-tab-inject .bs-inject-group {
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed #d3b8bb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.bs-wi-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.bs-wi-tab-btn {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    background: rgba(245, 235, 237, 0.6);
+    border: 1px solid var(--butter-frame-border-light);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    color: var(--butter-text-light);
+}
+
+.bs-wi-tab-btn:hover {
+    background: #ffffff;
+    border-color: var(--butter-frame-border-dark);
+}
+
+.bs-wi-tab-btn.active {
+    background-color: #ffffff;
+    border-color: #521808;
+    color: #521808;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.bs-wi-list-container {
+    max-height: 150px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid var(--butter-frame-border-light);
+}
+
+.bs-wi-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px dashed rgba(139, 90, 131, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+.bs-wi-item:last-child {
+    border-bottom: none;
+}
+
+.bs-wi-item:hover {
+    background: rgba(245, 235, 237, 0.5);
+}
+
+.bs-wi-item input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-right: 15px;
+    accent-color: #521808;
+}
+
+.bs-wi-name {
+    flex-grow: 1;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--butter-text-dark);
+}
+
+/* 🔵 API设置面板 */
+#butter-tab-api .butter-content-title h4,
+#butter-tab-api h5 {
+    color: #6c82b3;
+}
+
+#butter-tab-api .butter-content-title::before {
+    background-color: #6c82b3;
+    border-color: #56688f;
+}
+
+#butter-tab-api .menu_button {
+    background: linear-gradient(135deg, #6c82b3 0%, #56688f 100%);
+    border-color: #56688f;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+#butter-tab-api .menu_button:hover {
+    background: linear-gradient(135deg, #7c92c3 0%, #6377a0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(108, 130, 179, 0.3);
+}
+
+/* 🟡 Debug监控面板 */
+#butter-tab-debug .butter-content-title h4,
+#butter-tab-debug h5 {
+    color: #bfa07a;
+}
+
+#butter-tab-debug .butter-content-title::before {
+    background-color: #bfa07a;
+    border-color: #ab8154;
+}
+
+.debug-textarea {
+    width: 100%;
+    height: 110px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 12px;
+    background: rgba(18, 12, 24, 0.03);
+    border: 1px solid var(--butter-frame-border-light);
+    border-radius: 6px;
+    color: var(--butter-text-dark);
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.debug-io-group {
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed var(--butter-frame-border-light);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.debug-io-group h4 {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.debug-io-group label {
+    font-size: 11px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* 🔴 user注册面板 */
+.preset-loader-section {
+    background: rgba(245, 235, 237, 0.4);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed #d3b8bb;
+}
+
+.preset-loader-section label {
+    color: var(--butter-tab-active-text);
+    font-weight: bold;
+}
+
+#butter-root-container .preset-loader-section .menu_button,
+#butter-root-container #user-register-submit,
+#butter-root-container .preset-save-section .menu_button {
+    background: linear-gradient(135deg, #8b666d 0%, #6c4e54 100%);
+    border: 1px solid #b4737a;
+    border-radius: 6px;
+    color: #fdf7f8;
+    padding: 12px 22px;
+    width: 80%;
+    margin: 0 auto;
+    display: block;
+    font-family: "ZCOOL XiaoWei", serif;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+#butter-root-container .preset-loader-section .menu_button:hover,
+#butter-root-container #user-register-submit:hover,
+#butter-root-container .preset-save-section .menu_button:hover {
+    background: linear-gradient(135deg, #9c757c 0%, #7c5a61 100%);
+    border-color: #d3b8bb;
+    box-shadow: 0 4px 8px rgba(180, 115, 122, 0.25);
+}
+
+#b-reg-obscene-section {
+    padding-left: 20px;
+    margin-top: 15px;
+    border-left: 2px solid var(--butter-lust-bar-fill);
+}
+
+#butter-root-container #b-reg-submit-btn {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 12px 40px;
+    width: 60%;
+    max-width: 280px;
+    font-family: "ZCOOL XiaoWei", serif;
+    letter-spacing: 2px;
+    line-height: normal;
+    transition: all 0.2s ease;
+}
+
+.preset-save-section {
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed #d3b8bb;
+    padding: 15px;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.preset-save-section label {
+    color: #521808;
+    font-weight: 500;
+}
+
+.preset-save-section input[type="text"] {
+    margin-left: 10px;
+}
+
+/*
+ * ==========================================
+ * XII. 生理日历样式
+ * ==========================================
+ */
+.butter-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    padding: 2px;
+    background: rgba(18, 12, 24, 0.6);
+    border: 1px solid rgba(232, 200, 203, 0.2);
+    border-radius: 6px;
+    margin-top: 6px;
+    max-width: 70%;
+}
+
+.butter-calendar-day {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+    color: #ead8da;
+    background-color: transparent;
+    border: 3px solid transparent;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.butter-calendar-day:hover {
+    background-color: rgba(232, 200, 203, 0.15);
+}
+
+.butter-calendar-day.selected {
+    background-color: #b0697b;
+    border-color: #e8c8cb;
+    color: white;
+    font-weight: bold;
+    transform: scale(1.02);
+    box-shadow: 0 0 6px rgba(176, 105, 123, 0.6);
+}
+
+/*
+ * ==========================================
+ * XIII. 手机端响应式适配 (干掉 !important)
+ * ==========================================
+ */
+@media (max-width: 600px) {
+    #butter-status-modal {
+        width: 100vw;
+        height: 100dvh;
+        top: 0;
+        left: 0;
+        transform: none;
+        border-radius: 0;
+    }
+
+    #butter-root-container .butter-mobile-frame {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        padding: 15px 10px 10px 10px;
+    }
+
+    .butter-top-bar {
+        padding: 8px 15px;
+        font-size: 10px;
+        margin-bottom: 0;
+    }
+
+    .butter-middle-body {
+        flex-direction: column;
+        padding: 5px 0;
+    }
+
+    #butter-root-container .butter-sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--butter-frame-border-light);
+        padding: 5px 10px;
+        gap: 5px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    #butter-root-container .butter-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .butter-tab {
+        flex-shrink: 0;
+        padding: 8px;
+    }
+
+    .butter-tab-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .butter-tab span {
+        font-size: 10px;
+    }
+
+    #butter-root-container .butter-main-content {
+        padding: 15px;
+    }
+
+    .butter-womb-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .home-womb-img {
+        width: 120px;
+        height: 120px;
+    }
+
+    .home-womb-stats {
+        width: 100%;
+        align-items: flex-start;
+        padding-left: 10px;
+    }
+
+    #butter-root-container .butter-bottom-nav {
+        height: 60px;
+        padding: 5px;
+    }
+
+    .butter-nav-btn span {
+        display: none;
+    }
+
+    .butter-nav-icon-wrapper {
+        width: 42px;
+        height: 42px;
+    }
+} /* 👈 【核心修复：完美在此处闭合，不再让它往下吞掉电脑端样式】 */
+
+/*
+ * ==========================================
+ * XIV. 内容区左上角古典标题标签
+ * ==========================================
+ */
+#butter-root-container #butter-page-title-tag {
+    position: absolute;
+    top: 80px;
+    left: 101px;
+    z-index: 70;
+    width: 190px;
+    height: 50px;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/page_title_bg.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    font-family: "Noto Serif SC", "Microsoft YaHei", serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #4a2e35;
+    text-shadow: 1px 1px 0px rgba(255, 245, 245, 0.7);
+    display: flex;
+    align-items: center;
+    padding: 5px 45px 20px 25px;
+    pointer-events: none;
+}
+
+#butter-root-container .butter-tab-content {
+    padding-top: 45px;
+}
+
+/*
+ * ==========================================
+ * XV. 图标图片路径定义
+ * ==========================================
+ */
+
+/* --- 侧边栏图标 --- */
+#butter-icon-home {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_home.png");
+}
+#butter-icon-overview {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_overview.png");
+}
+#butter-icon-body {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_body.png");
+}
+#butter-icon-history {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_history.png");
+}
+#butter-icon-special {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_special.png");
+}
+#butter-icon-skills {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_skills.png");
+}
+#butter-icon-succubus {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_succubus.png");
+}
+
+/* --- 底栏图标 --- */
+#butter-icon-inject {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_inject.png");
+}
+#butter-icon-register {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_register.png");
+}
+#butter-icon-api {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_api.png");
+}
+#butter-icon-debug {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_debug.png");
+}
+#butter-icon-theme {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_theme.png");
+}
+
+/* --- 状态文本图标 --- */
+#butter-icon-stat-semen {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_semen.png");
+}
+#butter-icon-stat-cycle {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_cycle.png");
+}
+#butter-icon-stat-egg {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_egg.png");
+}
+#butter-icon-stat-estrus {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_estrus.png");
+}
+
+/* --- 画框与UI元素背景图 --- */
+.butter-frame-decoration {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png");
+}
+.lust-bar-track {
+    border-image-source: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
+}
+.home-womb-img::before {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
+}
+#butter-floating-eye {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lotus_icon.png");
+}
+.virgin-icon {
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_virgin_status.png");
+}
