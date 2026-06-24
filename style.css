@@ -1335,98 +1335,192 @@ h5.section-subtitle {
 }
 
 /* ==========================================
- * XIII. 手机端响应式适配（无隐藏BUG / 防裁切完整版）
+ * XIII. 手机端响应式适配（图二全屏完整 + 图三精致排版）
  * ========================================== */
 @media screen and (max-width: 768px) {
   /* ----------------------------------------------------
-   * 1. 模态框本体：千万不加 display !important，保留正常开关功能
+   * 1. 模态框外壳：采用【图二】的 100% 全屏尺寸，确保大画框边缘完整不被裁切
+   * 🚨 绝不加上 display: ，完美保留 JS 的正常开/关隐藏功能
    * ---------------------------------------------------- */
   #butter-root-container #butter-status-modal {
-    width: 92vw; /* 💡 放弃 72vw，手机屏幕太窄，72% 绝对塞不下这么多内容，放宽到 92% */
-    height: 75vh;
-    max-width: 420px;
-    /* transform: translate(-50%, -50%); 继续保持注释状态，防止死锁你的 JS 拖拽！ */
+    position: fixed;
+    width: 100vw;
+    height: 100dvh;
+    top: 0;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    flex-direction: column;
   }
 
-  /* ----------------------------------------------------
-   * 2. 🚨 状态栏“不完整/被裁切”的核心修复 🚨
-   * 强制所有内部画框、包装层放弃电脑端尺寸，严格收缩进手机视口
-   * ---------------------------------------------------- */
+  /* 强行让内部所有的装饰背景、内容包装器拉满全屏，呈现完美无缺的画框 */
   #butter-root-container .butter-mobile-frame,
   #butter-root-container .butter-content-wrapper,
   #butter-root-container .butter-frame-decoration {
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0px !important; /* 彻底打破电脑端的固定最小宽度（如 600px）限制 */
-    max-width: 100% !important;
-    box-sizing: border-box !important;
+    width: 100%;
+    height: 100%;
+    min-width: 0px;
+    max-width: 100%;
+    border-radius: 0;
+    box-sizing: border-box;
   }
+
+  /* 核心核心：确保羊皮纸主背景图以 100% 宽高严丝合缝填充手机屏幕，不丢任何细节 */
   #butter-root-container .butter-frame-decoration {
-    background-size: 100% 100% !important; /* 强制背景图完整塞进框内，右侧羊皮纸边框再也不会被裁切了 */
+    background-size: 100% 100%;
   }
 
   /* ----------------------------------------------------
-   * 3. 动态百分比网格与防内部内容越界
+   * 2. 顶栏样式控制：继承【图三】的精致微调字号与对齐
+   * ---------------------------------------------------- */
+  #butter-root-container .butter-top-bar {
+    height: 100px; /* 保持精美顶栏区域厚度 */
+  }
+  #butter-root-container .butter-top-bar span {
+    font-size: 11px; /* 文字缩小，防止在窄屏上重叠 */
+    top: 56%; /* 精准对齐背景图的中心装饰线 */
+  }
+  #butter-root-container #bs-user-title {
+    left: 55px;
+  }
+  #butter-root-container #bs-date-time {
+    right: 55px;
+  }
+
+  /* ----------------------------------------------------
+   * 3. 核心网格布局：保留【图三】的经典左边栏双列网格架构
+   * 🚨 拒绝图二的顶部横向堆叠，坚守左侧边栏的美学设计
    * ---------------------------------------------------- */
   #butter-root-container div.butter-content-grid {
-    /* 采用 17% 代替 50px，让侧边栏宽度永远跟背景图片里那条竖线同步缩放 */
-    grid-template-columns: 17% 1fr !important;
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box !important;
-    padding: 4% 5% 8% 2% !important; /* 用百分比动态留白，防右侧和底部被吞 */
-  }
-
-  /* 限制主内容滚动区，防止内部超长文本撑破画框 */
-  #butter-root-container .butter-main-content {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important; /* 绝不允许出现横向滚动条把 UI 撑断 */
-    padding-right: 8px !important;
+    display: grid;
+    grid-template-columns: 55px 1fr; /* 左侧栏固定 55px 宽，右侧主区占满剩下所有空间 */
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+    min-height: 0; /* 防止 flex 弹性计算导致主区域溢出 */
+    padding: 5px 8px 8px 8px; /* 内边距控制，使网格完美缩进在古典画框内部 */
   }
 
   /* ----------------------------------------------------
-   * 4. 侧边栏与底部按钮极限瘦身
+   * 4. 左侧边栏：采用【图三】的纵向图标排列与精细比例
    * ---------------------------------------------------- */
   #butter-root-container .butter-sidebar {
-    padding: 5px 0 5px 0 !important;
-    gap: 8px !important;
+    display: flex;
+    flex-direction: column; /* 坚守纵向排列 */
+    gap: 10px; /* 按钮间距 */
+    padding: 5px 1px 5px 1px;
+    overflow-y: auto; /* 标签过多时允许侧边栏纵向滚动 */
+    overflow-x: hidden;
+    border-right: none;
+    border-bottom: none;
+  }
+  #butter-root-container .butter-sidebar::-webkit-scrollbar {
+    display: none; /* 彻底隐藏侧边栏滚动条，保持画面干净 */
+  }
+  #butter-root-container .butter-tab {
+    padding: 4px 0;
+    gap: 2px;
+    flex-direction: column;
   }
   #butter-root-container .butter-tab-icon {
-    width: 28px !important;
-    height: 28px !important;
+    width: 34px;
+    height: 34px;
   }
-  #butter-root-container .butter-tab span,
-  #butter-root-container .butter-nav-btn span {
-    font-size: 11px !important;
-    transform: scale(0.8) !important;
-    white-space: nowrap !important; /* 绝对禁止文字换行，换行会撑乱布局 */
+  #butter-root-container .butter-tab span {
+    font-size: 11px;
+    transform: scale(0.9); /* 强行微缩，使小字体在手机端精致利落 */
+    transform-origin: center top;
+    white-space: nowrap; /* 禁止换行撑乱布局 */
   }
 
   /* ----------------------------------------------------
-   * 5. 表单及输入框防“内部挤爆”
+   * 5. 右侧主内容区顶部的“古典页面标题便签”
+   * ---------------------------------------------------- */
+  #butter-root-container #butter-page-title-tag {
+    top: 72px;
+    left: 55px; /* 对应 55px 的左侧边栏进行无缝对齐 */
+    width: 140px;
+    height: 40px;
+    font-size: 12px;
+    padding: 2px 25px 15px 15px;
+  }
+  #butter-root-container .butter-tab-content {
+    padding-top: 35px; /* 空出顶部高度，防业务内容钻到悬浮标题标签下方 */
+  }
+  #butter-root-container .butter-main-content {
+    padding: 5px 10px;
+    overflow-y: auto; /* 允许主面板内容独立上下滚动 */
+    overflow-x: hidden;
+  }
+
+  /* ----------------------------------------------------
+   * 6. 右下角精致底栏与五个功能按钮（保留图三小字）
+   * ---------------------------------------------------- */
+  #butter-root-container .butter-bottom-nav {
+    height: 76px;
+    padding: 10px 0 0 0;
+    flex-shrink: 0; /* 严禁底部导航栏被上方高弹性内容挤扁 */
+  }
+  #butter-root-container .butter-nav-btn {
+    width: 40px;
+  }
+  #butter-root-container .butter-nav-btn span {
+    display: block; /* 🚨 绝不隐藏！完整保留图三的底部分类说明文字 */
+    font-size: 11px;
+    transform: scale(0.85);
+    white-space: nowrap;
+  }
+  #butter-root-container .butter-nav-icon-wrapper {
+    width: 33px;
+    height: 33px;
+  }
+
+  /* ----------------------------------------------------
+   * 7. 核心内部业务组件微调（欲望条、子宫图、表单）
+   * ---------------------------------------------------- */
+  #butter-root-container .butter-lust-container {
+    margin-bottom: 12px;
+    gap: 6px;
+  }
+  #butter-root-container .lust-bar-track {
+    height: 24px;
+    border-width: 8px 20px;
+  }
+  #butter-root-container .butter-womb-section {
+    margin-bottom: 15px;
+    gap: 10px;
+  }
+  #butter-root-container .home-womb-img {
+    width: 110px;
+    height: 125px;
+    flex-shrink: 0;
+  }
+
+  /* ----------------------------------------------------
+   * 8. 表单输入网格的极致响应式压缩
    * ---------------------------------------------------- */
   #butter-root-container .bs-grid.bs-grid-three-column {
-    grid-template-columns: 1fr 1fr !important; /* 电脑端的三列在手机上绝对塞不下，强转为双列！ */
+    grid-template-columns: repeat(
+      2,
+      1fr
+    ); /* 电脑端三列改手机端两列，继承图三完美排版 */
   }
   #butter-root-container input.text_pole,
   #butter-root-container input[type="text"].text_pole,
-  #butter-root-container select,
-  #butter-root-container textarea.text_pole {
-    width: 100% !important; /* 限制输入框宽度不得超过父容器 */
-    box-sizing: border-box !important;
-    padding: 4px 8px !important;
-    font-size: 11px !important;
+  #butter-root-container select {
+    padding: 6px 10px;
+    font-size: 12px;
+    width: 100%;
   }
 
-  /* 左上角古典标题微调跟随缩放 */
-  #butter-root-container #butter-page-title-tag {
-    top: 55px !important;
-    left: 15% !important;
-    width: 120px !important;
-    height: 35px !important;
-    padding: 2px 20px 10px 10px !important;
-    font-size: 11px !important;
+  /* ----------------------------------------------------
+   * 9. 悬浮框（全视之眼）手机端防护控制
+   * ---------------------------------------------------- */
+  #butter-root-container #butter-floating-eye {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    touch-action: none;
   }
 }
 
