@@ -1334,125 +1334,166 @@ h5.section-subtitle {
   box-shadow: 0 0 6px rgba(176, 105, 123, 0.6);
 }
 
-/*
- * ==========================================
- * XIII. 手机端响应式适配 (严格无 !important、保留原版构图版)
- * ==========================================
- */
+/* ==========================================
+ * XIII. 手机端响应式适配（无 !important 精准微调版）
+ * ========================================== */
 @media screen and (max-width: 768px) {
-  /* 1. 大盒子居中悬浮，占屏幕 68% 宽 / 72% 高。通过双 ID 选择器天然压制权重 */
+  /* 📱 触发断点：当手机屏幕宽度小于 768px 时，以下样式才会生效 */
+
+  /* ----------------------------------------------------
+   * 1. 大盒子（外层弹窗画框）的控制中心
+   * ---------------------------------------------------- */
   #butter-root-container #butter-status-modal {
-    display: flex;
-    width: 68vw;
-    height: 72vh;
-    max-width: 92vw;
-    max-height: 85vh;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 12px;
+    position: fixed; /* 💡 核心修复一：显式指定固定定位，强行脱离手机端高度塌陷的父容器，改用全屏视口定位 */
+    display: flex; /* 启用弹性布局，让内部的网格和元素能正常伸缩 */
+    width: 72vw; /* 📐 宽度：占手机屏幕总宽度的 72% */
+    height: 74vh; /* 📐 高度：占手机屏幕总高度 of 74% */
+    max-width: 92vw; /* 🚨 横屏安全阀 */
+    max-height: 85vh; /* 🚨 竖屏安全阀 */
+
+    /* 💡 核心修复二：放弃 transform 居中方案（因为它会跟拖拽 JS 的 top/left 像素值疯狂打架）
+       【极致数学逻辑】：
+       - 既然宽度(width)是 72vw，那剩余空间就是 28vw，左右各分 14vw 即可完美水平居中！
+       - 既然高度(height)是 74vh，那剩余空间就是 26vh，上下各分 13vh 即可完美垂直居中！ */
+    top: 13vh;
+    left: 14vw;
+
+    /* transform: translate(-50%, -50%); ❌ 这一行必须彻底删掉或注释掉！否则会死锁拖拽坐标 */
+
+    border-radius: 12px; /* 🎨 圆角 */
   }
 
-  /* 2. 顶栏文字间距微调，适配变窄的屏幕 */
+  /* ----------------------------------------------------
+     * 2. 顶栏样式控制（文字、时间、用户标题等）
+     * ---------------------------------------------------- */
   #butter-root-container .butter-top-bar {
-    height: 75px;
+    height: 75px; /* 📐 顶栏高度：手机端适当缩减到 75px（电脑端通常较宽） */
   }
   #butter-root-container .butter-top-bar span {
-    font-size: 11px;
-    top: 56%;
+    font-size: 11px; /* 🔤 字体大小：手机端顶栏的所有小字缩小到 11px，防止挤爆 */
+    top: 56%; /* 📍 垂直对齐：让文字在顶栏内部向下挪一点（56%），对齐背景图的中心线 */
   }
   #butter-root-container #bs-user-title {
-    left: 55px;
+    left: 55px; /* 📍 左边距：左侧文字（用户头衔）距离大盒子左边缘 55px */
   }
   #butter-root-container #bs-date-time {
-    right: 55px;
+    right: 55px; /* 📍 右边距：右侧文字（时间日期）距离大盒子右边缘 55px */
   }
 
-  /* 3. 核心：坚决不破坏原版网格构图！仅将左侧边栏从 86px 缩减到 64px 腾出内容空间 */
+  /* ----------------------------------------------------
+     * 3. 核心双列网格布局（左边栏 | 右主内容区）
+     * ---------------------------------------------------- */
   #butter-root-container div.butter-content-grid {
-    grid-template-columns: 64px 1fr;
-    padding: 5px 5px 8px 8px;
+    grid-template-columns: 50px 1fr; /* ✂️ 分割线：左侧侧边栏固定宽 64px（由电脑端的86px缩减），右侧主区占满剩下所有空间(1fr) */
+    padding: 5px 5px 8px 8px; /* 📦 内边距：控制网格离四周古典边框的距离（上、右、下、左） */
   }
 
-  /* 4. 等比例缩小侧边栏图标与间距，防止挤压错位 */
+  /* ----------------------------------------------------
+     * 4. 左侧边栏切换按钮区域（首页、陈竹汐等标签）
+     * ---------------------------------------------------- */
   #butter-root-container .butter-sidebar {
-    gap: 10px;
-    padding: 5px 2px 20px 2px;
+    gap: 10px; /* ↕️ 间距：侧边栏里各个切页按钮之间的垂直间距 */
+    padding: 5px 1px 5px 1px; /* 📦 内边距：侧边栏内部四周的留白（上、右、下、左） */
   }
   #butter-root-container .butter-tab {
-    padding: 4px 0;
-    gap: 2px;
+    padding: 4px 0; /* 📦 内边距：单个切页按钮内部的上下留白，缩减它能让按钮变扁 */
+    gap: 2px; /* ↕️ 间距：按钮内部“小图标”和下面“文字”之间的距离 */
   }
   #butter-root-container .butter-tab-icon {
-    width: 34px;
-    height: 34px;
+    width: 34px; /* 🖼️ 图标宽度：手机端侧边栏图标缩小到 34px */
+    height: 34px; /* 🖼️ 图标高度：手机端侧边栏图标缩小到 34px */
   }
   #butter-root-container .butter-tab span {
-    font-size: 10px;
-    transform: scale(0.9); /* 字体微调缩小 */
-    transform-origin: center top;
+    font-size: 11px; /* 🔤 按钮字体：文字改小到 11px */
+    transform: scale(
+      0.9
+    ); /* 🔎 缩放修正：部分手机不支持 11px 以下字体，用 scale(0.9) 强行将其缩得更小精致 */
+    transform-origin: center top; /* 🎯 缩放原点：以文字的“顶部正中间”为基准进行缩放，防止缩放后文字位移 */
   }
 
-  /* 5. 联动调整左上角古典标题标签的位置与大小，使其完美贴合 64px 的新侧边栏 */
+  /* ----------------------------------------------------
+     * 5. 右侧主内容区顶部的“古典页面标题标签”
+     * ---------------------------------------------------- */
   #butter-root-container #butter-page-title-tag {
-    top: 72px;
-    left: 74px;
-    width: 140px;
-    height: 40px;
-    font-size: 12px;
-    padding: 2px 25px 15px 15px;
+    top: 72px; /* 📍 悬浮坐标：标签距离大盒子顶部的距离（微调它来对齐侧边栏和主内容） */
+    left: 50px; /* 📍 悬浮坐标：标签距离大盒子左边缘的距离（因为侧边栏变窄了，它也要往左移） */
+    width: 140px; /* 📐 标签宽度：缩小这个古典便签纸背景图的宽度 */
+    height: 40px; /* 📐 标签高度：缩小这个古典便签纸背景图的高度 */
+    font-size: 12px; /* 🔤 标签文字：便签纸里的主标题字号 */
+    padding: 2px 25px 15px 15px; /* 📦 内边距：文字在便签纸背景图里的内边距，用来把文字挤到印花的正中央 */
   }
   #butter-root-container .butter-tab-content {
-    padding-top: 35px;
+    padding-top: 35px; /* 🔓 顶部留白：主内容区域顶部空出 35px，防止内容钻到上面的悬浮标题标签下面被挡住 */
   }
 
-  /* 6. 缩小底栏高度及五个导航按钮的尺寸 */
+  /* ----------------------------------------------------
+     * 6. 右下角精致底栏与五个核心控制按钮
+     * ---------------------------------------------------- */
   #butter-root-container .butter-bottom-nav {
-    height: 75px;
-    padding: 10px 0 0 0;
+    height: 55px; /* 📐 底栏高度：手机端底栏缩减到 75px */
+    padding: 10px 0 0 0; /* 📦 内边距：只在顶部留出 10px 间距，让里面的小图标不要贴顶 */
   }
   #butter-root-container .butter-nav-btn {
-    width: 50px;
+    width: 40px; /* 📐 按钮宽度：底栏一共有五个按钮，限制每个按钮最大宽度 50px 防止横向排不下 */
   }
   #butter-root-container .butter-nav-icon-wrapper {
-    width: 36px;
-    height: 36px;
+    width: 33px; /* 🖼️ 底栏图标宽：圆形外框或者图标容器大小 */
+    height: 33px; /* 🖼️ 底栏图标高：圆形外框或者图标容器大小 */
   }
   #butter-root-container .butter-nav-btn span {
-    font-size: 10px;
-    transform: scale(0.85);
+    font-size: 11px; /* 🔤 底栏文字：按钮下方的说明小字调为 11px */
+    transform: scale(
+      0.85
+    ); /* 🔎 缩放修正：将底栏文字整体强制缩小到 0.85 倍，防止英文或长中文换行错位 */
   }
 
-  /* 7. 主内容区内部精致元素等比微调（如子宫图、欲望条），防窄屏溢出 */
+  /* ----------------------------------------------------
+     * 7. 核心业务组件微调（主内容区、欲望条、子宫图、表单）
+     * ---------------------------------------------------- */
   #butter-root-container .butter-main-content {
-    padding: 5px 10px;
+    padding: 5px 10px; /* 📦 主区留白：右侧滚动区域内部的左右留白，越小给表单腾出的宽度就越大 */
   }
   #butter-root-container .butter-lust-container {
-    margin-bottom: 12px;
-    gap: 6px;
+    margin-bottom: 12px; /* ↕️ 外边距：欲望条（控制区域）距离下方元素的距离 */
+    gap: 6px; /* ↕️ 间距：欲望条和它的数值标签之间的间距 */
   }
   #butter-root-container .lust-bar-track {
-    height: 24px;
-    border-width: 8px 20px; /* 减薄古典进度条外框 */
+    height: 24px; /* 📐 进度条高度：手机端把华丽的进度条高度压扁到 24px */
+    border-width: 8px 20px; /* 🎨 古典边框厚度：上下 8px 宽，左右 20px 宽（微调它可以改变进度条外框两端羽毛/花纹的肥瘦） */
   }
   #butter-root-container .butter-womb-section {
-    margin-bottom: 15px;
-    gap: 10px;
+    margin-bottom: 15px; /* ↕️ 外边距：子宫状态展示区距离下方表单的距离 */
+    gap: 10px; /* ↔️ 间距：子宫图片和右侧详细文字状态之间的横向间距 */
   }
   #butter-root-container .home-womb-img {
-    width: 110px;
-    height: 125px;
+    width: 110px; /* 🖼️ 图片宽度：手机端看板娘/子宫透视图的显示宽度 */
+    height: 125px; /* 🖼️ 图片高度：手机端看板娘/子宫透视图的显示高度 */
   }
 
-  /* 让表单内的多列布局在极窄容器下适当自适应 */
+  /* ----------------------------------------------------
+     * 8. 表单输入框、下拉菜单与多列布局的极致压缩
+     * ---------------------------------------------------- */
   #butter-root-container .bs-grid.bs-grid-three-column {
-    grid-template-columns: repeat(2, 1fr); /* 三列变双列，防止字叠在一起 */
+    grid-template-columns: repeat(
+      2,
+      1fr
+    ); /* ✂️ 网格裂变：将原本电脑端的“横向三列布局”强行拆成“双列布局”，防止三个输入框挤在一起导致字重叠 */
   }
   #butter-root-container input.text_pole,
   #butter-root-container input[type="text"].text_pole,
   #butter-root-container select {
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 6px 10px; /* 📦 内边距：输入框和下拉框内部的肉感（上下一律 6px，左右 10px） */
+    font-size: 12px; /* 🔤 字体大小：输入框里的文字和下拉菜单选项的字号 */
+  }
+
+  /* ----------------------------------------------------
+   * 9. 悬浮框（全视之眼）移动端防护控制
+   * ---------------------------------------------------- */
+  #butter-root-container #butter-floating-eye {
+    position: fixed; /* 💡 确保悬浮眼在手机端也是固定定位 */
+    top: 20px; /* 📍 手机端初始诞生位置：距离顶部 20px */
+    left: 20px; /* 📍 手机端初始诞生位置：距离左侧 20px */
+    touch-action: none; /* 💡 核心修复三：全面禁止手机浏览器对此按钮的原生滚动拦截，手势全权交给 JS 拖拽 */
   }
 }
 /*
