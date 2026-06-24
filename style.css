@@ -1380,7 +1380,7 @@ h5.section-subtitle {
     flex-direction: column; /* 🌟 核心：改为纵向排列，强制分行 */
     justify-content: center; /* 🌟 核心：内容在顶栏内垂直居中 */
     align-items: center; /* 🌟 核心：居中对齐。如果想整体靠左，可以改为 flex-start 并加 padding */
-    padding-top: 16px !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
+    padding-top: 17px !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
   }
   #butter-root-container .butter-top-bar span {
     position: static; /* 🌟 核心：解除原本电脑端的绝对定位(left/right) */
@@ -1448,9 +1448,9 @@ h5.section-subtitle {
    * 5. 右侧主内容区顶部的“古典页面标题便签”
    * ---------------------------------------------------- */
   #butter-root-container #butter-page-title-tag {
-    top: 74px !important;
-    left: 65px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
-    width: 120px;
+    top: 75px !important;
+    left: 67px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
+    width: 80px !important;
     height: 35px;
     font-size: 12px;
     padding: 2px 25px 15px 15px;
