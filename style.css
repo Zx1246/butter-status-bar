@@ -1335,42 +1335,57 @@ h5.section-subtitle {
 }
 
 /* ==========================================
- * XIII. 手机端响应式适配 (最终定位修复版)
+ * XIII. 手机端响应式适配 (最终定位强袭版)
  * ========================================== */
 @media screen and (max-width: 768px) {
   /* 📱 触发断点：当手机屏幕宽度小于 768px 时，以下样式才会生效 */
 
   /* ----------------------------------------------------
-   * 1. 大盒子（外层弹窗画框）的控制中心
+   * 1. 大盒子（外层弹窗画框）的控制中心 - 【暴力修正】
    * ---------------------------------------------------- */
   #butter-status-modal {
-    position: fixed; /* 💡 核心修复：确保固定定位 */
+    position: fixed !important; /* 💡 1. 强制固定定位 */
 
-    /* 【【【核心修正：尺寸与定位】】】 */
-    width: 95vw !important; /* 📐 宽度：强制占满屏幕宽度的95%，确保内容可见 */
-    height: 90vh !important; /* 📐 高度：强制占满屏幕高度的90%，提供充足的滚动空间 */
-    max-width: 95vw !important; /* 🚨 安全阀 */
-    max-height: 90vh !important; /* 🚨 安全阀 */
+    /* 💡 2. 移除所有可能导致计算错误的居中属性 */
+    transform: none !important;
+    margin: 0 !important;
 
-    /* 【【【核心修正：初始诞生位置】】】 */
-    /* 移除 transform, 使用 top/left/right/bottom 进行更可靠的定位 */
-    top: 5vh !important; /* 📍 强制距离屏幕顶部5% */
-    left: 2.5vw !important; /* 📍 强制距离屏幕左侧2.5%，实现水平居中 */
-    right: 2.5vw !important;
-    bottom: 5vh !important;
-    margin: auto !important; /* 配合top/left/right/bottom:0与margin:auto可实现完美的flexbox替代居中 */
-    transform: none !important; /* 再次确认禁用transform */
+    /* 💡 3. 【核心】直接、粗暴地定义其在屏幕上的位置和大小 */
+    top: 20px !important; /* 强制距离屏幕顶部 20px，绝不允许为负！ */
+    left: 2.5vw !important; /* 强制距离屏幕左侧 2.5% 的宽度 */
+    width: 95vw !important; /* 强制宽度为屏幕的 95% */
+    height: auto !important; /* 高度由内容自动撑开 */
+    max-height: calc(
+      100vh - 40px
+    ) !important; /* 最大高度为屏幕高度减去上下的边距，确保底部不超出 */
+    bottom: 20px !important; /* 作为高度的保险 */
+
+    display: flex !important; /* 确保内部布局正常 */
+    flex-direction: column !important;
   }
 
   /* ----------------------------------------------------
-     * 2. 顶栏样式控制
-     * ---------------------------------------------------- */
+   * 2. 全视之眼悬浮按钮
+   * ---------------------------------------------------- */
+  #butter-floating-eye {
+    top: 25px !important;
+    left: auto !important;
+    right: 15px !important; /* 把它放在右上角，防止与面板重叠 */
+    width: 45px !important;
+    height: 45px !important;
+    touch-action: none;
+  }
+
+  /* ----------------------------------------------------
+   * 3. 内部布局微调（基于新的、可靠的外部容器）
+   * ---------------------------------------------------- */
   #butter-root-container .butter-top-bar {
-    height: 60px; /* 📐 顶栏高度：再压扁一点 */
+    height: 60px;
+    cursor: grab; /* 确保拖拽手势图标正确 */
   }
   #butter-root-container .butter-top-bar span {
-    font-size: 10px; /* 🔤 字体更小 */
-    top: 55%;
+    font-size: 10px;
+    top: 58%;
   }
   #butter-root-container #bs-user-title {
     left: 45px;
@@ -1378,43 +1393,29 @@ h5.section-subtitle {
   #butter-root-container #bs-date-time {
     right: 40px;
   }
-
-  /* ----------------------------------------------------
-     * 3. 核心双列网格布局
-     * ---------------------------------------------------- */
   #butter-root-container div.butter-content-grid {
-    grid-template-columns: 50px 1fr; /* ✂️ 侧边栏再窄一点 */
+    grid-template-columns: 55px 1fr;
     padding: 0 5px 5px 5px;
+    flex-grow: 1; /* 让网格填满剩余空间 */
+    min-height: 0; /* 防止flex布局溢出 */
   }
-
-  /* ----------------------------------------------------
-     * 4. 左侧边栏
-     * ---------------------------------------------------- */
   #butter-root-container .butter-sidebar {
-    gap: 10px; /* ↕️ 间距：侧边栏里各个切页按钮之间的垂直间距 */
-    padding: 5px 1px 5px 1px; /* 📦 内边距：侧边栏内部四周的留白（上、右、下、左） */
+    gap: 8px;
+    padding-top: 10px;
+    overflow-y: auto; /* 允许侧边栏在内容过多时滚动 */
   }
-  #butter-root-container .butter-tab {
-    padding: 4px 0; /* 📦 内边距：单个切页按钮内部的上下留白，缩减它能让按钮变扁 */
-    gap: 2px; /* ↕️ 间距：按钮内部“小图标”和下面“文字”之间的距离 */
+  #butter-root-container .butter-main-content {
+    overflow-y: auto; /* 确保主内容区可以滚动 */
   }
   #butter-root-container .butter-tab-icon {
-    width: 34px; /* 🖼️ 图标宽度：手机端侧边栏图标缩小到 34px */
-    height: 34px; /* 🖼️ 图标高度：手机端侧边栏图标缩小到 34px */
+    width: 32px;
+    height: 32px;
   }
   #butter-root-container .butter-tab span {
-    font-size: 11px; /* 🔤 按钮字体：文字改小到 11px */
-    transform: scale(
-      0.9
-    ); /* 🔎 缩放修正：部分手机不支持 11px 以下字体，用 scale(0.9) 强行将其缩得更小精致 */
-    transform-origin: center top; /* 🎯 缩放原点：以文字的“顶部正中间”为基准进行缩放，防止缩放后文字位移 */
+    font-size: 9px;
   }
-
-  /* ----------------------------------------------------
-     * 5. 右侧主内容区顶部的“古典页面标题标签”
-     * ---------------------------------------------------- */
   #butter-root-container #butter-page-title-tag {
-    top: 50px;
+    top: 48px;
     left: 65px;
     width: 120px;
     height: 35px;
@@ -1424,71 +1425,21 @@ h5.section-subtitle {
   #butter-root-container .butter-tab-content {
     padding-top: 20px;
   }
-
-  /* ----------------------------------------------------
-     * 6. 右下角精致底栏
-     * ---------------------------------------------------- */
   #butter-root-container .butter-bottom-nav {
-    height: 76px;
-    padding: 10px 0 0 0;
-  }
-  #butter-root-container .butter-nav-btn {
-    width: 40px;
+    height: 65px;
+    flex-shrink: 0; /* 防止底栏被压缩 */
   }
   #butter-root-container .butter-nav-icon-wrapper {
     width: 32px;
     height: 32px;
   }
   #butter-root-container .butter-nav-btn span {
-    font-size: 11px; /* 🔤 底栏文字：按钮下方的说明小字调为 11px */
-    transform: scale(
-      0.85
-    ); /* 🔎 缩放修正：将底栏文字整体强制缩小到 0.85 倍，防止英文或长中文换行错位 */
+    font-size: 9px;
   }
-
-  /* ----------------------------------------------------
-     * 7. 核心业务组件微调
-     * ---------------------------------------------------- */
-  #butter-root-container .home-womb-img {
-    width: 110px;
-    height: 120px;
-  }
-
-  #butter-root-container .stat-text span {
-    font-size: 11px;
-  }
-  #butter-root-container .stat-text b {
-    font-size: 12px;
-  }
-
-  #butter-root-container .butter-additional-stats {
-    font-size: 11px;
-    margin-top: 10px;
-  }
-
-  /* ----------------------------------------------------
-     * 8. 表单与多列布局压缩
-     * ---------------------------------------------------- */
-  #butter-root-container .bs-grid.bs-grid-three-column {
-    grid-template-columns: 1fr 1fr; /* 强制两列 */
-  }
-
-  #butter-root-container .settings_section.flex-gap {
-    flex-direction: column; /* 在极小屏幕上，标签和输入框垂直排列 */
-    align-items: flex-start;
-    gap: 5px;
-  }
-
-  /* ----------------------------------------------------
-   * 9. 悬浮框（全视之眼）
-   * ---------------------------------------------------- */
-  #butter-floating-eye {
-    /* 之前在JS中已处理其行为，此处仅确保初始位置 */
-    top: 15px;
-    left: 15px;
-    width: 50px;
-    height: 50px;
-    touch-action: none;
+  #butter-root-container .home-womb-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
   }
 }
 
