@@ -362,9 +362,7 @@ async function ensureModalAndBindEvents() {
   if ($(`#${ROOT_CONTAINER_ID}`).length) return;
 
   const mainUiHtml = await $.get(`/${PLUGIN_DIR}/ui.html`);
-  const masterName = context.name1 || "主人";
-  let injectedHtml = mainUiHtml.replace(/\{\{user\}\}/g, masterName);
-  $("body").append(injectedHtml);
+  $("body").append(mainUiHtml);
 
   // 绑定所有UI面板的交互事件
   bindMasterUIEvents();
