@@ -110,15 +110,12 @@ const uiManager = {
 };
 
 // ==========================================
-// 2. 核心功能组件 (拖拽与响应式)
-// 【已修复手机移动端触屏拖拽锁定问题】
-// ==========================================
-// ==========================================
 // 2. 核心功能组件 (拖拽与响应式) - 【移动端抗干扰完美修复版】
 // ==========================================
 function makeDraggable(triggerEl, targetEl) {
   if (!triggerEl || !targetEl) return;
 
+  // 【新增】强制告知浏览器，此区域的触摸事件由我JS接管，不要自作主张滚动页面
   triggerEl.style.touchAction = "none";
 
   let pos = { x: 0, y: 0, startX: 0, startY: 0 };
@@ -133,6 +130,11 @@ function makeDraggable(triggerEl, targetEl) {
       ).length > 0
     ) {
       return;
+    }
+
+    // 【修正】在开始拖拽时，如果元素还在使用transform，先清除它
+    if (targetEl.style.transform) {
+      targetEl.style.transform = "none";
     }
 
     const rect = targetEl.getBoundingClientRect();
@@ -158,7 +160,10 @@ function makeDraggable(triggerEl, targetEl) {
       isDragging = true;
       targetEl.style.position = "fixed";
       targetEl.style.margin = "0";
-      targetEl.style.transform = "none";
+      // 确保在拖动开始时清除 transform
+      if (targetEl.style.transform) {
+        targetEl.style.transform = "none";
+      }
     }
 
     if (isDragging) {
@@ -175,13 +180,15 @@ function makeDraggable(triggerEl, targetEl) {
       if (maxLeft > 0) {
         newLeft = Math.max(0, Math.min(newLeft, maxLeft));
       } else {
-        newLeft = Math.max(maxLeft, Math.min(newLeft, 0)); // 允许超宽组件全屏错位滑动查看
+        // 允许超宽组件在负坐标滑动，以便用户能看到所有内容
+        newLeft = Math.max(maxLeft, Math.min(newLeft, 0));
       }
 
       if (maxTop > 0) {
         newTop = Math.max(0, Math.min(newTop, maxTop));
       } else {
-        newTop = Math.max(maxTop, Math.min(newTop, 0)); // 允许超高组件上下滑动，绝不死锁在0
+        // 允许超高组件上下滑动，绝不死锁在0
+        newTop = Math.max(maxTop, Math.min(newTop, 0));
       }
 
       targetEl.style.left = `${newLeft}px`;
@@ -199,10 +206,10 @@ function makeDraggable(triggerEl, targetEl) {
 
     if (isDragging) {
       const rect = targetEl.getBoundingClientRect();
-      const percentLeft = (rect.left / window.innerWidth) * 100;
-      const percentTop = (rect.top / window.innerHeight) * 100;
-      targetEl.style.left = `${percentLeft}%`;
-      targetEl.style.top = `${percentTop}%`;
+      // 在拖动结束后，不再使用百分比定位，因为这会导致resize时的跳动。
+      // 直接保持像素定位即可。
+      targetEl.style.left = `${rect.left}px`;
+      targetEl.style.top = `${rect.top}px`;
     }
 
     setTimeout(() => {
@@ -218,41 +225,48 @@ function makeDraggable(triggerEl, targetEl) {
 window.addEventListener("resize", () => {
   // 移动端若检测到输入框正在聚焦（证明键盘拉起），直接跳过防止布局踩踏吸顶
   if (
-    (/Mobi|Android|iPhone/i.test(navigator.userAgent) &&
-      document.activeElement.tagName === "INPUT") ||
-    document.activeElement.tagName === "TEXTAREA"
+    /Mobi|Android|iPhone/i.test(navigator.userAgent) &&
+    (document.activeElement.tagName === "INPUT" ||
+      document.activeElement.tagName === "TEXTAREA")
   ) {
     return;
   }
 
-  const modal = document.getElementById(ROOT_CONTAINER_ID);
+  const modal = document.getElementById("butter-status-modal");
   if (!modal || modal.style.display === "none") return;
+
+  // 清理可能残留的transform属性
+  if (modal.style.transform) {
+    const rect = modal.getBoundingClientRect();
+    modal.style.transform = "none";
+    modal.style.left = `${rect.left}px`;
+    modal.style.top = `${rect.top}px`;
+  }
+
   const rect = modal.getBoundingClientRect();
-  if (modal.style.margin && modal.style.margin !== "0px") {
+
+  // 如果面板完全在视口内，则不做任何处理
+  if (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.right <= window.innerWidth &&
+    rect.bottom <= window.innerHeight
+  ) {
     return;
   }
 
-  let currentLeft = rect.left;
-  let currentTop = rect.top;
-  let changed = false;
+  // 否则，进行边界修正
+  let newLeft = Math.max(
+    0,
+    Math.min(rect.left, window.innerWidth - rect.width),
+  );
+  let newTop = Math.max(
+    0,
+    Math.min(rect.top, window.innerHeight - rect.height),
+  );
 
-  const maxLeft = window.innerWidth - rect.width - 10;
-  const maxTop = window.innerHeight - rect.height - 10;
-
-  if (currentLeft + rect.width > window.innerWidth) {
-    currentLeft = Math.max(0, maxLeft);
-    changed = true;
-  }
-  // 只有在屏幕仍有富余空间（maxTop > 0）时才进行溢出修正，否则放行
-  if (maxTop > 0 && currentTop + rect.height > window.innerHeight) {
-    currentTop = Math.max(0, maxTop);
-    changed = true;
-  }
-
-  if (changed) {
-    modal.style.left = `${(currentLeft / window.innerWidth) * 100}%`;
-    modal.style.top = `${(currentTop / window.innerHeight) * 100}%`;
-  }
+  modal.style.left = `${newLeft}px`;
+  modal.style.top = `${newTop}px`;
 });
 
 window.addEventListener("resize", () => {
