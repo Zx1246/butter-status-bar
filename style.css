@@ -9,9 +9,49 @@
  * ====================================================*/
 
 /* ==========================================
- * I. 核心变量与全新华丽字体导入
+ * I. 核心变量与本地华丽字体导入 (5字全齐本地化版)
  * ==========================================
  */
+
+/* 1. 站酷快乐体 */
+@font-face {
+  font-family: "ZCOOL KuaiLe";
+  src: url("fonts/ZCOOLKuaiLe-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* 2. 思源宋体 */
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("fonts/NotoSerifSC-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* 3. 马善政毛笔楷书 */
+@font-face {
+  font-family: "Ma Shan Zheng";
+  src: url("fonts/MaShanZheng-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* 4. 站酷小薇体 (用于标签文本) */
+@font-face {
+  font-family: "ZCOOL XiaoWei";
+  src: url("fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* 5. Cinzel 古典英文字体 (用于高精数字与英文) */
+@font-face {
+  font-family: "Cinzel";
+  src: url("fonts/Cinzel-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
 
 :root {
   /* 从图片吸取的配色方案 */
@@ -1296,102 +1336,125 @@ h5.section-subtitle {
 
 /*
  * ==========================================
- * XIII. 手机端响应式适配 (干掉 !important)
+ * XIII. 手机端响应式适配 (严格无 !important、保留原版构图版)
  * ==========================================
  */
-@media (max-width: 600px) {
-  #butter-status-modal {
-    width: 100vw;
-    height: 100dvh;
-    top: 0;
-    left: 0;
-    transform: none;
-    border-radius: 0;
+@media screen and (max-width: 768px) {
+  /* 1. 大盒子居中悬浮，占屏幕 68% 宽 / 72% 高。通过双 ID 选择器天然压制权重 */
+  #butter-root-container #butter-status-modal {
+    display: flex;
+    width: 68vw;
+    height: 72vh;
+    max-width: 92vw;
+    max-height: 85vh;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 12px;
   }
 
-  #butter-root-container .butter-mobile-frame {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    padding: 15px 10px 10px 10px;
+  /* 2. 顶栏文字间距微调，适配变窄的屏幕 */
+  #butter-root-container .butter-top-bar {
+    height: 75px;
+  }
+  #butter-root-container .butter-top-bar span {
+    font-size: 11px;
+    top: 56%;
+  }
+  #butter-root-container #bs-user-title {
+    left: 55px;
+  }
+  #butter-root-container #bs-date-time {
+    right: 55px;
   }
 
-  .butter-top-bar {
-    padding: 8px 15px;
-    font-size: 10px;
-    margin-bottom: 0;
+  /* 3. 核心：坚决不破坏原版网格构图！仅将左侧边栏从 86px 缩减到 64px 腾出内容空间 */
+  #butter-root-container div.butter-content-grid {
+    grid-template-columns: 64px 1fr;
+    padding: 5px 5px 8px 8px;
   }
 
-  .butter-middle-body {
-    flex-direction: column;
-    padding: 5px 0;
-  }
-
+  /* 4. 等比例缩小侧边栏图标与间距，防止挤压错位 */
   #butter-root-container .butter-sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--butter-frame-border-light);
-    padding: 5px 10px;
-    gap: 5px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    gap: 10px;
+    padding: 5px 2px 20px 2px;
   }
-
-  #butter-root-container .butter-sidebar::-webkit-scrollbar {
-    display: none;
+  #butter-root-container .butter-tab {
+    padding: 4px 0;
+    gap: 2px;
   }
-
-  .butter-tab {
-    flex-shrink: 0;
-    padding: 8px;
+  #butter-root-container .butter-tab-icon {
+    width: 34px;
+    height: 34px;
   }
-
-  .butter-tab-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .butter-tab span {
+  #butter-root-container .butter-tab span {
     font-size: 10px;
+    transform: scale(0.9); /* 字体微调缩小 */
+    transform-origin: center top;
   }
 
-  #butter-root-container .butter-main-content {
-    padding: 15px;
+  /* 5. 联动调整左上角古典标题标签的位置与大小，使其完美贴合 64px 的新侧边栏 */
+  #butter-root-container #butter-page-title-tag {
+    top: 72px;
+    left: 74px;
+    width: 140px;
+    height: 40px;
+    font-size: 12px;
+    padding: 2px 25px 15px 15px;
+  }
+  #butter-root-container .butter-tab-content {
+    padding-top: 35px;
   }
 
-  .butter-womb-section {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .home-womb-img {
-    width: 120px;
-    height: 120px;
-  }
-
-  .home-womb-stats {
-    width: 100%;
-    align-items: flex-start;
-    padding-left: 10px;
-  }
-
+  /* 6. 缩小底栏高度及五个导航按钮的尺寸 */
   #butter-root-container .butter-bottom-nav {
-    height: 60px;
-    padding: 5px;
+    height: 75px;
+    padding: 10px 0 0 0;
+  }
+  #butter-root-container .butter-nav-btn {
+    width: 50px;
+  }
+  #butter-root-container .butter-nav-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+  #butter-root-container .butter-nav-btn span {
+    font-size: 10px;
+    transform: scale(0.85);
   }
 
-  .butter-nav-btn span {
-    display: none;
+  /* 7. 主内容区内部精致元素等比微调（如子宫图、欲望条），防窄屏溢出 */
+  #butter-root-container .butter-main-content {
+    padding: 5px 10px;
+  }
+  #butter-root-container .butter-lust-container {
+    margin-bottom: 12px;
+    gap: 6px;
+  }
+  #butter-root-container .lust-bar-track {
+    height: 24px;
+    border-width: 8px 20px; /* 减薄古典进度条外框 */
+  }
+  #butter-root-container .butter-womb-section {
+    margin-bottom: 15px;
+    gap: 10px;
+  }
+  #butter-root-container .home-womb-img {
+    width: 110px;
+    height: 125px;
   }
 
-  .butter-nav-icon-wrapper {
-    width: 42px;
-    height: 42px;
+  /* 让表单内的多列布局在极窄容器下适当自适应 */
+  #butter-root-container .bs-grid.bs-grid-three-column {
+    grid-template-columns: repeat(2, 1fr); /* 三列变双列，防止字叠在一起 */
   }
-} /* 👈 【核心修复：完美在此处闭合，不再让它往下吞掉电脑端样式】 */
-
+  #butter-root-container input.text_pole,
+  #butter-root-container input[type="text"].text_pole,
+  #butter-root-container select {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
 /*
  * ==========================================
  * XIV. 内容区左上角古典标题标签
@@ -1498,56 +1561,4 @@ h5.section-subtitle {
 }
 .virgin-icon {
   background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_virgin_status.png");
-}
-
-/* ====================================================
- * 📱 移动端/手机屏幕 响应式适配样式
- * 当屏幕宽度小于 768px（手机或小平板）时自动生效
- * ==================================================== */
-@media screen and (max-width: 768px) {
-  /* 1. 让大盒子支持上下滚动，防止被酒馆底层顶掉 */
-  #butter-root-container {
-    padding: 12px;
-    max-height: 85vh;
-    overflow-y: auto;
-  }
-
-  /* 2. 核心：把原本横向排开的布局（Flex）全部改成垂直上下排列 */
-  #butter-root-container .flex-gap,
-  #butter-root-container .flex-container,
-  #butter-root-container .status-bar-row {
-    flex-direction: column;
-    align-items: stretch !important; /* 让子元素自动撑满整行宽度 */
-    gap: 10px;
-  }
-
-  /* 3. 让输入框、下拉框、生日输入框等100%撑满手机屏幕宽度 */
-  #butter-root-container input[type="text"],
-  #butter-root-container input[type="number"],
-  #butter-root-container select {
-    width: 100% !important;
-    box-sizing: border-box;
-    height: 40px; /* 稍微加高一点，更方便手机手指点击 */
-    font-size: 14px; /* 防止 iOS 浏览器点击输入框时自动放大页面 */
-  }
-
-  /* 4. 优化复选框（勾选框）在手机上的排列 */
-  #butter-root-container .settings_section.flex-container {
-    flex-direction: row; /* 勾选框和文字还是保持横向 */
-    justify-content: flex-start;
-    align-items: center;
-  }
-  #butter-root-container input[type="checkbox"] {
-    width: 20px; /* 放大勾选框，方便手指按 */
-    height: 20px;
-  }
-
-  /* 5. 按钮变大，变成全宽按钮，方便单手大拇指狂点 */
-  #butter-root-container .menu_button,
-  #butter-root-container .submit-button {
-    width: 100%;
-    padding: 12px 0;
-    font-size: 15px;
-    text-align: center;
-  }
 }
