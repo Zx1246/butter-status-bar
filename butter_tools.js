@@ -4,6 +4,8 @@
 // ==========================================
 
 import { getButterState, saveButterState } from "./butter_state.js";
+import { advanceDay } from "./menstrual_cycle_manager.js";
+const LEAKAGE_RATE_PER_HOUR = 5; // 每小时浊液自然流失量 (ml)
 
 // 定义提供给AI的工具清单
 export const ButterToolsDefinition = [
@@ -32,7 +34,7 @@ export const ButterToolsDefinition = [
             required: ["source", "is_second_shot", "condom_used"],
         },
     },
-    // ... 其他已有的工具定义保留原样 ...
+
     {
         name: "bt_update_contraception",
         description:
@@ -236,8 +238,9 @@ export const ButterToolsDefinition = [
                 },
                 time_of_day: {
                     type: "string",
+                    // 【核心修正】移除了末尾多余的右括号
                     description:
-                        "推测当前大致时间段（如：清晨、中午、傍晚、深夜。无法判断留空）",
+                        "推测当前具体时间，必须使用24小时制 HH:mm 格式 (例如 '08:30' 或 '23:15')。如果无法判断则留空。",
                 },
                 sleep_occurred: {
                     type: "boolean",
@@ -298,9 +301,9 @@ function getRandomInt(min, max) {
  * 核心执行引擎
  * @param {string} functionName 被调用的工具函数名
  * @param {string|object} args AI传入的参数，可能是JSON字符串或已解析的对象
- * @returns {string} 返回给系统的执行结果日志
+ * @returns {Promise<string>} 返回给系统的执行结果日志
  */
-export function handleToolExecution(functionName, args) {
+export async function handleToolExecution(functionName, args) {
     let bState = getButterState();
     if (!bState) return "【报错：肉体档案记录落空】.";
 
@@ -334,10 +337,12 @@ export function handleToolExecution(functionName, args) {
             );
             bState.dynamic.experience.creampie_count += 1;
 
+            // 【【【核心改造：使用剧情时间记录】】】
+            // 不再使用现实时间的 toLocaleTimeString()，而是直接使用 state 中存储的剧情时间。
             bState.dynamic.womb.semen_sources.push({
                 source: sourceName,
                 volume: volumeToInject,
-                time: new Date().toLocaleTimeString(),
+                time: bState.dynamic.time_tracker.time, // 使用剧情时间
             });
             if (bState.dynamic.womb.semen_sources.length > 10)
                 bState.dynamic.womb.semen_sources.shift();
@@ -372,12 +377,8 @@ export function handleToolExecution(functionName, args) {
                 if (roll <= prob) {
                     bState.dynamic.status.is_pregnant = true;
                     bState.dynamic.experience.pregnancy_count += 1;
-                    // ====================【手术切口】====================
-                    // 不再使用现实世界时间，而是记录下此刻的【剧情日期】。
-                    // 这个日期是 'YYYY-MM-DD' 格式的字符串，与您的时间推进系统完全同步。
                     bState.dynamic.status.pregnancy_start_date =
                         bState.dynamic.time_tracker.story_date;
-                    // ===================================================
                     logOutHintTxtResultForItOnly += ` 【厄运降临】受孕检定命中(概率${prob}%, 骰出${roll})！她怀孕了，但她一无所知。`;
                 } else {
                     logOutHintTxtResultForItOnly += ` 检定未命中(概率${prob}%, 骰出${roll})，侥幸逃过一劫。`;
@@ -608,11 +609,53 @@ export function handleToolExecution(functionName, args) {
         let meta = bState.dynamic.metabolism;
         let hrs = argumentsProcessed.elapsed_hours || 0;
 
-        // 时间推进器
-        if (hrs > 0)
+        // 【【【核心补完：基于剧情小时的浊液被动流出】】】
+        // 只有在穴口未被堵住，且体内有存货时，才会发生流出。
+        if (
+            !bState.dynamic.womb.is_plugged &&
+            bState.dynamic.womb.semen_volume > 0 &&
+            hrs > 0
+        ) {
+            // 【问题4修正】使用在文件顶部定义的常量
+            const totalLeakage = hrs * LEAKAGE_RATE_PER_HOUR;
+
+            bState.dynamic.womb.semen_volume = Math.max(
+                0,
+                bState.dynamic.womb.semen_volume - totalLeakage,
+            );
+
+            logOutHintTxtResultForItOnly += ` [时间流逝] ${hrs}小时内，浊液自然流失了 ${totalLeakage.toFixed(1)}ml。`;
+        }
+        // 【【【补完结束】】】
+
+        const oldTime = bState.dynamic.time_tracker.time; // 获取旧时间，如 "23:00"
+        const newTime = argumentsProcessed.time_of_day; // 获取AI传入的新时间，如 "01:30"
+
+        // 【重构：将跨天判断与时间推进逻辑合并】
+        if (newTime && oldTime && newTime < oldTime) {
+            // 如果检测到跨天...
+            logOutHintTxtResultForItOnly += ` [午夜钟声] 时间从 ${oldTime} 跳跃至 ${newTime}，日期自动推进一天。`;
+
+            // 【核心修改】调用 advanceDay(1) 并且不再手动修改时间。
+            // advanceDay 应该负责所有与日期推进相关的事务。
+            // 我们将把时间更新的逻辑移到 advanceDay 内部。
+            // (此处的 await 确保了在执行后续代谢计算前，日期和周期已更新完毕)
+            await advanceDay(1, newTime); // 将新时间作为参数传递
+
+            // advanceDay 执行后，state 可能已更新，重新获取一下确保数据最新
+            bState = getButterState();
+            meta = bState.dynamic.metabolism;
+        } else {
+            // 如果没有跨天，仅更新时间
+            if (newTime) {
+                bState.dynamic.time_tracker.time = newTime;
+            }
+        }
+
+        // 仅处理时间流逝对 last_update_timestamp 的影响，不再手动改时间
+        if (hrs > 0) {
             bState.dynamic.time_tracker.last_update_timestamp -= hrs * 3600000;
-        if (argumentsProcessed.time_of_day)
-            bState.dynamic.time_tracker.time = argumentsProcessed.time_of_day;
+        }
 
         // A. 产乳资格综合校验系统 (Can Lactate?)
         let canLactate = false;

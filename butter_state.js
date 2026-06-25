@@ -59,6 +59,7 @@ const defaultButterUserState = {
             last_update_timestamp: null, // 【主人指定的刻印】记录上次被插入/更新的时间戳
         },
         status: {
+            is_initial_state_calibrated: false,
             is_virgin: true,
             lust: 0,
             menstrual_phase: "卵泡期",
@@ -251,7 +252,7 @@ export function registerButterUser(formData) {
 // ==========================================
 // 【全局预设/克隆工坊】
 // ==========================================
-const SETTINGS_KEY = "butterPluginSettings";
+export const SETTINGS_KEY = "butterPluginSettings";
 
 export function getUserPresets() {
     const context = SillyTavern.getContext();
@@ -287,6 +288,11 @@ export function saveUserPreset(presetName, formData) {
     console.log(`[克隆工坊] 预设 '${cloneData.name}' 已永久录入全局标本库。`);
 }
 
+/**
+ * 【修改】增加了生理周期重新计算的逻辑
+ * @param {string} presetName
+ * @returns {boolean}
+ */
 export function loadUserPresetIntoChat(presetName) {
     const presets = getUserPresets();
     const target = presets.find((p) => p.name === presetName);
@@ -294,9 +300,53 @@ export function loadUserPresetIntoChat(presetName) {
 
     let newState = getDefaultState();
     newState.dynamic.time_tracker.last_update_timestamp = Date.now();
+
     // 注入预设的核心灵魂
-    newState.fixed = { ...newState.fixed, ...target.fixed };
-    newState.semi_fixed = { ...newState.semi_fixed, ...target.semi_fixed };
+    // 【核心修正】确保深拷贝，防止污染原始预设对象
+    newState.fixed = { ...newState.fixed, ...structuredClone(target.fixed) };
+    newState.semi_fixed = {
+        ...newState.semi_fixed,
+        ...structuredClone(target.semi_fixed),
+    };
+
+    // 【【【新增：从 registerButterUser 函数中复制来的周期计算逻辑】】】
+    try {
+        const cycleBase = newState.fixed.cycle_base;
+        const menstrualDays = cycleBase.menstrual_dates.length;
+        const avgCycle = cycleBase.average_cycle;
+
+        const ovulationLength = 4;
+        const lutealLength = 14;
+        let follicularLength =
+            avgCycle - (menstrualDays + ovulationLength + lutealLength);
+
+        if (follicularLength < 1) {
+            follicularLength = 1;
+        }
+
+        newState.fixed.cycle_base.phase_lengths = {
+            menstrual: menstrualDays,
+            follicular: follicularLength,
+            ovulation: ovulationLength,
+            luteal: lutealLength,
+        };
+        console.log(
+            "[Butter State] 从预设加载后，生理周期阶段长度自动推算完成:",
+            newState.fixed.cycle_base.phase_lengths,
+        );
+    } catch (e) {
+        console.error(
+            "[Butter State] 从预设加载后计算生理周期失败，将使用默认值。",
+            e,
+        );
+        // 保险起见，提供一个默认值
+        newState.fixed.cycle_base.phase_lengths = {
+            menstrual: 5,
+            follicular: 9,
+            ovulation: 4,
+            luteal: 10,
+        };
+    }
 
     saveButterState(newState);
     return true;

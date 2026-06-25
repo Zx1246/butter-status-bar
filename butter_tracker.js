@@ -12,9 +12,47 @@
 
 import { getButterState, saveButterState } from "./butter_state.js";
 import { ButterToolsDefinition, handleToolExecution } from "./butter_tools.js";
+// 【新增】导入 advanceDay 以便在日期跳跃时调用
+import { advanceDay } from "./menstrual_cycle_manager.js";
+const PROMPT_KEY = "butter_status_core_prompt";
 // 【新增】暗网监控缓存：用于捕获瞬间的数据流
 export let debugLastPrompt = "";
 export let debugLastResponse = "";
+
+/**
+ * 【新增】将用户输入的简单规则翻译成真正的正则表达式。
+ * @param {string} rule - 用户输入的规则，如 "<detail>" 或 "!--"。
+ * @returns {RegExp|null} - 返回一个正则表达式对象，如果规则无效则返回 null。
+ */
+function translateSimpleRuleToRegex(rule) {
+    if (!rule || typeof rule !== "string") return null;
+
+    const trimmedRule = rule.trim();
+
+    // 匹配通用标签，如 <detail>, <status>
+    const tagMatch = trimmedRule.match(/^<(\w+)>$/);
+    if (tagMatch && tagMatch[1]) {
+        const tagName = tagMatch[1];
+        // 构建匹配 <tagName>...</tagName> 的正则表达式
+        return new RegExp(`<${tagName}>[\\s\\S]*?<\\/${tagName}>`, "gi");
+    }
+
+    // 匹配注释标签 <!-- ... -->
+    if (trimmedRule === "!--") {
+        return new RegExp("<!--[\\s\\S]*?-->", "g");
+    }
+
+    // 如果不符合上述简单规则，则尝试将其作为标准正则表达式处理
+    try {
+        return new RegExp(trimmedRule, "g");
+    } catch (e) {
+        console.warn(
+            `[Butter Tracker] 无效的裁剪规则，已忽略: "${trimmedRule}"`,
+            e,
+        );
+        return null;
+    }
+}
 
 const SETTINGS_KEY = "butterPluginSettings";
 let isTrackingActive = false; // 防止并发调用的全局锁
@@ -125,30 +163,45 @@ function getLactationDescription(state) {
 
     return `\n[泌乳状态: ${lacDesc}]`;
 }
+
 /**
- * 核心注入函数：将所有状态信息组装成最终的系统提示词并注入。
+ * 【最终修正版】核心注入函数：严格按照模板，将所有状态信息组装成一个内容完整的系统提示词。
  */
 export async function injectButterSystemPrompt() {
     const context = SillyTavern.getContext();
     const state = getButterState();
 
-    // 为我们的插件状态注入定义一个独一无二的ID
-    const INJECTION_ID = "butter_status_core_injection";
-
     if (!state) {
-        // 如果没有状态，确保移除旧的注入，以防残留
-        await context.executeSlashCommandsWithOptions(
-            `/inject id=${INJECTION_ID}`,
-        );
+        context.setExtensionPrompt(PROMPT_KEY, "");
         updateDebugPanelIO("", "N/A (已移除)");
-        console.log("[Butter Tracker] 无肉体档案，已移除状态注入并清空监控。");
+        console.log("[Butter Tracker] 无肉体档案，已移除状态扩展提示词。");
         return;
     }
 
     const p = state.semi_fixed.pronoun || "她";
-    const physicalDescriptions = translatePhysicalState(state);
-    const lactationDescription = getLactationDescription(state);
+    const moment = SillyTavern.libs.moment;
 
+    // --- 1. 计算所有需要的变量 ---
+
+    // 年龄
+    let ageString = "";
+    if (state.fixed.birthday) {
+        try {
+            const birthDate = moment(state.fixed.birthday, "YYYY-MM-DD");
+            const currentDate = moment(
+                state.dynamic.time_tracker.story_date,
+                "YYYY-MM-DD",
+            );
+            if (birthDate.isValid() && currentDate.isValid()) {
+                const age = currentDate.diff(birthDate, "years");
+                ageString = `${age}岁 (生日: ${state.fixed.birthday})`;
+            }
+        } catch (e) {
+            console.error("[Butter Tracker] 年龄计算失败", e);
+        }
+    }
+
+    // 小腹状态
     let wombVolume = state.dynamic.womb.semen_volume;
     let abdomenDesc = "小腹平坦紧实。";
     if (wombVolume > 90)
@@ -160,70 +213,92 @@ export async function injectButterSystemPrompt() {
         abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
     else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
 
+    // 泌乳状态
+    const lactationDescription = getLactationDescription(state).trim();
+
+    // 灵魂契约
     const contracts = state.dynamic.relationships.soul_contract || [];
     const soulContractDesc =
         contracts.length > 0
-            ? `\n[灵魂契约]: ${p}已和【${contracts.join("、")}】建立了灵魂锁链，可从他们身上持续汲取能量。`
+            ? `已和【${contracts.join("、")}】建立了灵魂锁链`
             : "";
 
+    // 身体适应度
+    const physicalDescriptions = translatePhysicalState(state);
+
+    // AI生成的档案
     const personaAddon = state.semi_fixed.generated_persona
-        ? `\n[绝对生理/种族机能档案]\n${state.semi_fixed.generated_persona}\n`
+        ? `[绝对生理/种族机能档案]\n${state.semi_fixed.generated_persona}\n\n`
         : "";
 
-    let rawBodyString = `${personaAddon}
-[生理状态参考，请自然融入：]
+    // --- 2. 使用您提供的模板精确构建 rawBodyString ---
+
+    // 使用模板字符串和三元运算符，确保即使变量为空，也能正确显示默认文本
+    const 生理状态参考 = `[生理状态参考，请自然融入：]
+- 小腹状态: ${abdomenDesc}
+- 泌乳状态: ${lactationDescription ? lactationDescription : "无泌乳迹象。"}
+- 灵魂契约: ${soulContractDesc ? soulContractDesc : "未建立灵魂契约。"}
+- 年龄档案: ${ageString ? ageString : "未知年龄。"}
 - 身体适应度:【${physicalDescriptions}】
 - 当前状态: 生理周期(${state.dynamic.status.menstrual_phase}) | 情欲(Lust:${state.dynamic.status.lust}/100)
 - 子宫滞留液: ${state.dynamic.womb.semen_volume.toFixed(1)}ml
 - 穴口状态: ${state.dynamic.womb.is_plugged ? "【堵住/夹紧，无法流出】" : "【敞开/放松，缓慢流出】"}`;
 
-    rawBodyString += lactationDescription;
+    // --- 3. 拼接所有部分 ---
+    const promptSegments = [];
 
+    if (personaAddon) {
+        promptSegments.push(personaAddon.trim());
+    }
+
+    promptSegments.push(生理状态参考);
+
+    // 条件指令
     if (
         state.dynamic.status.menstrual_phase === "生理期" &&
         !state.dynamic.status.is_pregnant
     ) {
-        rawBodyString += `\n[系统最高指令: 生理期间，绝对禁止插入式性交。请展现身体疲惫与腹部坠胀，婉拒实质性插入。]`;
+        promptSegments.push(
+            `[系统最高指令: 生理期间，绝对禁止插入式性交。请展现身体疲惫与腹部坠胀，婉拒实质性插入。]`,
+        );
     }
-
     if (state.dynamic.status.is_pregnant) {
         if (!state.dynamic.status.is_pregnancy_known_to_user) {
-            rawBodyString += `\n[系统最高指令: ${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等【轻微变化】。绝对禁止使用“怀孕”、“胎儿”等词剧透！]`;
+            promptSegments.push(
+                `[系统最高指令: ${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等【轻微变化】。绝对禁止使用“怀孕”、“胎儿”等词剧透！]`,
+            );
         } else {
-            rawBodyString += `\n[状态提示: ${p}已知悉受孕，请合理展现该阶段的心理与生理特征。]`;
+            promptSegments.push(
+                `[状态提示: ${p}已知悉受孕，请合理展现该阶段的心理与生理特征。]`,
+            );
         }
     }
-
     if (state.fixed.race === "魅魔" && state.dynamic.succubus_status) {
-        rawBodyString += `\n[生态设定: 魅魔需与他人建立灵魂契约以维持能量。]`;
         if (
             state.dynamic.succubus_status.hunger_percent < 10 ||
             state.dynamic.succubus_status.is_forced_estrus
         ) {
-            state.dynamic.succubus_status.is_forced_estrus = true;
-            saveButterState(state);
-            rawBodyString += `\n[状态提示: 魔力濒临枯竭。生理本能将压倒理智，产生强烈的体液渴求。]`;
+            if (!state.dynamic.succubus_status.is_forced_estrus) {
+                state.dynamic.succubus_status.is_forced_estrus = true;
+                saveButterState(state);
+            }
+            promptSegments.push(
+                `[状态提示: 魔力濒临枯竭。生理本能将压倒理智，产生强烈的体液渴求。]`,
+            );
         }
     }
 
-    // ====================【手术切口】====================
-    // 将所有要注入的内容包裹成一个单一的字符串。
-    // 注意：由于内容可能包含空格和特殊字符，最安全的方式是将其包裹在 closure `{: ... :}` 中，
-    // STScript 解析器会将其视为一个整体参数。
-    const finalInjectedString = `<Butter_Status_Core_Override>\n${rawBodyString}\n</Butter_Status_Core_Override>`;
-    const position = "after";
+    const finalPrompt = promptSegments.join("\n\n");
 
-    // 构建一个【完整】的命令字符串。
-    // 格式为： /command arg1=value1 arg2=value2 {：无名参数内容：}
-    // `finalInjectedString` 作为无名参数传递。
-    const command = `/inject id=${INJECTION_ID} position=${position} {:${finalInjectedString}:}`;
+    // --- 4. 执行注入 ---
+    // 【问题6修正】使用最稳定、最通用的双参数调用方式，确保最大兼容性。
+    context.setExtensionPrompt(PROMPT_KEY, finalPrompt);
 
-    // 执行这个单一、完整的命令。executeSlashCommandsWithOptions 只接受一个命令字符串。
-    await context.executeSlashCommandsWithOptions(command);
-    // ===================================================
-
-    updateDebugPanelIO(finalInjectedString, `position: ${position}`);
-    console.log(`[Butter Tracker] 已将生理状态无损注入到主设定后方。`);
+    // 更新Debug面板的UI，位置信息现在变为一个通用描述
+    updateDebugPanelIO(finalPrompt, `默认扩展槽`);
+    console.log(
+        `[Butter Tracker] 已通过 setExtensionPrompt 将生理状态显式注入。`,
+    );
 }
 
 /**
@@ -292,70 +367,109 @@ function safelyExtractToolCalls(rawAnswerContent) {
 }
 
 /**
- * 记忆滤网：提取并过滤激活的世界书条目
+ * 【重构版】记忆滤网：主动异步获取并过滤世界书条目
  * @param {string} recentText - The recent chat history text.
  * @param {object} context - The SillyTavern context.
- * @returns {string} A formatted string of active world lore, or an empty string.
+ * @returns {Promise<string>} A formatted string of active world lore, or an empty string.
  */
-function extractFilteredWorldLore(recentText, context) {
+async function extractFilteredWorldLore(recentText, context) {
     const settings = context.extensionSettings[SETTINGS_KEY] || {};
     const mode = settings.wiMode || "normal";
     const blacklist = settings.wiBlacklist || [];
     const whitelist = settings.wiWhitelist || [];
 
-    // 【核心修正】虽然仍依赖全局变量，但这是当前API限制下的常见做法。
-    // 官方没有提供直接获取所有世界书条目的稳定API。
-    if (!window.world_info || !Array.isArray(window.world_info)) {
-        return "";
-    }
+    try {
+        // 1. 获取角色绑定的世界书内容
+        const charBookNameResult =
+            await context.executeSlashCommandsWithOptions("/getchatbook");
+        const charBookName = charBookNameResult?.pipe?.trim();
+        let allEntries = [];
 
-    const activeEntries = window.world_info.filter((entry) => {
-        if (!entry || !entry.uid) return false;
-
-        if (mode === "reference") {
-            return whitelist.includes(entry.uid);
+        if (charBookName) {
+            const charWorldInfo = await context.loadWorldInfo(charBookName);
+            if (charWorldInfo && charWorldInfo.entries) {
+                allEntries.push(...Object.values(charWorldInfo.entries));
+            }
         }
 
-        let isActive = entry.constant;
-        if (!isActive && Array.isArray(entry.key) && recentText) {
-            isActive = entry.key.some((kw) => kw && recentText.includes(kw));
+        // 2. 获取全局启用的世界书内容
+        const globalBooksResult = await context.executeSlashCommandsWithOptions(
+            "/getvar var_name=world_info.globalSelect",
+        );
+        if (
+            globalBooksResult &&
+            !globalBooksResult.isError &&
+            globalBooksResult.pipe
+        ) {
+            const globalBookNames = JSON.parse(globalBooksResult.pipe);
+            if (Array.isArray(globalBookNames)) {
+                for (const bookName of globalBookNames) {
+                    const globalWorldInfo =
+                        await context.loadWorldInfo(bookName);
+                    if (globalWorldInfo && globalWorldInfo.entries) {
+                        allEntries.push(
+                            ...Object.values(globalWorldInfo.entries),
+                        );
+                    }
+                }
+            }
         }
 
-        return isActive && !blacklist.includes(entry.uid);
-    });
+        if (allEntries.length === 0) return "";
 
-    if (activeEntries.length > 0) {
-        const loreContent = activeEntries.map((e) => e.content).join("\n\n");
-        return `<World_Lore>\n[相关世界设定参考]:\n${loreContent}\n</World_Lore>\n\n`;
+        // 3. 根据模式进行过滤
+        const activeEntries = allEntries.filter((entry) => {
+            if (!entry || !entry.uid) return false;
+
+            if (mode === "reference" || mode === "whitelist") {
+                return whitelist.includes(entry.uid);
+            }
+
+            if (blacklist.includes(entry.uid)) return false;
+            if (entry.constant) return true;
+
+            if (Array.isArray(entry.key) && recentText) {
+                return entry.key.some((kw) => kw && recentText.includes(kw));
+            }
+            return false;
+        });
+
+        if (activeEntries.length > 0) {
+            const loreContent = activeEntries
+                .map((e) => e.content)
+                .join("\n\n");
+            return `<World_Lore>\n[相关世界设定参考]:\n${loreContent}\n</World_Lore>\n\n`;
+        }
+    } catch (e) {
+        console.error("[Butter Tracker] 主动抓取世界书失败:", e);
     }
 
     return "";
 }
 
 /**
- * 预设外衣：提取指定的系统预设来包裹提示词
+ * 【重构版】预设外衣：提取指定的系统预设来包裹提示词
  * @param {object} context - The SillyTavern context.
  * @returns {string} The system prompt from the selected preset, or an empty string.
  */
 function getPresetWrapper(context) {
     const settings = context.extensionSettings[SETTINGS_KEY] || {};
-    if (!settings.injectPreset || settings.injectPreset === "default") {
+    const presetName = settings.injectPreset;
+
+    if (!presetName || presetName === "default") {
         return "";
     }
 
     try {
         const presetManager = context.getPresetManager();
-        const preset = presetManager?.presets?.find(
-            (p) => p.name === settings.injectPreset,
-        );
-        if (preset?.system_prompt) {
+        const allPresets = presetManager.getAllPresets(); // 获取所有预设的列表
+        const preset = allPresets.find((p) => p.name === presetName); // 根据名称查找
+
+        if (preset && preset.system_prompt) {
             return `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
         }
     } catch (e) {
-        console.warn(
-            `[Butter Tracker] 获取预设 '${settings.injectPreset}' 失败`,
-            e,
-        );
+        console.warn(`[Butter Tracker] 获取预设 '${presetName}' 失败`, e);
     }
 
     return "";
@@ -385,22 +499,11 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     console.log("[Butter Tracker] 引擎已点火并上锁。");
 
     try {
-        const now = Date.now();
-        const lastUpdate =
-            state.dynamic.time_tracker.last_update_timestamp || now;
-        const elapsedHours = (now - lastUpdate) / 3600000;
-        if (
-            !state.dynamic.womb.is_plugged &&
-            elapsedHours > 0 &&
-            state.dynamic.womb.semen_volume > 0
-        ) {
-            const leakage = elapsedHours * 10;
-            state.dynamic.womb.semen_volume = Math.max(
-                0,
-                state.dynamic.womb.semen_volume - leakage,
-            );
-        }
-        state.dynamic.time_tracker.last_update_timestamp = now;
+        // 【【【核心改造：移除基于现实时间的被动衰减】】】
+        // 移除了原有的基于 Date.now() 和 last_update_timestamp 计算浊液流失的逻辑。
+        // 现在，引擎每次运行时，只会简单地更新时间戳，以标记“最后活动时间”。
+        // 真正的衰减计算，将被统一到由剧情时间驱动的 advanceDay 函数中。
+        state.dynamic.time_tracker.last_update_timestamp = Date.now(); // 仍然记录现实时间戳，但只用于潜在的未来功能，不再参与计算。
         saveButterState(state);
 
         let recentChatText = forcedCheckText;
@@ -427,25 +530,98 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
                 .join("\n");
         }
 
+        try {
+            // 正则表达式匹配 "YYYY.MM.DD HH:mm" 或 "YYYY-MM-DD HH:mm" 或 "YYYY/MM/DD HH:mm" 等格式
+            // 同时允许年份是2位或4位，月份和日期是1位或2位。
+            const dateTimeRegex =
+                /(\d{2,4})[.\-/年](\d{1,2})[.\-/月](\d{1,2})[日\s,]*(\d{1,2}):(\d{1,2})/;
+            const match = recentChatText.match(dateTimeRegex);
+
+            if (match) {
+                const moment = SillyTavern.libs.moment;
+                // 从匹配结果构建日期字符串，确保格式统一为 YYYY-MM-DD HH:mm
+                const year = match[1].length === 2 ? "20" + match[1] : match[1];
+                const newDateTimeStr = `${year}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")} ${match[4].padStart(2, "0")}:${match[5].padStart(2, "0")}`;
+
+                const newDate = moment(newDateTimeStr, "YYYY-MM-DD HH:mm");
+                const oldDate = moment(
+                    state.dynamic.time_tracker.story_date,
+                    "YYYY-MM-DD",
+                );
+
+                if (newDate.isValid() && newDate.isAfter(oldDate)) {
+                    const daysDiff = newDate.diff(oldDate, "days");
+                    console.log(
+                        `[Butter Tracker] 侦测到日期跳跃: 从 ${oldDate.format("YYYY-MM-DD")} 到 ${newDate.format("YYYY-MM-DD")}，相差 ${daysDiff} 天。`,
+                    );
+
+                    if (daysDiff > 0) {
+                        // 调用日期推进核心函数，并等待它完成
+                        const logMessage = await advanceDay(daysDiff);
+                        // advanceDay 内部已经处理了日期的更新，但我们需要更新时间
+                        state = getButterState(); // 重新获取状态
+                        state.dynamic.time_tracker.time =
+                            newDate.format("HH:mm");
+                        saveButterState(state); // 保存时间更新
+
+                        // 发送系统消息通知用户
+                        context.sendSystemMessage(
+                            "generic",
+                            `【时间自动同步】\n${logMessage}`,
+                        );
+                        toastr.info(
+                            `侦测到剧情时间跳跃，已自动同步 ${daysDiff} 天。`,
+                            "世界时钟",
+                        );
+                    } else {
+                        // 如果只是当天内的时间变化
+                        state.dynamic.time_tracker.time =
+                            newDate.format("HH:mm");
+                        saveButterState(state);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("[Butter Tracker] 自动日期侦测失败:", e);
+        }
+
         if (pluginSettings.apiRegexFilter) {
             try {
                 const regexRules = pluginSettings.apiRegexFilter
                     .split("\n")
                     .filter((rule) => rule.trim() !== "");
+
                 regexRules.forEach((ruleStr) => {
-                    const regex = new RegExp(ruleStr, "g");
-                    recentChatText = recentChatText.replace(regex, "");
+                    // 使用新的翻译函数
+                    const regex = translateSimpleRuleToRegex(ruleStr);
+                    if (regex) {
+                        // 仅在翻译成功时执行替换
+                        recentChatText = recentChatText.replace(regex, "");
+                    }
                 });
             } catch (e) {
-                console.error(
-                    "[Butter Tracker] 正则表达式无效，已跳过裁剪:",
-                    e,
-                );
+                console.error("[Butter Tracker] 正则表达式裁剪执行时出错:", e);
             }
         }
 
+        // 【新增：首次运行校准逻辑】
+        const isFirstRun = !state.dynamic.status.is_initial_state_calibrated;
+        if (isFirstRun) {
+            // 如果是首次运行，就在构建提示词时注入特殊指令
+            // 我们将在 buildAnalysisPrompt 函数中处理这个逻辑
+            console.log(
+                "[Butter Tracker] 检测到首次运行，将执行初始状态校准。",
+            );
+        }
+
         // 步骤3: 构建完整的分析提示词
-        const prompt = buildAnalysisPrompt(state, recentChatText, context);
+        // 【修改】传入 isFirstRun 旗标
+        const prompt = await buildAnalysisPrompt(
+            state,
+            recentChatText,
+            context,
+            isFirstRun,
+        );
 
         // 步骤4: 调用AI进行分析
         let rawApiResponse;
@@ -481,6 +657,17 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
                     handleToolExecution(functionName, args);
                 }
             });
+            // 【新增】如果这是首次运行且成功调用了工具，则更新旗标
+            if (isFirstRun) {
+                let updatedState = getButterState(); // 重新获取状态，因为它可能已被工具修改
+                if (updatedState) {
+                    updatedState.dynamic.status.is_initial_state_calibrated = true;
+                    saveButterState(updatedState);
+                    console.log(
+                        "[Butter Tracker] 初始状态校准完成，旗标已更新。",
+                    );
+                }
+            }
             await injectButterSystemPrompt();
             context.eventSource.emit("BUTTER_DATA_UPDATED");
         } else {
@@ -501,36 +688,28 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
 }
 
 /**
- * 构建用于AI分析的完整提示词
+ * 【重构】构建用于AI分析的完整提示词
  * @param {object} state - The current butter state.
  * @param {string} recentChatText - The recent chat history text.
  * @param {object} context - The SillyTavern context.
- * @returns {string} The fully constructed prompt string.
+ * @param {boolean} isFirstRun - True if this is the initial calibration run.
+ * @returns {Promise<string>} The fully constructed prompt string.
  */
-function buildAnalysisPrompt(state, recentChatText, context) {
+async function buildAnalysisPrompt(
+    state,
+    recentChatText,
+    context,
+    isFirstRun = false,
+) {
     const p = state.semi_fixed.pronoun || "她";
-    // --- 1. 抓取对话补充预设 ---
-    let presetPrompts = [];
-    try {
-        // 尝试获取当前API的预设管理器
-        const pm = context.getPresetManager();
-        const currentPreset = pm?.presets?.find((p) => p.name === pm.preset);
-        if (currentPreset) {
-            if (currentPreset.system_prompt)
-                presetPrompts.push(
-                    `[System Prompt]\n${currentPreset.system_prompt}`,
-                );
-            // 可根据需要添加 main_prompt, nsfw_prompt 等
-        }
-    } catch (e) {
-        console.warn("[Butter Tracker] 获取对话预设失败", e);
-    }
-    const presetWrapperStr =
-        presetPrompts.length > 0
-            ? `<Chat_Preset_Context>\n${presetPrompts.join("\n\n")}\n</Chat_Preset_Context>\n\n`
-            : "";
 
-    // --- 2. 抓取角色设定 ---
+    // --- 1. 【异步】抓取世界书 ---
+    const worldLoreStr = await extractFilteredWorldLore(
+        recentChatText,
+        context,
+    );
+
+    // --- 2. 抓取角色设定 (同步) ---
     let characterContext = "";
     if (
         context.characterId !== undefined &&
@@ -549,10 +728,39 @@ function buildAnalysisPrompt(state, recentChatText, context) {
         }
     }
 
-    // --- 3. 抓取世界书 ---
-    const worldLoreStr = extractFilteredWorldLore(recentChatText, context);
+    // --- 3. 抓取对话预设 (同步) ---
+    // 我将之前的 getPresetWrapper 逻辑直接整合到这里，并增加健壮性
+    let presetWrapperStr = "";
+    const settings = context.extensionSettings[SETTINGS_KEY] || {};
+    if (settings.injectPreset && settings.injectPreset !== "default") {
+        try {
+            const presetManager = context.getPresetManager();
+            const preset = presetManager?.presets?.find(
+                (p) => p.name === settings.injectPreset,
+            );
+            if (preset?.system_prompt) {
+                presetWrapperStr = `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
+            } else {
+                console.warn(
+                    `[Butter Tracker] 预设 '${settings.injectPreset}' 被选中，但未找到或其中不含 'system_prompt'。`,
+                );
+            }
+        } catch (e) {
+            console.error(
+                `[Butter Tracker] 获取预设 '${settings.injectPreset}' 失败`,
+                e,
+            );
+        }
+    }
 
     // --- 4. 组装最终提示词 ---
+    const firstRunInstruction = isFirstRun
+        ? `
+**Urgent Initial Calibration Directive:**
+This is the very first analysis for this character. Their current state values (like hunger, energy) are at default 100%. This is incorrect. You MUST scrutinize the "Recent Activity Log" (which contains the character's opening message) and infer their true initial state. For example, if the log says "I haven't eaten in three days," you MUST call the \`bt_report_metabolism_changes\` tool with a significant negative \`hunger_change\` value to reflect this. Your primary goal in this first run is to correct the initial state based on the context.
+`
+        : "";
+
     const availableFunctionsDoc = JSON.stringify(
         {
             Instructions:
@@ -575,9 +783,10 @@ function buildAnalysisPrompt(state, recentChatText, context) {
         traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
     }
 
-    return `${presetWrapperStr}${worldLoreStr}[SYSTEM NOTE]
+    // 【修改】将 presetWrapperStr 和 characterContext 也加入最终返回
+    return `${presetWrapperStr}${characterContext}${worldLoreStr}[SYSTEM NOTE]
 You are an objective, silent observer AI. Your task is to analyze the user's situation based on the provided logs and call the appropriate tools to update their status. Your response MUST be ONLY a valid JSON array of tool calls.
-
+${firstRunInstruction}
 **Core Directives:**
 1.  **Internal Ejaculation:** When a male character ejaculates inside the user, you MUST call \`bt_internal_ejaculation\`.
 2.  **Abortion/Miscarriage:** If pregnancy is terminated for any reason, you MUST call \`bt_abort_pregnancy\`.
