@@ -151,6 +151,12 @@ export const ButterToolsDefinition = [
                     description: "精浴/被颜射/大量精液涂抹次数",
                 },
                 orgasm_count: { type: "number", description: "绝顶高潮的次数" },
+                // 【【【新增参数】】】
+                partner_name: {
+                    type: "string",
+                    description:
+                        "本次性行为中主要伴侣的名字。如果涉及多人，则填入出现的全部伴侣名字。如果名字不详，则填入'未知'或'不明'。此参数用于记录第一次性行为的伴侣。",
+                },
             },
         },
     },
@@ -499,6 +505,34 @@ export async function handleToolExecution(functionName, args) {
 
     // 10. 行为清算与敏感度处刑引擎
     if (functionName === "bt_report_sexual_acts") {
+        // ==========================================================
+        // 【【【核心改造：纯洁度剥夺仪式】】】
+        // ==========================================================
+        // 首先，检查当前是否仍处于纯洁状态
+        if (bState.dynamic.status.is_virgin === true) {
+            // 检查本次上报的行为中，是否包含任何形式的“破处”行为
+            // 我们将插入式性交（阴道或肛门）定义为破处的标准
+            const pussyActs = argumentsProcessed.pussy || 0;
+            const analActs = argumentsProcessed.anal || 0;
+
+            if (pussyActs > 0 || analActs > 0) {
+                // 条件满足，执行剥夺
+                bState.dynamic.status.is_virgin = false;
+                logOutHintTxtResultForItOnly += ` 【初次丧失】纯洁之身已被玷污！`;
+
+                // 【联动机制】如果“第一次”的记录为空，则将本次的伴侣记录下来
+                // 为此，我们需要bt_report_sexual_acts工具能提供伴侣名字
+                if (
+                    !bState.dynamic.relationships.first_partner &&
+                    argumentsProcessed.partner_name
+                ) {
+                    bState.dynamic.relationships.first_partner =
+                        argumentsProcessed.partner_name;
+                    logOutHintTxtResultForItOnly += ` 罪魁祸首 '${argumentsProcessed.partner_name}' 已被烙印为最初的掠夺者。`;
+                }
+            }
+        }
+
         let modeMult = bState.semi_fixed.sensitivity_growth_mode;
         if (modeMult === undefined) modeMult = 1;
 

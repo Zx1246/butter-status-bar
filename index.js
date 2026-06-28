@@ -28,7 +28,7 @@ import {
     runButterTrackingEngine,
     updateDebugPanelIO, // 使用新的专用函数更新Debug IO
 } from "./butter_tracker.js";
-import { advanceDay } from "./menstrual_cycle_manager.js";
+import { advanceDay, setDateTime } from "./menstrual_cycle_manager.js";
 import { succubusPrompts } from "./prompts.js";
 
 // 获取酒馆核心上下文
@@ -595,6 +595,92 @@ function registerButterCommands() {
                     "【Butter Status】手动推进时间。用法：/advday [天数]。",
             }),
         );
+        context.SlashCommandParser.addCommandObject(
+            context.SlashCommand.fromProps({
+                name: "bset",
+                callback: async (args, value) => {
+                    let state = getButterState();
+                    if (!state) {
+                        return toastr.error(
+                            "【错误】未找到肉体档案，无法执行修改。",
+                        );
+                    }
+
+                    // 1. 解析命令：将 "key.path=value" 格式的字符串拆解
+                    const parts = value.split("=");
+                    if (parts.length !== 2) {
+                        return toastr.error(
+                            "【格式错误】请使用 '路径=值' 格式，例如: /bset exp.pussy=100",
+                        );
+                    }
+
+                    const pathString = parts[0].trim();
+                    let newValue = parts[1].trim();
+                    const path = pathString.split(".");
+
+                    // 2. 特殊处理日期：如果路径是 'date'，则调用 setDateTime
+                    if (path.length === 1 && path[0] === "date") {
+                        const time = state.dynamic.time_tracker.time || "00:00";
+                        const log = setDateTime(newValue, time); // newValue 应该是 'YYYY-MM-DD'
+                        context.sendSystemMessage("generic", log);
+                        return; // 日期处理完毕，直接退出
+                    }
+
+                    // 3. 递归寻找并修改目标值
+                    let currentStateLayer = state;
+                    for (let i = 0; i < path.length - 1; i++) {
+                        if (currentStateLayer[path[i]] === undefined) {
+                            return toastr.error(
+                                `【路径错误】找不到路径: ${path.slice(0, i + 1).join(".")}`,
+                            );
+                        }
+                        currentStateLayer = currentStateLayer[path[i]];
+                    }
+
+                    const finalKey = path[path.length - 1];
+                    if (currentStateLayer[finalKey] === undefined) {
+                        return toastr.error(
+                            `【键名错误】在路径 '${path.slice(0, -1).join(".")}' 下找不到键: ${finalKey}`,
+                        );
+                    }
+
+                    // 4. 根据原始值的类型，对新值进行转换
+                    const originalValue = currentStateLayer[finalKey];
+                    if (typeof originalValue === "number") {
+                        newValue = parseFloat(newValue);
+                        if (isNaN(newValue)) {
+                            return toastr.error(
+                                `【类型错误】'${parts[1]}' 无法转换为数字。`,
+                            );
+                        }
+                    } else if (typeof originalValue === "boolean") {
+                        newValue = newValue.toLowerCase() === "true";
+                    }
+                    // 字符串类型则直接使用
+
+                    // 5. 执行修改
+                    currentStateLayer[finalKey] = newValue;
+
+                    // 6. 保存状态并反馈
+                    saveButterState(state);
+                    context.eventSource.emit("BUTTER_DATA_UPDATED");
+
+                    const successMsg = `【档案篡改】: '${pathString}' 已被强制覆写为 '${newValue}'。`;
+                    toastr.success(successMsg, "Butter 指令");
+                    context.sendSystemMessage("generic", successMsg);
+
+                    return ""; // 指令成功执行，返回空字符串
+                },
+                helpString: `【Butter】强制修改肉体档案。
+用法: /bset <路径>=<值>
+示例:
+/bset exp.pussy=100
+/bset sens.genital=50
+/bset status.is_virgin=false
+/bset date=2025-12-25
+`,
+            }),
+        );
     } catch (e) {
         console.error("Failed to register slash command", e);
     }
@@ -910,36 +996,53 @@ function initDebugPanelEvents(root) {
 async function initInjectPanel() {
     const root = $(`#${ROOT_CONTAINER_ID}`);
 
-    // 绑定一次性事件 (如果尚未绑定)
+    // 使用 isInjectPanelInitialized 标志确保事件只被绑定一次，防止重复监听
     if (!uiManager.isInjectPanelInitialized) {
         const settings = extensionSettings[SETTINGS_KEY];
 
-        // 预设选择事件
+        // 1. 预设选择下拉菜单的事件绑定
         root.on("change", "#butter-inject-preset-select", function () {
             settings.injectPreset = $(this).val();
             context.saveSettingsDebounced();
             console.log(`[Butter] 注入预设已切换为: ${settings.injectPreset}`);
         });
 
-        // 世界书传输模式事件
+        // 2. 世界书传输模式下拉菜单的事件绑定
         root.on("change", "#butter-inject-mode-select", function () {
             settings.wiMode = $(this).val();
             context.saveSettingsDebounced();
             console.log(`[Butter] 世界书传输模式已切换为: ${settings.wiMode}`);
         });
 
-        // 角色/全局世界书标签页切换事件
+        // 3. 【核心恢复】角色/全局世界书标签页切换事件
         root.on("click", ".butter-wi-tab-btn", function () {
-            if ($(this).hasClass("active")) return; // 如果已经是激活状态，则不重复加载
+            // 如果已经是激活状态，则不执行任何操作，避免不必要的刷新
+            if ($(this).hasClass("active")) return;
+
+            // 移除所有标签的激活状态，并为当前点击的标签添加激活状态
             root.find(".butter-wi-tab-btn").removeClass("active");
             $(this).addClass("active");
-            updateWorldInfoData(); // 切换标签时重新加载和渲染数据
+
+            // 切换时，隐藏所有的列表容器
+            $(
+                "#butter-inject-char-wb-list, #butter-inject-global-wb-list",
+            ).hide();
+            // 获取当前点击的标签页所对应的列表容器ID
+            const targetListId = $(this).data("target");
+            // 只显示目标列表容器
+            $(`#${targetListId}`).show();
+
+            // 重新加载并渲染对应列表的数据
+            updateInjectPanelData();
         });
 
-        // 世界书搜索框输入事件
+        // 4. 世界书搜索框的实时输入过滤事件
         root.on("input", "#butter-inject-search-input", function () {
             const keyword = $(this).val().toLowerCase();
-            root.find(".butter-worldbook-item").each(function () {
+            // 在当前可见的列表容器中进行搜索
+            $(
+                ".butter-worldbook-container:visible .butter-worldbook-item",
+            ).each(function () {
                 const itemName = $(this)
                     .find(".butter-worldbook-name")
                     .text()
@@ -948,10 +1051,11 @@ async function initInjectPanel() {
             });
         });
 
+        // 标记为已初始化
         uiManager.isInjectPanelInitialized = true;
     }
 
-    // 每次打开面板都强制刷新所有数据
+    // 每次打开或调用此函数时，都强制刷新所有数据
     await updateInjectPanelData();
 }
 
@@ -960,53 +1064,87 @@ async function initInjectPanel() {
  */
 async function updateInjectPanelData() {
     const root = $(`#${ROOT_CONTAINER_ID}`);
-    const activeTabType =
-        root.find(".butter-wi-tab-btn.active").data("type") || "character";
-    const listContainer =
-        activeTabType === "character"
-            ? $("#butter-inject-char-wb-list")
-            : $("#butter-inject-global-wb-list");
 
-    // 更新UI标题
-    root.find(
-        "#butter-inject-char-wb-list, #butter-inject-global-wb-list",
-    ).hide();
-    listContainer
-        .show()
-        .html('<div class="butter-no-item-msg">正在扫描...</div>');
-
-    // --- 加载预设 ---
+    // --- 1. 加载并填充预设下拉菜单 ---
     try {
         const presetManager = context.getPresetManager();
-        const allPresets = presetManager.getAllPresets();
-        const $presetSelect = $("#butter-inject-preset-select");
-        const currentVal = $presetSelect.val(); // 保存当前选择
-        $presetSelect
-            .empty()
-            .append('<option value="">跟随酒馆当前预设</option>');
-        if (allPresets && allPresets.length > 0) {
-            allPresets.forEach((preset) => {
-                $presetSelect.append(
-                    `<option value="${preset.name}">${preset.name}</option>`,
-                );
-            });
+        if (presetManager) {
+            const allPresets = presetManager.getAllPresets();
+            const $presetSelect = $("#butter-inject-preset-select");
+            const currentVal = $presetSelect.val(); // 保存当前选择
+            $presetSelect
+                .empty()
+                .append('<option value="">跟随酒馆当前预设</option>');
+            if (allPresets && allPresets.length > 0) {
+                allPresets.forEach((preset) => {
+                    $presetSelect.append(
+                        `<option value="${preset.name}">${preset.name}</option>`,
+                    );
+                });
+            }
+            $presetSelect.val(currentVal); // 恢复之前的选择
         }
-        $presetSelect.val(currentVal); // 恢复之前的选择
     } catch (e) {
         console.error("[Butter] 更新预设列表失败:", e);
     }
 
-    // --- 加载世界书 ---
+    // --- 2. 【核心恢复】加载并填充世界书列表 ---
+    const charListContainer = $("#butter-inject-char-wb-list");
+    const globalListContainer = $("#butter-inject-global-wb-list");
+
+    // 开始加载前，显示“正在扫描”提示
+    charListContainer.html(
+        '<div class="butter-no-item-msg">正在扫描角色世界书...</div>',
+    );
+    globalListContainer.html(
+        '<div class="butter-no-item-msg">正在扫描全局世界书...</div>',
+    );
+
     try {
-        const { characterBooks, globalBooks } = await getAvailableWorldBooks();
-        renderWorldInfoList(
-            activeTabType === "character" ? characterBooks : globalBooks,
-            listContainer,
+        // 2a. 使用最可靠的方式获取角色绑定的世界书
+        const characterId = context.characterId;
+        const character = context.characters[characterId];
+        const characterBooks =
+            character && Array.isArray(character.world_books)
+                ? character.world_books
+                : [];
+
+        // 渲染角色世界书列表
+        renderWorldInfoList(characterBooks, charListContainer, "character");
+
+        // 2b. 使用您之前确认有效的斜杠命令方式获取全局世界书
+        const globalInfoResult = await context.executeSlashCommandsWithOptions(
+            "/getvar var_name=world_info.globalSelect",
         );
+        let globalBooks = [];
+        if (
+            globalInfoResult &&
+            !globalInfoResult.isError &&
+            globalInfoResult.pipe
+        ) {
+            try {
+                // 返回的 pipe 是一个 JSON 字符串数组，需要解析
+                const parsedPipe = JSON.parse(globalInfoResult.pipe);
+                if (Array.isArray(parsedPipe)) {
+                    globalBooks = parsedPipe;
+                }
+            } catch (jsonError) {
+                console.error(
+                    "[Butter] 解析全局世界书列表JSON失败:",
+                    jsonError,
+                );
+            }
+        }
+
+        // 渲染全局世界书列表
+        renderWorldInfoList(globalBooks, globalListContainer, "global");
     } catch (e) {
         console.error("[Butter] 更新世界书数据时发生严重错误:", e);
-        listContainer.html(
-            '<div class="butter-no-item-msg">加载世界书失败，请检查控制台。</div>',
+        charListContainer.html(
+            '<div class="butter-no-item-msg">加载角色世界书失败，请检查控制台。</div>',
+        );
+        globalListContainer.html(
+            '<div class="butter-no-item-msg">加载全局世界书失败，请检查控制台。</div>',
         );
     }
 }
@@ -1074,7 +1212,17 @@ function renderWorldInfoList(bookList = [], listContainer) {
  * 【终极版】处理注册表单的提交，一次API调用完成所有任务。
  */
 async function handleRegistrationSubmit() {
-    // --- 1. 前置校验与UI准备 ---
+    // --- 1. 前置校验 ---
+    const avgCycle = parseInt($("#b-reg-avg-cycle").val());
+    const selectedDaysCount = $(
+        "#b-reg-calendar-container .butter-calendar-day.selected",
+    ).length;
+    if (selectedDaysCount > 0 && selectedDaysCount >= avgCycle) {
+        return toastr.error(
+            "生理期持续天数不能大于或等于平均周期总天数。",
+            "设定错误",
+        );
+    }
     const checkRepro = $("#b-reg-repro").val();
     const checkGest = parseInt($("#b-reg-gestation").val());
     if (checkRepro === "胎生" && checkGest < 3) {
@@ -1089,97 +1237,177 @@ async function handleRegistrationSubmit() {
         );
 
     try {
-        // --- 2. 收集所有用户输入，构建单一、完整的AI指令 ---
+        // --- 2. 判断是否需要AI生成，并执行调用 ---
         const race = $("#b-reg-race").val();
-        const name = $("#b-reg-name").val().trim() || context.name2 || "user";
+        let generatedData = {}; // 初始化一个空对象，用于存放AI返回的数据
 
-        const basePrompt = buildPersonaGenerationPrompt(race, {
-            fixed: { name },
-        });
-        const customExtra =
-            $("#b-reg-custom-extra").val()?.trim() || "一个普通人";
-        const obsceneSettings = $("#b-reg-obscene-toggle").is(":checked")
-            ? $("#b-reg-obs-extra-text")?.val() || ""
-            : "";
-
-        const finalPrompt = buildSystemWrapper(
-            race,
-            basePrompt,
-            customExtra,
-            obsceneSettings,
-        );
-
-        updateDebugPanelIO(finalPrompt, "..."); // 立即更新输入
-        toastr.info("单一指令已构建，正在连接主源神经，请稍候...", "系统运行", {
-            timeOut: 20000,
-        });
-
-        // --- 3. 执行【唯一一次】API调用 ---
-        const pluginSettings = extensionSettings[SETTINGS_KEY] || {};
-        const useExternalApi =
-            pluginSettings.useExternalCustomFetch &&
-            pluginSettings.apiKey &&
-            pluginSettings.apiUrl;
-
-        const generateWithSelectedApi = useExternalApi
-            ? (prompt) => callExternalApi(prompt, pluginSettings)
-            : (prompt) => context.generateRaw({ prompt });
-
-        const rawResponse = await generateWithSelectedApi(finalPrompt);
-
-        updateDebugPanelIO(finalPrompt, rawResponse); // 更新完整IO
-
-        // --- 4. 【问题4修正：植入更强大的JSON解析逻辑】 ---
-        let personaData;
-        try {
-            let responseText = String(rawResponse);
-            let jsonString = null;
-
-            // 步骤a: 优先尝试寻找被 ```json ... ``` 包裹的代码块
-            const fencedMatch = responseText.match(
-                /```(?:json)?\s*([\s\S]+?)\s*```/,
+        if (race === "魅魔" || race === "自设") {
+            const name =
+                $("#b-reg-name").val().trim() || context.name2 || "user";
+            const basePrompt = buildPersonaGenerationPrompt(race, {
+                fixed: { name },
+            });
+            const customExtra =
+                $("#b-reg-custom-extra").val()?.trim() || "一个普通人";
+            const obsceneSettings = $("#b-reg-obscene-toggle").is(":checked")
+                ? $("#b-reg-obs-extra-text")?.val() || ""
+                : "";
+            const finalPrompt = buildSystemWrapper(
+                race,
+                basePrompt,
+                customExtra,
+                obsceneSettings,
             );
-            if (fencedMatch && fencedMatch[1]) {
-                jsonString = fencedMatch[1];
-            } else {
-                // 步骤b: 如果找不到代码块，则在整个回复中寻找第一个 {...} 结构
-                const objectMatch = responseText.match(/\{[\s\S]*\}/);
-                if (objectMatch && objectMatch[0]) {
-                    jsonString = objectMatch[0];
+
+            updateDebugPanelIO(finalPrompt, "...");
+            toastr.info("正在连接主源神经生成种族档案...", "系统运行", {
+                timeOut: 20000,
+            });
+
+            const pluginSettings = extensionSettings[SETTINGS_KEY] || {};
+            const useExternalApi =
+                pluginSettings.useExternalCustomFetch &&
+                pluginSettings.apiKey &&
+                pluginSettings.apiUrl;
+            const generateWithSelectedApi = useExternalApi
+                ? (prompt) => callExternalApi(prompt, pluginSettings)
+                : (prompt) => context.generateRaw({ prompt });
+
+            const rawResponse = await generateWithSelectedApi(finalPrompt);
+            updateDebugPanelIO(finalPrompt, rawResponse);
+
+            try {
+                let responseText = String(rawResponse);
+                let jsonString = null;
+                const fencedMatch = responseText.match(
+                    /```(?:json)?\s*([\s\S]+?)\s*```/,
+                );
+                if (fencedMatch && fencedMatch[1]) {
+                    jsonString = fencedMatch[1];
+                } else {
+                    const objectMatch = responseText.match(/\{[\s\S]*\}/);
+                    if (objectMatch && objectMatch[0])
+                        jsonString = objectMatch[0];
                 }
-            }
+                if (!jsonString)
+                    throw new Error("在AI的回复中未找到任何有效的JSON结构。");
 
-            if (!jsonString) {
-                throw new Error("在AI的回复中未找到任何有效的JSON结构。");
-            }
+                const parsedData = JSON.parse(jsonString);
+                if (!parsedData || typeof parsedData !== "object")
+                    throw new Error("解析出的JSON格式不正确。");
 
-            // 步骤c: 解析最终提取出的字符串
-            personaData = JSON.parse(jsonString);
-        } catch (e) {
-            console.error("AI返回的JSON解析失败", e, "原始回复:", rawResponse);
-            throw new Error(
-                "AI未能返回有效的JSON格式档案，注册被迫中止。请检查Debug面板中的API输出。",
-            );
+                generatedData = parsedData;
+            } catch (e) {
+                throw new Error(`AI未能返回有效的JSON档案: ${e.message}`);
+            }
         }
 
-        if (!personaData || typeof personaData !== "object") {
-            throw new Error("解析出的JSON格式不正确（非对象），注册中止。");
+        // --- 3. 整合UI数据与AI返回的数据，并进行智能计算 ---
+        const safeVal = (selector) => $(selector).val() || "";
+        const moment = SillyTavern.libs.moment;
+
+        // 生理周期基准日智能计算
+        const storyStartDate = moment(
+            getButterState()?.dynamic.time_tracker.story_date || "2026-01-01",
+            "YYYY-MM-DD",
+        );
+        const selectedDays = [];
+        $("#b-reg-calendar-container .butter-calendar-day.selected").each(
+            function () {
+                selectedDays.push(parseInt($(this).text()));
+            },
+        );
+        selectedDays.sort((a, b) => a - b);
+        const menstrualStartDayOfMonth =
+            selectedDays.length > 0 ? selectedDays[0] : 1;
+        const menstrualDuration =
+            selectedDays.length > 0 ? selectedDays.length : 5;
+        const storyStartDayOfMonth = storyStartDate.date();
+        let last_menstrual_start_date;
+        if (storyStartDayOfMonth >= menstrualStartDayOfMonth) {
+            last_menstrual_start_date = storyStartDate
+                .clone()
+                .date(menstrualStartDayOfMonth)
+                .format("YYYY-MM-DD");
+        } else {
+            last_menstrual_start_date = storyStartDate
+                .clone()
+                .subtract(1, "months")
+                .date(menstrualStartDayOfMonth)
+                .format("YYYY-MM-DD");
         }
 
-        // --- 5. 带着AI返回的数据，调用 gatherFormData ---
-        let formData = gatherFormData(personaData);
+        // 组装最终的 formData
+        const finalGeneratedPersona = [
+            generatedData.race_appearance
+                ? `外貌特征: ${generatedData.race_appearance}`
+                : "",
+            generatedData.race_body_state
+                ? `身体状态: ${generatedData.race_body_state}`
+                : "",
+            generatedData.race_core_mechanic
+                ? `特异机制: ${generatedData.race_core_mechanic}`
+                : "",
+            generatedData.aphrodisiac_mechanic
+                ? `催淫机制: ${generatedData.aphrodisiac_mechanic}`
+                : "",
+            generatedData.crest_system
+                ? `淫纹系统: ${generatedData.crest_system}`
+                : "",
+        ]
+            .filter(Boolean)
+            .join("\n");
 
-        // --- 6. 保存与收尾 ---
+        const formData = {
+            fixed: {
+                name: safeVal("#b-reg-name").trim() || context.name2 || "user",
+                gender: safeVal("#b-reg-gender"),
+                race:
+                    race === "自设"
+                        ? safeVal("#b-reg-custom-name").trim() || "新物种"
+                        : race,
+                birthday: safeVal("#bs-reg-birthday").trim(),
+                cycle_base: {
+                    last_menstrual_start_date: last_menstrual_start_date,
+                    average_cycle: parseInt(safeVal("#b-reg-avg-cycle")) || 28,
+                    menstrual_duration: menstrualDuration,
+                },
+            },
+            semi_fixed: {
+                reproduction_type: safeVal("#b-reg-repro") || "胎生",
+                gestation_duration: parseInt(safeVal("#b-reg-gestation")) || 10,
+                pronoun: safeVal("#b-reg-pronoun") || "她",
+                custom_erogenous_zones: safeVal("#b-reg-custom-sens").trim(),
+                obscene_content_enabled: $("#b-reg-obscene-toggle").is(
+                    ":checked",
+                ),
+                sensitivity_growth_mode:
+                    parseInt(safeVal("#b-reg-obs-sens")) || 1,
+                lactation_setting:
+                    safeVal("#b-reg-obs-lac") || "孕后哺乳期产乳",
+                pregnancy_setting: safeVal("#b-reg-obs-preg") || "正常孕期",
+                generated_persona: finalGeneratedPersona,
+                traits:
+                    generatedData.traits && Array.isArray(generatedData.traits)
+                        ? generatedData.traits
+                        : [],
+                race_appearance: generatedData.race_appearance || "",
+                race_body_state: generatedData.race_body_state || "",
+                race_core_mechanic: generatedData.race_core_mechanic || "",
+                aphrodisiac_mechanic: generatedData.aphrodisiac_mechanic || "",
+                crest_system: generatedData.crest_system || "",
+            },
+        };
+
+        // --- 4. 保存与收尾 ---
         if ($("#b-reg-save-preset-check").is(":checked")) {
             const pName =
                 $("#b-reg-preset-name").val().trim() ||
-                `${formData.fixed.name}_${race}`;
-            // 【问题3修正】移除对同步函数的无效 await
+                `${formData.fixed.name}_${formData.fixed.race}`;
             saveUserPreset(pName, formData);
             toastr.info(`预设 [${pName}] 已保存。`);
         }
 
-        // 【问题3修正】移除对同步函数的无效 await
         registerButterUser(formData);
 
         if (
@@ -1188,11 +1416,10 @@ async function handleRegistrationSubmit() {
         ) {
             let state = getButterState();
             if (state) {
-                // 安全检查
                 Object.keys(state.dynamic.sensitivity).forEach(
                     (key) => (state.dynamic.sensitivity[key] = 100),
                 );
-                saveButterState(state); // 内部是异步防抖保存
+                saveButterState(state);
             }
         }
 
@@ -1200,7 +1427,6 @@ async function handleRegistrationSubmit() {
             "肉体改造与注册完成！您的所有设定已被系统彻底锁定。",
             "烙印成功",
         );
-
         onChatOrLoad();
     } catch (error) {
         console.error("[Butter Registration] 注册流程失败:", error);
@@ -1250,59 +1476,141 @@ function buildPersonaGenerationPrompt(race, formData) {
 }
 
 /**
- * 从UI和AI返回的数据中收集并格式化最终的档案
- * @param {object} generatedData - AI生成的机能档案和特征
- * @returns {object} - 完整的肉体状态对象
+ * 【最终修正版】整合UI输入和AI数据，并智能计算生理周期基准日
+ * @returns {Promise<object>} 返回一个完整的、可用于注册的肉体状态对象
  */
-function gatherFormData(generatedData = {}) {
+async function gatherFormData() {
+    // 1. 调用AI生成种族专属档案
     const race = $("#b-reg-race").val();
+    let generatedData = {}; // 先创建一个空对象
+
+    if (race === "魅魔" || race === "自设") {
+        const name = $("#b-reg-name").val().trim() || context.name2 || "user";
+        const basePrompt = buildPersonaGenerationPrompt(race, {
+            fixed: { name },
+        });
+        const customExtra =
+            $("#b-reg-custom-extra").val()?.trim() || "一个普通人";
+        const obsceneSettings = $("#b-reg-obscene-toggle").is(":checked")
+            ? $("#b-reg-obs-extra-text")?.val() || ""
+            : "";
+        const finalPrompt = buildSystemWrapper(
+            race,
+            basePrompt,
+            customExtra,
+            obsceneSettings,
+        );
+
+        updateDebugPanelIO(finalPrompt, "...");
+        toastr.info("正在连接主源神经生成种族档案...", "系统运行", {
+            timeOut: 20000,
+        });
+
+        const pluginSettings = extensionSettings[SETTINGS_KEY] || {};
+        const useExternalApi =
+            pluginSettings.useExternalCustomFetch &&
+            pluginSettings.apiKey &&
+            pluginSettings.apiUrl;
+        const generateWithSelectedApi = useExternalApi
+            ? (prompt) => callExternalApi(prompt, pluginSettings)
+            : (prompt) => context.generateRaw({ prompt });
+
+        const rawResponse = await generateWithSelectedApi(finalPrompt);
+        updateDebugPanelIO(finalPrompt, rawResponse);
+
+        try {
+            let responseText = String(rawResponse);
+            let jsonString = null;
+            const fencedMatch = responseText.match(
+                /```(?:json)?\s*([\s\S]+?)\s*```/,
+            );
+            if (fencedMatch && fencedMatch[1]) {
+                jsonString = fencedMatch[1];
+            } else {
+                const objectMatch = responseText.match(/\{[\s\S]*\}/);
+                if (objectMatch && objectMatch[0]) {
+                    jsonString = objectMatch[0];
+                }
+            }
+            if (!jsonString)
+                throw new Error("在AI的回复中未找到任何有效的JSON结构。");
+
+            const parsedData = JSON.parse(jsonString);
+            if (!parsedData || typeof parsedData !== "object")
+                throw new Error("解析出的JSON格式不正确。");
+
+            generatedData = parsedData; // 将解析出的数据赋值给 generatedData
+        } catch (e) {
+            console.error("AI返回的JSON解析失败", e, "原始回复:", rawResponse);
+            throw new Error("AI未能返回有效的JSON格式档案，注册被迫中止。");
+        }
+    }
+
+    // 2. 整合UI数据并进行智能计算
+    const safeVal = (selector) => $(selector).val() || "";
+    const moment = SillyTavern.libs.moment;
+
+    // --- 【【【生理周期基准日智能计算 (核心逻辑)】】】 ---
+    const storyStartDate = moment(
+        getButterState()?.dynamic.time_tracker.story_date || "2026-01-01",
+        "YYYY-MM-DD",
+    );
+
+    // 从日历UI获取用户选择的日期数组
     const selectedDays = [];
     $("#b-reg-calendar-container .butter-calendar-day.selected").each(
         function () {
             selectedDays.push(parseInt($(this).text()));
         },
     );
+    // 对选择的日期进行排序，并取第一个作为基准“日”
+    selectedDays.sort((a, b) => a - b);
+    const menstrualStartDayOfMonth =
+        selectedDays.length > 0 ? selectedDays[0] : 1; // 如果没选，默认为1号
+    const menstrualDuration = selectedDays.length > 0 ? selectedDays.length : 5; // 持续天数即为选择的天数
 
-    const safeVal = (selector) => $(selector).val() || "";
+    let last_menstrual_start_date;
+    const storyStartDayOfMonth = storyStartDate.date(); // 获取剧情开始日期的“日”，例如 15
 
-    const traitsArray =
-        generatedData.traits && Array.isArray(generatedData.traits)
-            ? generatedData.traits
-            : [];
-
-    let personaTexts = [];
-    if (race === "魅魔") {
-        personaTexts = [
-            generatedData.race_appearance
-                ? `外貌特征: ${generatedData.race_appearance}`
-                : "",
-            generatedData.race_body_state
-                ? `身体状态: ${generatedData.race_body_state}`
-                : "",
-            generatedData.race_core_mechanic
-                ? `特异机制: ${generatedData.race_core_mechanic}`
-                : "",
-            generatedData.aphrodisiac_mechanic
-                ? `催淫机制: ${generatedData.aphrodisiac_mechanic}`
-                : "",
-            generatedData.crest_system
-                ? `淫纹系统: ${generatedData.crest_system}`
-                : "",
-        ];
-    } else if (race === "自设") {
-        personaTexts = [
-            generatedData.race_appearance
-                ? `外貌特征: ${generatedData.race_appearance}`
-                : "",
-            generatedData.race_body_state
-                ? `身体状态: ${generatedData.race_body_state}`
-                : "",
-            generatedData.race_core_mechanic
-                ? `特异机制: ${generatedData.race_core_mechanic}`
-                : "",
-        ];
+    // 比较并决策
+    if (storyStartDayOfMonth >= menstrualStartDayOfMonth) {
+        // 情况A：剧情开始的“日”大于等于生理期的“日”，说明本月已经来过
+        // 基准日就是剧情开始的【当月】的那个日期
+        last_menstrual_start_date = storyStartDate
+            .clone()
+            .date(menstrualStartDayOfMonth)
+            .format("YYYY-MM-DD");
+    } else {
+        // 情况B：剧情开始的“日”小于生理期的“日”，说明本月还没来，应追溯到上个月
+        // 基准日就是剧情开始的【上一个月】的那个日期
+        last_menstrual_start_date = storyStartDate
+            .clone()
+            .subtract(1, "months")
+            .date(menstrualStartDayOfMonth)
+            .format("YYYY-MM-DD");
     }
-    const finalGeneratedPersona = personaTexts.filter(Boolean).join("\n");
+    // --- 【【【计算结束】】】 ---
+
+    // 3. 组装最终的 formData 对象
+    const finalGeneratedPersona = [
+        generatedData.race_appearance
+            ? `外貌特征: ${generatedData.race_appearance}`
+            : "",
+        generatedData.race_body_state
+            ? `身体状态: ${generatedData.race_body_state}`
+            : "",
+        generatedData.race_core_mechanic
+            ? `特异机制: ${generatedData.race_core_mechanic}`
+            : "",
+        generatedData.aphrodisiac_mechanic
+            ? `催淫机制: ${generatedData.aphrodisiac_mechanic}`
+            : "",
+        generatedData.crest_system
+            ? `淫纹系统: ${generatedData.crest_system}`
+            : "",
+    ]
+        .filter(Boolean)
+        .join("\n");
 
     return {
         fixed: {
@@ -1314,29 +1622,30 @@ function gatherFormData(generatedData = {}) {
                     : race,
             birthday: safeVal("#bs-reg-birthday").trim(),
             cycle_base: {
-                menstrual_dates:
-                    selectedDays.length > 0
-                        ? selectedDays.sort((a, b) => a - b)
-                        : [1, 2, 3, 4, 5],
+                last_menstrual_start_date: last_menstrual_start_date, // 使用我们智能计算出的基准日
                 average_cycle: parseInt(safeVal("#b-reg-avg-cycle")) || 28,
+                menstrual_duration: menstrualDuration, // 使用日历选择的天数作为持续时间
             },
         },
         semi_fixed: {
             reproduction_type: safeVal("#b-reg-repro") || "胎生",
             gestation_duration: parseInt(safeVal("#b-reg-gestation")) || 10,
-            race_appearance: generatedData.race_appearance || "",
-            race_body_state: generatedData.race_body_state || "",
-            race_core_mechanic: generatedData.race_core_mechanic || "",
-            aphrodisiac_mechanic: generatedData.aphrodisiac_mechanic || "",
-            crest_system: generatedData.crest_system || "",
-            custom_erogenous_zones: safeVal("#b-reg-custom-sens").trim(),
             pronoun: safeVal("#b-reg-pronoun") || "她",
+            custom_erogenous_zones: safeVal("#b-reg-custom-sens").trim(),
             obscene_content_enabled: $("#b-reg-obscene-toggle").is(":checked"),
             sensitivity_growth_mode: parseInt(safeVal("#b-reg-obs-sens")) || 1,
             lactation_setting: safeVal("#b-reg-obs-lac") || "孕后哺乳期产乳",
             pregnancy_setting: safeVal("#b-reg-obs-preg") || "正常孕期",
             generated_persona: finalGeneratedPersona,
-            traits: traitsArray,
+            traits:
+                generatedData.traits && Array.isArray(generatedData.traits)
+                    ? generatedData.traits
+                    : [],
+            race_appearance: generatedData.race_appearance || "",
+            race_body_state: generatedData.race_body_state || "",
+            race_core_mechanic: generatedData.race_core_mechanic || "",
+            aphrodisiac_mechanic: generatedData.aphrodisiac_mechanic || "",
+            crest_system: generatedData.crest_system || "",
         },
     };
 }

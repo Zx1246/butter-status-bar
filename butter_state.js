@@ -13,13 +13,19 @@ const defaultButterUserState = {
         race: "人族",
         birthday: "",
         cycle_base: {
-            menstrual_dates: [],
-            average_cycle: 28,
-            phase_lengths: {
-                menstrual: 5,
-                follicular: 9,
-                ovulation: 4,
-                luteal: 10,
+            cycle_base: {
+                // menstrual_dates 不再需要，我们将用基准日代替
+                // menstrual_dates: [],
+                last_menstrual_start_date: "2026-01-01", // 【【【新增核心】】】最近一次月经开始的日期
+                average_cycle: 28, // 平均周期长度
+                menstrual_duration: 5, // 【【【新增】】】月经持续天数
+                phase_lengths: {
+                    // 这部分现在仅作为参考，实际计算将是动态的
+                    menstrual: 5,
+                    follicular: 9,
+                    ovulation: 4,
+                    luteal: 10,
+                },
             },
         },
     },
@@ -192,61 +198,22 @@ export function checkAndInitRegistration() {
  * @param {Object} formData 从 ui.html 读取到的玩家填写的问卷数据
  */
 export function registerButterUser(formData) {
-    // 1. 获取一个全新的处女空壳
     let newState = getDefaultState();
-
-    // 2. 赋予初始时间戳，标志着堕落的开始
     newState.dynamic.time_tracker.last_update_timestamp = Date.now();
 
-    // 3. 将问卷数据狠狠地注入进空壳里
+    // 将问卷数据注入
+    // 【核心改造】直接合并整个 fixed 对象，因为 formData.fixed 已经包含了我们需要的 cycle_base
     newState.fixed = { ...newState.fixed, ...formData.fixed };
     newState.semi_fixed = { ...newState.semi_fixed, ...formData.semi_fixed };
 
-    // 4. 【核心新增】根据用户输入计算生理周期各阶段长度
-    try {
-        const cycleBase = newState.fixed.cycle_base;
-        const menstrualDays = cycleBase.menstrual_dates.length;
-        const avgCycle = cycleBase.average_cycle;
+    // 【【【移除旧的、不准确的 phase_lengths 计算】】】
+    // 我们将在需要时动态计算，而不是在注册时写死
 
-        // 固定排卵期和黄体期（医学上较为稳定）
-        const ovulationLength = 4;
-        const lutealLength = 14;
-
-        // 卵泡期 = 总周期 - (生理期 + 排卵期 + 黄体期)
-        let follicularLength =
-            avgCycle - (menstrualDays + ovulationLength + lutealLength);
-
-        // 安全校验，防止卵泡期为负数
-        if (follicularLength < 1) {
-            follicularLength = 1;
-            // 如果周期过短，可以考虑牺牲黄体期，但暂不处理复杂情况
-        }
-
-        newState.fixed.cycle_base.phase_lengths = {
-            menstrual: menstrualDays,
-            follicular: follicularLength,
-            ovulation: ovulationLength,
-            luteal: lutealLength,
-        };
-
-        console.log(
-            "[Butter State] 生理周期阶段长度自动推算完成:",
-            newState.fixed.cycle_base.phase_lengths,
-        );
-    } catch (e) {
-        console.error("[Butter State] 自动计算生理周期失败，将使用默认值。", e);
-        // 如果计算失败，确保有一个默认值
-        newState.fixed.cycle_base.phase_lengths = {
-            menstrual: 5,
-            follicular: 9,
-            ovulation: 4,
-            luteal: 10,
-        };
-    }
-
-    // 5. 强行保存
     saveButterState(newState);
-    console.log("[Butter Status] 注册完成！她的命运已被彻底锁定。");
+    console.log(
+        "[Butter Status] 注册完成！她的命运已被彻底锁定，生理周期锚定于: " +
+            newState.fixed.cycle_base.last_menstrual_start_date,
+    );
 }
 
 // ==========================================

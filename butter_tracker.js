@@ -12,8 +12,8 @@
 
 import { getButterState, saveButterState } from "./butter_state.js";
 import { ButterToolsDefinition, handleToolExecution } from "./butter_tools.js";
-// 【新增】导入 advanceDay 以便在日期跳跃时调用
-import { advanceDay } from "./menstrual_cycle_manager.js";
+// 【新增】导入 advanceDay 和 setDateTime 以便在日期跳跃时调用
+import { advanceDay, setDateTime } from "./menstrual_cycle_manager.js";
 const PROMPT_KEY = "butter_status_core_prompt";
 // 【新增】暗网监控缓存：用于捕获瞬间的数据流
 export let debugLastPrompt = "";
@@ -34,7 +34,7 @@ function translateSimpleRuleToRegex(rule) {
     if (tagMatch && tagMatch[1]) {
         const tagName = tagMatch[1];
         // 构建匹配 <tagName>...</tagName> 的正则表达式
-        return new RegExp(`<${tagName}>[\\s\\S]*?<\\/${tagName}>`, "gi");
+        return new RegExp(`<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>`, "gi");
     }
 
     // 匹配注释标签 <!-- ... -->
@@ -164,6 +164,8 @@ function getLactationDescription(state) {
     return `\n[泌乳状态: ${lacDesc}]`;
 }
 
+// 文件: butter_tracker.js
+
 /**
  * 【最终修正版】核心注入函数：严格按照模板，将所有状态信息组装成一个内容完整的系统提示词。
  */
@@ -171,8 +173,9 @@ export async function injectButterSystemPrompt() {
     const context = SillyTavern.getContext();
     const state = getButterState();
 
+    // 1. 安全检查：如果当前没有肉体档案，则清空注入并退出，防止错误信息污染。
     if (!state) {
-        context.setExtensionPrompt(PROMPT_KEY, "");
+        context.setExtensionPrompt(PROMPT_KEY, ""); // 使用唯一的KEY清空该扩展的提示词
         updateDebugPanelIO("", "N/A (已移除)");
         console.log("[Butter Tracker] 无肉体档案，已移除状态扩展提示词。");
         return;
@@ -181,10 +184,10 @@ export async function injectButterSystemPrompt() {
     const p = state.semi_fixed.pronoun || "她";
     const moment = SillyTavern.libs.moment;
 
-    // --- 1. 计算所有需要的变量 ---
+    // --- 2. 数据准备：计算所有需要注入的动态变量 ---
 
-    // 年龄
-    let ageString = "";
+    // 年龄计算
+    let ageString = "未知年龄。";
     if (state.fixed.birthday) {
         try {
             const birthDate = moment(state.fixed.birthday, "YYYY-MM-DD");
@@ -201,7 +204,7 @@ export async function injectButterSystemPrompt() {
         }
     }
 
-    // 小腹状态
+    // 小腹状态描述
     let wombVolume = state.dynamic.womb.semen_volume;
     let abdomenDesc = "小腹平坦紧实。";
     if (wombVolume > 90)
@@ -213,91 +216,70 @@ export async function injectButterSystemPrompt() {
         abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
     else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
 
-    // 泌乳状态
+    // 泌乳状态描述
     const lactationDescription = getLactationDescription(state).trim();
 
-    // 灵魂契约
+    // 灵魂契约描述
     const contracts = state.dynamic.relationships.soul_contract || [];
     const soulContractDesc =
         contracts.length > 0
             ? `已和【${contracts.join("、")}】建立了灵魂锁链`
-            : "";
+            : "未建立灵魂契约。";
 
-    // 身体适应度
+    // 身体适应度（纯洁/淫乱）描述
     const physicalDescriptions = translatePhysicalState(state);
 
-    // AI生成的档案
+    // AI生成的种族/生理机能档案
     const personaAddon = state.semi_fixed.generated_persona
         ? `[绝对生理/种族机能档案]\n${state.semi_fixed.generated_persona}\n\n`
         : "";
 
-    // --- 2. 使用您提供的模板精确构建 rawBodyString ---
+    // --- 3. 模板构建：使用模板字符串组装最终的提示词 ---
 
-    // 使用模板字符串和三元运算符，确保即使变量为空，也能正确显示默认文本
-    const 生理状态参考 = `[生理状态参考，请自然融入：]
+    const finalPrompt = `
+${personaAddon}[生理状态参考，请自然融入：]
 - 小腹状态: ${abdomenDesc}
-- 泌乳状态: ${lactationDescription ? lactationDescription : "无泌乳迹象。"}
-- 灵魂契约: ${soulContractDesc ? soulContractDesc : "未建立灵魂契约。"}
-- 年龄档案: ${ageString ? ageString : "未知年龄。"}
+- 泌乳状态: ${lactationDescription || "无泌乳迹象。"}
+- 灵魂契约: ${soulContractDesc}
+- 年龄档案: ${ageString}
 - 身体适应度:【${physicalDescriptions}】
 - 当前状态: 生理周期(${state.dynamic.status.menstrual_phase}) | 情欲(Lust:${state.dynamic.status.lust}/100)
 - 子宫滞留液: ${state.dynamic.womb.semen_volume.toFixed(1)}ml
-- 穴口状态: ${state.dynamic.womb.is_plugged ? "【堵住/夹紧，无法流出】" : "【敞开/放松，缓慢流出】"}`;
+- 穴口状态: ${state.dynamic.womb.is_plugged ? "【堵住/夹紧，无法流出】" : "【敞开/放松，缓慢流出】"}
 
-    // --- 3. 拼接所有部分 ---
-    const promptSegments = [];
+${
+    // --- 4. 条件指令：根据状态动态添加高优先级指令 ---
+    state.dynamic.status.menstrual_phase === "生理期" &&
+    !state.dynamic.status.is_pregnant
+        ? `[系统最高指令: 生理期间，绝对禁止插入式性交。请展现身体疲惫与腹部坠胀，婉拒实质性插入。]`
+        : ""
+}
 
-    if (personaAddon) {
-        promptSegments.push(personaAddon.trim());
-    }
+${
+    state.dynamic.status.is_pregnant
+        ? !state.dynamic.status.is_pregnancy_known_to_user
+            ? `[系统最高指令: ${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等【轻微变化】。绝对禁止使用“怀孕”、“胎儿”等词剧透！]`
+            : `[状态提示: ${p}已知悉受孕，请合理展现该阶段的心理与生理特征。]`
+        : ""
+}
 
-    promptSegments.push(生理状态参考);
+${
+    state.fixed.race === "魅魔" &&
+    state.dynamic.succubus_status &&
+    (state.dynamic.succubus_status.hunger_percent < 10 ||
+        state.dynamic.succubus_status.is_forced_estrus)
+        ? `[状态提示: 魔力濒临枯竭。生理本能将压倒理智，产生强烈的体液渴求。]`
+        : ""
+}
+`.trim(); // 使用 trim() 清除前后多余的换行符
 
-    // 条件指令
-    if (
-        state.dynamic.status.menstrual_phase === "生理期" &&
-        !state.dynamic.status.is_pregnant
-    ) {
-        promptSegments.push(
-            `[系统最高指令: 生理期间，绝对禁止插入式性交。请展现身体疲惫与腹部坠胀，婉拒实质性插入。]`,
-        );
-    }
-    if (state.dynamic.status.is_pregnant) {
-        if (!state.dynamic.status.is_pregnancy_known_to_user) {
-            promptSegments.push(
-                `[系统最高指令: ${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等【轻微变化】。绝对禁止使用“怀孕”、“胎儿”等词剧透！]`,
-            );
-        } else {
-            promptSegments.push(
-                `[状态提示: ${p}已知悉受孕，请合理展现该阶段的心理与生理特征。]`,
-            );
-        }
-    }
-    if (state.fixed.race === "魅魔" && state.dynamic.succubus_status) {
-        if (
-            state.dynamic.succubus_status.hunger_percent < 10 ||
-            state.dynamic.succubus_status.is_forced_estrus
-        ) {
-            if (!state.dynamic.succubus_status.is_forced_estrus) {
-                state.dynamic.succubus_status.is_forced_estrus = true;
-                saveButterState(state);
-            }
-            promptSegments.push(
-                `[状态提示: 魔力濒临枯竭。生理本能将压倒理智，产生强烈的体液渴求。]`,
-            );
-        }
-    }
-
-    const finalPrompt = promptSegments.join("\n\n");
-
-    // --- 4. 执行注入 ---
-    // 【问题6修正】使用最稳定、最通用的双参数调用方式，确保最大兼容性。
+    // --- 5. 执行注入：将构建好的提示词交给酒馆核心 ---
     context.setExtensionPrompt(PROMPT_KEY, finalPrompt);
 
-    // 更新Debug面板的UI，位置信息现在变为一个通用描述
-    updateDebugPanelIO(finalPrompt, `默认扩展槽`);
+    // --- 6. 反馈与调试：更新UI，让您能看到我们注入的内容 ---
+    updateDebugPanelIO(finalPrompt, `扩展槽注入 (等效深度4)`);
     console.log(
-        `[Butter Tracker] 已通过 setExtensionPrompt 将生理状态显式注入。`,
+        `[Butter Tracker] 已通过 setExtensionPrompt 将生理状态显式注入。内容已更新至Debug面板。`,
     );
 }
 
@@ -375,61 +357,47 @@ function safelyExtractToolCalls(rawAnswerContent) {
 async function extractFilteredWorldLore(recentText, context) {
     const settings = context.extensionSettings[SETTINGS_KEY] || {};
     const mode = settings.wiMode || "normal";
+    if (mode === "disabled") return ""; // 如果设置为禁用，则直接返回空
+
     const blacklist = settings.wiBlacklist || [];
     const whitelist = settings.wiWhitelist || [];
 
     try {
-        // 1. 获取角色绑定的世界书内容
-        const charBookNameResult =
-            await context.executeSlashCommandsWithOptions("/getchatbook");
-        const charBookName = charBookNameResult?.pipe?.trim();
-        let allEntries = [];
+        // 【核心改造】直接从 context 中获取世界书信息
+        const worldInfo = await context.getWorldInfoPrompt();
 
-        if (charBookName) {
-            const charWorldInfo = await context.loadWorldInfo(charBookName);
-            if (charWorldInfo && charWorldInfo.entries) {
-                allEntries.push(...Object.values(charWorldInfo.entries));
-            }
+        if (!worldInfo || !worldInfo.entries) {
+            console.log(
+                "[Butter Tracker] 未从 context.getWorldInfoPrompt() 获取到任何世界书条目。",
+            );
+            return "";
         }
 
-        // 2. 获取全局启用的世界书内容
-        const globalBooksResult = await context.executeSlashCommandsWithOptions(
-            "/getvar var_name=world_info.globalSelect",
-        );
-        if (
-            globalBooksResult &&
-            !globalBooksResult.isError &&
-            globalBooksResult.pipe
-        ) {
-            const globalBookNames = JSON.parse(globalBooksResult.pipe);
-            if (Array.isArray(globalBookNames)) {
-                for (const bookName of globalBookNames) {
-                    const globalWorldInfo =
-                        await context.loadWorldInfo(bookName);
-                    if (globalWorldInfo && globalWorldInfo.entries) {
-                        allEntries.push(
-                            ...Object.values(globalWorldInfo.entries),
-                        );
-                    }
-                }
-            }
-        }
-
+        const allEntries = worldInfo.entries;
         if (allEntries.length === 0) return "";
 
-        // 3. 根据模式进行过滤
+        // 根据模式进行过滤
         const activeEntries = allEntries.filter((entry) => {
             if (!entry || !entry.uid) return false;
 
-            if (mode === "reference" || mode === "whitelist") {
-                return whitelist.includes(entry.uid);
+            // 黑名单模式：黑名单中的条目直接排除
+            if (mode === "normal") {
+                if (blacklist.includes(entry.uid)) return false;
+            }
+            // 白名单模式：只有白名单中的条目才可能被激活
+            else if (mode === "whitelist") {
+                if (!whitelist.includes(entry.uid)) return false;
             }
 
-            if (blacklist.includes(entry.uid)) return false;
-            if (entry.constant) return true;
-
+            // 对剩下的条目应用激活规则
+            if (entry.constant) return true; // 常驻条目始终激活
             if (Array.isArray(entry.key) && recentText) {
-                return entry.key.some((kw) => kw && recentText.includes(kw));
+                // 检查关键词是否在近期对话中出现
+                return entry.key.some(
+                    (kw) =>
+                        kw &&
+                        recentText.toLowerCase().includes(kw.toLowerCase()),
+                );
             }
             return false;
         });
@@ -456,20 +424,31 @@ function getPresetWrapper(context) {
     const settings = context.extensionSettings[SETTINGS_KEY] || {};
     const presetName = settings.injectPreset;
 
-    if (!presetName || presetName === "default") {
+    // 如果未选择特定预设，则返回空
+    if (!presetName || presetName === "") {
         return "";
     }
 
     try {
+        // 【核心改造】直接、可靠地从 PresetManager 获取预设
         const presetManager = context.getPresetManager();
-        const allPresets = presetManager.getAllPresets(); // 获取所有预设的列表
-        const preset = allPresets.find((p) => p.name === presetName); // 根据名称查找
+        if (!presetManager) {
+            console.warn("[Butter Tracker] 无法获取到 PresetManager 实例。");
+            return "";
+        }
+
+        // 使用 PresetManager 的标准方法来查找预设
+        const preset = presetManager.presets.find((p) => p.name === presetName);
 
         if (preset && preset.system_prompt) {
             return `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
+        } else {
+            console.warn(
+                `[Butter Tracker] 预设 '${presetName}' 被选中，但未找到或其中不含 'system_prompt'。`,
+            );
         }
     } catch (e) {
-        console.warn(`[Butter Tracker] 获取预设 '${presetName}' 失败`, e);
+        console.error(`[Butter Tracker] 获取预设 '${presetName}' 失败`, e);
     }
 
     return "";
@@ -499,25 +478,17 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     console.log("[Butter Tracker] 引擎已点火并上锁。");
 
     try {
-        // 【【【核心改造：移除基于现实时间的被动衰减】】】
-        // 移除了原有的基于 Date.now() 和 last_update_timestamp 计算浊液流失的逻辑。
-        // 现在，引擎每次运行时，只会简单地更新时间戳，以标记“最后活动时间”。
-        // 真正的衰减计算，将被统一到由剧情时间驱动的 advanceDay 函数中。
-        state.dynamic.time_tracker.last_update_timestamp = Date.now(); // 仍然记录现实时间戳，但只用于潜在的未来功能，不再参与计算。
+        state.dynamic.time_tracker.last_update_timestamp = Date.now();
         saveButterState(state);
 
         let recentChatText = forcedCheckText;
         if (!recentChatText) {
-            // 【核心修正】使用 context.chat 这一官方稳定的内存数据源
             const chatHistory = context.chat;
-
-            // 【核心修正】放宽启动门槛，只要有用户输入就准备分析
             if (!Array.isArray(chatHistory) || chatHistory.length < 1) {
                 console.log("[Butter Tracker] 聊天记录过少，本次追踪跳过。");
                 isTrackingActive = false;
                 return;
             }
-
             const historyCount = pluginSettings.apiHistoryCount || 10;
             recentChatText = chatHistory
                 .slice(-historyCount)
@@ -530,60 +501,123 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
                 .join("\n");
         }
 
+        // ==========================================================
+        // 【【【核心改造区域：日期与时间处理逻辑】】】
+        // ==========================================================
         try {
-            // 正则表达式匹配 "YYYY.MM.DD HH:mm" 或 "YYYY-MM-DD HH:mm" 或 "YYYY/MM/DD HH:mm" 等格式
-            // 同时允许年份是2位或4位，月份和日期是1位或2位。
-            const dateTimeRegex =
-                /(\d{2,4})[.\-/年](\d{1,2})[.\-/月](\d{1,2})[日\s,]*(\d{1,2}):(\d{1,2})/;
-            const match = recentChatText.match(dateTimeRegex);
+            const moment = SillyTavern.libs.moment;
+            let timeUpdated = false; // 新增一个标志，防止重复处理
 
-            if (match) {
-                const moment = SillyTavern.libs.moment;
-                // 从匹配结果构建日期字符串，确保格式统一为 YYYY-MM-DD HH:mm
-                const year = match[1].length === 2 ? "20" + match[1] : match[1];
-                const newDateTimeStr = `${year}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")} ${match[4].padStart(2, "0")}:${match[5].padStart(2, "0")}`;
+            // --- 模式1：匹配相对时间，如“3天后”、“过去了三天” (最高优先级) ---
+            const relativeTimeRegex =
+                /(?:过去|过|过了|after|pass(?:ed)?)\s*(\d{1,2})\s*(?:天|day)/i;
+            const relativeMatch = recentChatText.match(relativeTimeRegex);
 
-                const newDate = moment(newDateTimeStr, "YYYY-MM-DD HH:mm");
-                const oldDate = moment(
-                    state.dynamic.time_tracker.story_date,
-                    "YYYY-MM-DD",
-                );
-
-                if (newDate.isValid() && newDate.isAfter(oldDate)) {
-                    const daysDiff = newDate.diff(oldDate, "days");
+            if (relativeMatch && relativeMatch[1]) {
+                const daysToAdvance = parseInt(relativeMatch[1], 10);
+                if (daysToAdvance > 0) {
                     console.log(
-                        `[Butter Tracker] 侦测到日期跳跃: 从 ${oldDate.format("YYYY-MM-DD")} 到 ${newDate.format("YYYY-MM-DD")}，相差 ${daysDiff} 天。`,
+                        `[Butter Tracker] 侦测到相对时间推进: ${daysToAdvance} 天。`,
                     );
 
-                    if (daysDiff > 0) {
-                        // 调用日期推进核心函数，并等待它完成
-                        const logMessage = await advanceDay(daysDiff);
-                        // advanceDay 内部已经处理了日期的更新，但我们需要更新时间
-                        state = getButterState(); // 重新获取状态
-                        state.dynamic.time_tracker.time =
-                            newDate.format("HH:mm");
-                        saveButterState(state); // 保存时间更新
+                    // 直接调用 advanceDay，它包含了所有复杂的推演和周期计算
+                    const logMessage = await advanceDay(daysToAdvance);
 
-                        // 发送系统消息通知用户
-                        context.sendSystemMessage(
-                            "generic",
-                            `【时间自动同步】\n${logMessage}`,
+                    context.sendSystemMessage(
+                        "generic",
+                        `【时间自动推进】\n${logMessage}`,
+                    );
+                    toastr.info(
+                        `侦测到剧情时间流逝，已自动推进 ${daysToAdvance} 天。`,
+                        "世界时钟",
+                    );
+
+                    state = getButterState(); // 重新获取状态
+                    timeUpdated = true; // 标记已处理
+                }
+            }
+
+            // --- 模式2：匹配绝对日期和时间 (如果模式1未触发) ---
+            if (!timeUpdated) {
+                // 这个正则现在可以匹配 "YYYY-MM-DD HH:mm", "YYYY年M月D日 H:m" 等多种组合
+                const absoluteDateTimeRegex =
+                    /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日\s]*.*?(\d{1,2}):(\d{1,2})/;
+                const absoluteMatch = recentChatText.match(
+                    absoluteDateTimeRegex,
+                );
+
+                if (absoluteMatch) {
+                    const [, year, month, day, hour, minute] = absoluteMatch;
+                    const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+                    const newTimeStr = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+
+                    if (
+                        newDateStr !== state.dynamic.time_tracker.story_date ||
+                        newTimeStr !== state.dynamic.time_tracker.time
+                    ) {
+                        console.log(
+                            `[Butter Tracker] 侦测到绝对时间同步指令: ${newDateStr} ${newTimeStr}`,
                         );
+                        const logMessage = await setDateTime(
+                            newDateStr,
+                            newTimeStr,
+                        ); // 使用 await
+                        context.sendSystemMessage("generic", logMessage);
                         toastr.info(
-                            `侦测到剧情时间跳跃，已自动同步 ${daysDiff} 天。`,
+                            "侦测到剧情时间，状态栏已自动同步。",
                             "世界时钟",
                         );
-                    } else {
-                        // 如果只是当天内的时间变化
-                        state.dynamic.time_tracker.time =
-                            newDate.format("HH:mm");
-                        saveButterState(state);
+                        state = getButterState();
+                        timeUpdated = true;
+                    }
+                }
+            }
+
+            // --- 模式3：只匹配绝对日期 (如果前两个模式都未触发) ---
+            if (!timeUpdated) {
+                const dateOnlyRegex =
+                    /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日]?/g;
+                let dateOnlyMatch;
+                // 我们需要找到最后一个匹配项，因为它最可能是当前的日期
+                let lastMatch = null;
+                while (
+                    (dateOnlyMatch = dateOnlyRegex.exec(recentChatText)) !==
+                    null
+                ) {
+                    lastMatch = dateOnlyMatch;
+                }
+
+                if (lastMatch) {
+                    const [, year, month, day] = lastMatch;
+                    const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+
+                    if (newDateStr !== state.dynamic.time_tracker.story_date) {
+                        console.log(
+                            `[Butter Tracker] 侦测到仅日期同步指令: ${newDateStr}`,
+                        );
+                        // 当只有日期时，我们使用当前状态的时间来补全
+                        const currentTime =
+                            state.dynamic.time_tracker.time || "08:00";
+                        const logMessage = await setDateTime(
+                            newDateStr,
+                            currentTime,
+                        ); // 使用 await
+                        context.sendSystemMessage("generic", logMessage);
+                        toastr.info(
+                            "侦测到剧情日期，状态栏已自动同步。",
+                            "世界时钟",
+                        );
+                        state = getButterState();
+                        timeUpdated = true;
                     }
                 }
             }
         } catch (e) {
-            console.error("[Butter Tracker] 自动日期侦测失败:", e);
+            console.error("[Butter Tracker] 自动日期侦测与设定失败:", e);
         }
+        // ==========================================================
+        // 【【【改造结束】】】
+        // ==========================================================
 
         if (pluginSettings.apiRegexFilter) {
             try {
@@ -604,18 +638,13 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
             }
         }
 
-        // 【新增：首次运行校准逻辑】
         const isFirstRun = !state.dynamic.status.is_initial_state_calibrated;
         if (isFirstRun) {
-            // 如果是首次运行，就在构建提示词时注入特殊指令
-            // 我们将在 buildAnalysisPrompt 函数中处理这个逻辑
             console.log(
                 "[Butter Tracker] 检测到首次运行，将执行初始状态校准。",
             );
         }
 
-        // 步骤3: 构建完整的分析提示词
-        // 【修改】传入 isFirstRun 旗标
         const prompt = await buildAnalysisPrompt(
             state,
             recentChatText,
@@ -623,7 +652,6 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
             isFirstRun,
         );
 
-        // 步骤4: 调用AI进行分析
         let rawApiResponse;
         if (
             pluginSettings.useExternalCustomFetch &&
@@ -632,14 +660,11 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
         ) {
             rawApiResponse = await callExternalApi(prompt, pluginSettings);
         } else {
-            // 【修正】移除 generateRaw 中无效的 quiet: true 参数。
-            // generateRaw 本身就是返回数据而不渲染到聊天，符合您的需求。
             rawApiResponse = await context.generateRaw({
                 prompt: prompt,
             });
         }
 
-        // 步骤5: 更新Debug面板的IO显示
         $("#bs-debug-api-input").val(prompt);
         $("#bs-debug-api-output").val(
             typeof rawApiResponse === "object"
@@ -647,19 +672,18 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
                 : rawApiResponse,
         );
 
-        // 步骤6: 解析并执行工具调用
         const toolCalls = safelyExtractToolCalls(rawApiResponse);
         if (toolCalls.length > 0) {
-            toolCalls.forEach((call) => {
+            for (const call of toolCalls) {
+                // 使用 for...of 循环以支持 await
                 const functionName = call.name || call.function?.name;
                 const args = call.arguments || call.function?.arguments;
                 if (functionName && args) {
-                    handleToolExecution(functionName, args);
+                    await handleToolExecution(functionName, args); // 等待每个工具执行完毕
                 }
-            });
-            // 【新增】如果这是首次运行且成功调用了工具，则更新旗标
+            }
             if (isFirstRun) {
-                let updatedState = getButterState(); // 重新获取状态，因为它可能已被工具修改
+                let updatedState = getButterState();
                 if (updatedState) {
                     updatedState.dynamic.status.is_initial_state_calibrated = true;
                     saveButterState(updatedState);

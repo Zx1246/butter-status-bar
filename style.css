@@ -526,7 +526,7 @@
     top: -8px;
     bottom: -8px;
     left: -12px; /* 👈 图一左边包不住，把这里的负数调大，相框就会往左边延伸去包住它 */
-    right: -12px;
+    right: -8px;
 
     /* --- 相框贴图设置 --- */
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
@@ -724,6 +724,29 @@
     color: var(--butter-text-dark);
 }
 
+/* ===================================================
+ * 🎯 终极修复：首页最底下纯文字块（无图标）的距离与染色
+ * =================================================== */
+
+/* 1. 瞄准【穴口/积乳状态栏 (.butter-additional-stats)】正下方的那个纯文字 div */
+#butter-root-container .butter-additional-stats + div,
+#butter-root-container .butter-additional-stats ~ div {
+    margin-top: 25px !important; /* 👈 核心修改：拉开与上方的间距，觉得不够可以改到 30px */
+    padding-top: 5px !important;
+    color: var(
+        --butter-danger-color
+    ); /* 👈 核心修改：将原本的暗绿色强行覆盖为暗粉红 */
+    font-weight: bold;
+    line-height: 1.6; /* 让两行字（标题和暂为净处）之间看起来不那么挤 */
+}
+
+/* 2. 防御性染色：如果这段文字内部被插件加上了 <span> 或 <b> 标签，一并强制染色为深蔷薇色 */
+#butter-root-container .butter-additional-stats ~ div span,
+#butter-root-container .butter-additional-stats ~ div b,
+#butter-root-container .butter-additional-stats ~ div strong {
+    color: #77494d !important;
+    text-shadow: 0 0 4px rgba(217, 129, 151, 0.2) !important;
+}
 /*
  * ==========================================
  * IX. 概览、开发、经历等其他面板样式
@@ -1606,7 +1629,7 @@ h5.section-subtitle {
         top: -5px;
         bottom: -5px;
         left: -8px;
-        right: -8px;
+        right: -5px;
     }
 
     /* 🌟 子宫区域与图片缩放（这部分你写得完全正确，完美保留） */
