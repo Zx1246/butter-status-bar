@@ -13,20 +13,11 @@ const defaultButterUserState = {
         race: "人族",
         birthday: "",
         cycle_base: {
-            cycle_base: {
-                // menstrual_dates 不再需要，我们将用基准日代替
-                // menstrual_dates: [],
-                last_menstrual_start_date: "2026-01-01", // 【【【新增核心】】】最近一次月经开始的日期
-                average_cycle: 28, // 平均周期长度
-                menstrual_duration: 5, // 【【【新增】】】月经持续天数
-                phase_lengths: {
-                    // 这部分现在仅作为参考，实际计算将是动态的
-                    menstrual: 5,
-                    follicular: 9,
-                    ovulation: 4,
-                    luteal: 10,
-                },
-            },
+            // 【核心修正】移除不正确的嵌套层级
+            // last_menstrual_start_date 的默认值设为 null，让后续逻辑来处理
+            last_menstrual_start_date: "2026-01-01",
+            average_cycle: 28,
+            menstrual_duration: 5,
         },
     },
 
@@ -279,7 +270,8 @@ export function loadUserPresetIntoChat(presetName) {
     // 【【【新增：从 registerButterUser 函数中复制来的周期计算逻辑】】】
     try {
         const cycleBase = newState.fixed.cycle_base;
-        const menstrualDays = cycleBase.menstrual_dates.length;
+        // 【核心修正】使用 menstrual_duration 替代不存在的 menstrual_dates.length
+        const menstrualDays = cycleBase.menstrual_duration;
         const avgCycle = cycleBase.average_cycle;
 
         const ovulationLength = 4;
@@ -288,24 +280,17 @@ export function loadUserPresetIntoChat(presetName) {
             avgCycle - (menstrualDays + ovulationLength + lutealLength);
 
         if (follicularLength < 1) {
-            follicularLength = 1;
+            follicularLength = 1; // 确保卵泡期至少有1天
         }
 
-        newState.fixed.cycle_base.phase_lengths = {
-            menstrual: menstrualDays,
-            follicular: follicularLength,
-            ovulation: ovulationLength,
-            luteal: lutealLength,
-        };
+        // 此处不再需要 phase_lengths，因为新的周期计算引擎不再依赖它
+        // 我们仅需确保 cycleBase 中的基础数据是正确的
         console.log(
-            "[Butter State] 从预设加载后，生理周期阶段长度自动推算完成:",
-            newState.fixed.cycle_base.phase_lengths,
+            "[Butter State] 从预设加载后，生理周期基础数据已确认:",
+            newState.fixed.cycle_base,
         );
     } catch (e) {
-        console.error(
-            "[Butter State] 从预设加载后计算生理周期失败，将使用默认值。",
-            e,
-        );
+        console.error("[Butter State] 从预设加载后校验生理周期数据失败。", e);
         // 保险起见，提供一个默认值
         newState.fixed.cycle_base.phase_lengths = {
             menstrual: 5,

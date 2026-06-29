@@ -3,7 +3,11 @@
  * 世界时钟、生理周期与暗影演算的统一引擎
  * ====================================================*/
 
-import { getButterState, saveButterState } from "./butter_state.js";
+import {
+    getButterState,
+    saveButterState,
+    SETTINGS_KEY,
+} from "./butter_state.js";
 import { callExternalApi } from "./butter_tracker.js";
 
 /**
@@ -131,8 +135,7 @@ async function performShadowCalculation(daysToCalculate, initialState) {
             : "未知";
         const characterProfileForAI = `- 种族: ${state.fixed.race}\n- 年龄: ${ageString}\n- 核心特征(Traits): ${traits}\n- 敏感度开发模式: ${sensDesc}\n- 当前孕期状态: ${state.dynamic.status.is_pregnant ? "怀孕中" : "未怀孕"}\n- 最近的性伴侣: ${state.dynamic.relationships.recent_partner || "无"}\n- 恋爱关系: ${state.dynamic.relationships.romance_partner || "无"}`;
         let shadowPrompt = `[系统底层暗影推演指令：时间跳跃]\n宿主的剧情时间被突然快进了 ${daysToCalculate} 天。\n你必须根据以下提供的宿主档案，推断${p}在这段空白期内最可能发生的遭遇。\n\n【宿主档案】\n${characterProfileForAI}\n\n【你的任务】\n基于以上档案，脑补这 ${daysToCalculate} 天内${p}在后台可能遭遇了多少次隐秘的性交、调教或自慰。\n请你务-必返回一个纯 JSON 对象，用来表示这几天内${p}各项肉体经验和敏感度的【增加量】。绝对不要输出任何其他解释文本！\nJSON 格式要求如下：\n{\n  "exp_add": { "oral": 5, "pussy": 10, "anal": 2, "creampie_count": 10, "orgasm_count": 15 },\n  "sens_add": { "genital": 20, "breast": 10 }\n}`;
-        const pluginSettings =
-            context.extensionSettings.butterPluginSettings || {};
+        const pluginSettings = context.extensionSettings[SETTINGS_KEY] || {};
         let shadowRes;
         if (
             pluginSettings.useExternalCustomFetch &&
