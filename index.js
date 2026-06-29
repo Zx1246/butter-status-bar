@@ -380,8 +380,10 @@ async function bootstrap() {
  * 确保插件设置存在
  */
 async function ensureSettings() {
-    if (!extensionSettings[SETTINGS_KEY]) {
-        extensionSettings[SETTINGS_KEY] = {
+    // 【核心修正】实时获取最新的 settings 对象，而非使用文件顶部的陈旧快照。
+    const liveSettings = SillyTavern.getContext().extensionSettings;
+    if (!liveSettings[SETTINGS_KEY]) {
+        liveSettings[SETTINGS_KEY] = {
             enablePlugin: true,
             useExternalCustomFetch: false,
             apiUrl: "",
@@ -391,13 +393,12 @@ async function ensureSettings() {
             apiHistoryCount: 10,
             apiRegexFilter: "",
             injectPreset: "default",
-            injectionDepth: 2,
             wiMode: "normal",
             wiBlacklist: [],
             wiWhitelist: [],
             user_presets: [],
         };
-        // 【核心修正】使用官方提供的 saveSettingsDebounced 函数
+        // 使用全局的 context 引用进行保存
         context.saveSettingsDebounced();
     }
 }
@@ -502,9 +503,9 @@ function updateAllDynamicUI(state) {
     // --- 同步“魅魔状态”侧边栏标签 ---
     $("#butter-tab-succubus-nav").toggle(state.fixed.race === "魅魔");
 
-    // --- 同步"注入深度" --- (如果保留该功能)
-    const settings = extensionSettings[SETTINGS_KEY];
-    // 我们将深度输入框改为显示当前注入位置，更有意义
+    // 【核心修正】此行已被证明不再需要，因为注入位置是固定的。
+    // 但为了保留结构，我们只是注释掉对 settings 的读取。
+    // const settings = extensionSettings[SETTINGS_KEY];
     $("#bs-debug-depth").val("position: after");
 }
 
@@ -871,7 +872,9 @@ function initSpecialSettingsPanelEvents(root) {
  * @param {JQuery} root - The root container jQuery object.
  */
 function initApiPanelEvents(root) {
-    const settings = extensionSettings[SETTINGS_KEY];
+    // 【核心修正】在函数开始时，实时获取最新的设置对象，用于初始化UI。
+    const settings =
+        SillyTavern.getContext().extensionSettings[SETTINGS_KEY] || {};
 
     // 恢复UI状态
     $("#bs-api-enable-plugin").prop("checked", settings.enablePlugin ?? true);
@@ -888,37 +891,56 @@ function initApiPanelEvents(root) {
 
     // 事件绑定
     root.on("change", "#bs-api-regex-filter", function () {
-        settings.apiRegexFilter = $(this).val();
-        context.saveSettingsDebounced();
-        toastr.info("API聊天记录裁剪规则已即时保存。");
+        // 【核心修正】在事件处理器内部，再次实时获取设置对象进行修改。
+        const liveSettings =
+            SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+        if (liveSettings) {
+            liveSettings.apiRegexFilter = $(this).val();
+            context.saveSettingsDebounced();
+            toastr.info("API聊天记录裁剪规则已即时保存。");
+        }
     });
 
     root.on(
         "change",
         "#bs-api-enable-plugin, #bs-api-use-external, #bs-api-stream-toggle",
         function () {
-            settings.enablePlugin = $("#bs-api-enable-plugin").is(":checked");
-            settings.useExternalCustomFetch = $("#bs-api-use-external").is(
-                ":checked",
-            );
-            settings.apiStream = $("#bs-api-stream-toggle").is(":checked");
-            context.saveSettingsDebounced();
-            toastr.info("API核心设定已即时保存。");
+            // 【核心修正】在事件处理器内部，再次实时获取设置对象进行修改。
+            const liveSettings =
+                SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+            if (liveSettings) {
+                liveSettings.enablePlugin = $("#bs-api-enable-plugin").is(
+                    ":checked",
+                );
+                liveSettings.useExternalCustomFetch = $(
+                    "#bs-api-use-external",
+                ).is(":checked");
+                liveSettings.apiStream = $("#bs-api-stream-toggle").is(
+                    ":checked",
+                );
+                context.saveSettingsDebounced();
+                toastr.info("API核心设定已即时保存。");
+            }
         },
     );
 
     root.on("click", "#bs-api-save-btn", function () {
-        settings.apiUrl = $("#bs-api-url").val().trim();
-        settings.apiKey = $("#bs-api-key").val().trim();
-        settings.apiModelName = $("#bs-api-model-name").val().trim();
-        settings.apiHistoryCount =
-            parseInt($("#bs-api-history-count").val()) || 10;
-        settings.apiRegexFilter = $("#bs-api-regex-filter").val();
-        context.saveSettingsDebounced();
-        toastr.success(
-            "神枢控制台的 API 设定已强行覆写并永久保存。",
-            "Butter Status",
-        );
+        // 【核心修正】在事件处理器内部，再次实时获取设置对象进行修改。
+        const liveSettings =
+            SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+        if (liveSettings) {
+            liveSettings.apiUrl = $("#bs-api-url").val().trim();
+            liveSettings.apiKey = $("#bs-api-key").val().trim();
+            liveSettings.apiModelName = $("#bs-api-model-name").val().trim();
+            liveSettings.apiHistoryCount =
+                parseInt($("#bs-api-history-count").val()) || 10;
+            liveSettings.apiRegexFilter = $("#bs-api-regex-filter").val();
+            context.saveSettingsDebounced();
+            toastr.success(
+                "神枢控制台的 API 设定已强行覆写并永久保存。",
+                "Butter Status",
+            );
+        }
     });
 
     root.on("click", "#bs-api-fetch-models", async function () {
@@ -998,48 +1020,56 @@ async function initInjectPanel() {
 
     // 使用 isInjectPanelInitialized 标志确保事件只被绑定一次，防止重复监听
     if (!uiManager.isInjectPanelInitialized) {
-        const settings = extensionSettings[SETTINGS_KEY];
+        // 【核心修正】移除此处的 settings 定义，将其移入事件处理器内部。
 
         // 1. 预设选择下拉菜单的事件绑定
         root.on("change", "#butter-inject-preset-select", function () {
-            settings.injectPreset = $(this).val();
-            context.saveSettingsDebounced();
-            console.log(`[Butter] 注入预设已切换为: ${settings.injectPreset}`);
+            // 实时获取设置并修改
+            const liveSettings =
+                SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+            if (liveSettings) {
+                liveSettings.injectPreset = $(this).val();
+                context.saveSettingsDebounced();
+                console.log(
+                    `[Butter] 注入预设已切换为: ${liveSettings.injectPreset}`,
+                );
+            }
         });
 
         // 2. 世界书传输模式下拉菜单的事件绑定
         root.on("change", "#butter-inject-mode-select", function () {
-            settings.wiMode = $(this).val();
-            context.saveSettingsDebounced();
-            console.log(`[Butter] 世界书传输模式已切换为: ${settings.wiMode}`);
+            // 实时获取设置并修改
+            const liveSettings =
+                SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+            if (liveSettings) {
+                liveSettings.wiMode = $(this).val();
+                context.saveSettingsDebounced();
+                console.log(
+                    `[Butter] 世界书传输模式已切换为: ${liveSettings.wiMode}`,
+                );
+            }
         });
 
         // 3. 【核心恢复】角色/全局世界书标签页切换事件
         root.on("click", ".butter-wi-tab-btn", function () {
-            // 如果已经是激活状态，则不执行任何操作，避免不必要的刷新
             if ($(this).hasClass("active")) return;
 
-            // 移除所有标签的激活状态，并为当前点击的标签添加激活状态
             root.find(".butter-wi-tab-btn").removeClass("active");
             $(this).addClass("active");
 
-            // 切换时，隐藏所有的列表容器
             $(
                 "#butter-inject-char-wb-list, #butter-inject-global-wb-list",
             ).hide();
-            // 获取当前点击的标签页所对应的列表容器ID
             const targetListId = $(this).data("target");
-            // 只显示目标列表容器
             $(`#${targetListId}`).show();
 
-            // 重新加载并渲染对应列表的数据
-            updateInjectPanelData();
+            // 注意：此处无需调用 updateInjectPanelData()，因为切换Tab只是显示/隐藏，数据已加载。
+            // 调用反而可能引起不必要的重复加载。
         });
 
         // 4. 世界书搜索框的实时输入过滤事件
         root.on("input", "#butter-inject-search-input", function () {
             const keyword = $(this).val().toLowerCase();
-            // 在当前可见的列表容器中进行搜索
             $(
                 ".butter-worldbook-container:visible .butter-worldbook-item",
             ).each(function () {
@@ -1071,7 +1101,8 @@ async function updateInjectPanelData() {
         if (presetManager) {
             const allPresets = presetManager.getAllPresets();
             const $presetSelect = $("#butter-inject-preset-select");
-            const currentVal = $presetSelect.val(); // 保存当前选择
+            const currentSettings = extensionSettings[SETTINGS_KEY] || {};
+            const currentVal = currentSettings.injectPreset || ""; // 从设置中获取当前值
             $presetSelect
                 .empty()
                 .append('<option value="">跟随酒馆当前预设</option>');
@@ -1088,11 +1119,10 @@ async function updateInjectPanelData() {
         console.error("[Butter] 更新预设列表失败:", e);
     }
 
-    // --- 2. 【核心恢复】加载并填充世界书列表 ---
+    // --- 2. 加载并填充世界书列表 ---
     const charListContainer = $("#butter-inject-char-wb-list");
     const globalListContainer = $("#butter-inject-global-wb-list");
 
-    // 开始加载前，显示“正在扫描”提示
     charListContainer.html(
         '<div class="butter-no-item-msg">正在扫描角色世界书...</div>',
     );
@@ -1101,18 +1131,13 @@ async function updateInjectPanelData() {
     );
 
     try {
-        // 2a. 使用最可靠的方式获取角色绑定的世界书
         const characterId = context.characterId;
         const character = context.characters[characterId];
-        const characterBooks =
-            character && Array.isArray(character.world_books)
-                ? character.world_books
-                : [];
 
-        // 渲染角色世界书列表
-        renderWorldInfoList(characterBooks, charListContainer, "character");
+        // 【核心修正】使用可选链和空值合并，确保 characterBooks 永远是数组。
+        const characterBooks = character?.world_books || [];
+        renderWorldInfoList(characterBooks, charListContainer);
 
-        // 2b. 使用您之前确认有效的斜杠命令方式获取全局世界书
         const globalInfoResult = await context.executeSlashCommandsWithOptions(
             "/getvar var_name=world_info.globalSelect",
         );
@@ -1123,7 +1148,6 @@ async function updateInjectPanelData() {
             globalInfoResult.pipe
         ) {
             try {
-                // 返回的 pipe 是一个 JSON 字符串数组，需要解析
                 const parsedPipe = JSON.parse(globalInfoResult.pipe);
                 if (Array.isArray(parsedPipe)) {
                     globalBooks = parsedPipe;
@@ -1135,9 +1159,7 @@ async function updateInjectPanelData() {
                 );
             }
         }
-
-        // 渲染全局世界书列表
-        renderWorldInfoList(globalBooks, globalListContainer, "global");
+        renderWorldInfoList(globalBooks, globalListContainer);
     } catch (e) {
         console.error("[Butter] 更新世界书数据时发生严重错误:", e);
         charListContainer.html(
@@ -1150,17 +1172,23 @@ async function updateInjectPanelData() {
 }
 
 /**
- * 【重构版 & 修正版】渲染世界书条目列表
+ * 【重构版 & 绝对根治版】渲染世界书条目列表
  * @param {string[]} bookList - 从可靠API获取的书籍名称数组
  * @param {jQuery} listContainer - 要渲染到的jQuery容器对象
  */
 function renderWorldInfoList(bookList = [], listContainer) {
-    // 【核心修正】在函数内部直接、安全地获取设置，确保 settings 变量始终可用。
-    const settings = extensionSettings[SETTINGS_KEY] || {};
+    const blacklist =
+        SillyTavern.getContext().extensionSettings?.[SETTINGS_KEY]
+            ?.wiBlacklist || [];
     listContainer.empty();
 
     if (bookList.length === 0) {
-        const message = listContainer.attr("id").includes("char")
+        // 【真正的病根在此！安全获取ID】
+        // 如果DOM尚未完全挂载，listContainer为空，attr("id")会是undefined。
+        // 使用 || "" 确保它始终是一个字符串，防止 .includes() 崩溃。
+        const containerId = listContainer.attr("id") || "";
+
+        const message = containerId.includes("char")
             ? "未检测到角色链接的世界书。"
             : "未检测到启用的全局世界书。";
         return listContainer.html(
@@ -1168,11 +1196,7 @@ function renderWorldInfoList(bookList = [], listContainer) {
         );
     }
 
-    // 此处的 blacklist 现在总是安全的，要么是数组，要么是空数组。
-    let blacklist = settings.wiBlacklist || [];
-
     bookList.forEach((bookName) => {
-        // 这行代码现在可以安全执行了
         const isEnabled = !blacklist.includes(bookName);
 
         const itemHtml = `
@@ -1191,19 +1215,31 @@ function renderWorldInfoList(bookList = [], listContainer) {
         .off("change.butter")
         .on("change.butter", ".butter-wi-toggle", function () {
             const bookName = $(this).data("book-name");
-            if (!settings.wiBlacklist) settings.wiBlacklist = [];
+
+            const currentSettings = SillyTavern.getContext().extensionSettings;
+
+            if (!currentSettings[SETTINGS_KEY]) {
+                currentSettings[SETTINGS_KEY] = {};
+            }
+            if (!currentSettings[SETTINGS_KEY].wiBlacklist) {
+                currentSettings[SETTINGS_KEY].wiBlacklist = [];
+            }
+
+            let currentBlacklist = currentSettings[SETTINGS_KEY].wiBlacklist;
 
             if (!$(this).is(":checked")) {
-                if (!settings.wiBlacklist.includes(bookName)) {
-                    settings.wiBlacklist.push(bookName);
+                if (!currentBlacklist.includes(bookName)) {
+                    currentBlacklist.push(bookName);
                 }
             } else {
-                settings.wiBlacklist = settings.wiBlacklist.filter(
-                    (name) => name !== bookName,
-                );
+                currentSettings[SETTINGS_KEY].wiBlacklist =
+                    currentBlacklist.filter((name) => name !== bookName);
             }
-            context.saveSettingsDebounced();
-            console.log("[Butter] 世界书黑名单已更新:", settings.wiBlacklist);
+            SillyTavern.getContext().saveSettingsDebounced();
+            console.log(
+                "[Butter] 世界书黑名单已更新:",
+                currentSettings[SETTINGS_KEY].wiBlacklist,
+            );
         });
 }
 
