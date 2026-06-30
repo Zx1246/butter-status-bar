@@ -242,7 +242,7 @@ export const ButterToolsDefinition = [
           type: "string",
           // 【核心修正】移除了末尾多余的右括号
           description:
-            "推测当前具体时间，必须使用24小时制 HH:mm 格式 (例如 '08:30' 或 '23:15')。如果无法判断则留空。",
+            "推测当前具体时间，必须使用24小时制 HH:mm 格式 (例如 '08:30' 或 '23:15'）。如果无法判断则留空。",
         },
         sleep_occurred: {
           type: "boolean",

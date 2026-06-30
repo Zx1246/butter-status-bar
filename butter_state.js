@@ -266,39 +266,9 @@ export function loadUserPresetIntoChat(presetName) {
     ...newState.semi_fixed,
     ...structuredClone(target.semi_fixed),
   };
-
-  // 【【【新增：从 registerButterUser 函数中复制来的周期计算逻辑】】】
-  try {
-    const cycleBase = newState.fixed.cycle_base;
-    // 【核心修正】使用 menstrual_duration 替代不存在的 menstrual_dates.length
-    const menstrualDays = cycleBase.menstrual_duration;
-    const avgCycle = cycleBase.average_cycle;
-
-    const ovulationLength = 4;
-    const lutealLength = 14;
-    let follicularLength =
-      avgCycle - (menstrualDays + ovulationLength + lutealLength);
-
-    if (follicularLength < 1) {
-      follicularLength = 1; // 确保卵泡期至少有1天
-    }
-
-    // 此处不再需要 phase_lengths，因为新的周期计算引擎不再依赖它
-    // 我们仅需确保 cycleBase 中的基础数据是正确的
-    console.log(
-      "[Butter State] 从预设加载后，生理周期基础数据已确认:",
-      newState.fixed.cycle_base,
-    );
-  } catch (e) {
-    console.error("[Butter State] 从预设加载后校验生理周期数据失败。", e);
-    // 保险起见，提供一个默认值
-    newState.fixed.cycle_base.phase_lengths = {
-      menstrual: 5,
-      follicular: 9,
-      ovulation: 4,
-      luteal: 10,
-    };
-  }
+  // 【代码净化】此处原有的 phase_lengths 计算逻辑已被移除。
+  // 新的渲染和周期管理引擎已不再依赖这个预计算的、不稳定的数据结构，
+  // 它们会根据 cycle_base 中的基础数据动态计算所需的一切。
 
   saveButterState(newState);
   return true;
