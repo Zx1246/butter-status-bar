@@ -486,11 +486,14 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
   isTrackingActive = true;
   console.log("[Butter Tracker] 引擎已点火并上锁。");
 
-  // ====================【核心修正 1/2】====================
-  // 在所有操作之前，创建一个当前状态的深拷贝快照。
-  // 这解决了 oldStateSnapshot 未定义的致命错误。
-  const oldStateSnapshot = JSON.parse(JSON.stringify(state));
+  // ====================【核心修改点 1/3】====================
+  // 在追踪开始时，显示一个“正在发送”的提示。
+  toastr.info("正在发送对话记录进行后台分析...", "追踪引擎启动", {
+    timeOut: 3000,
+  });
   // =======================================================
+
+  const oldStateSnapshot = JSON.parse(JSON.stringify(state));
 
   try {
     state.dynamic.time_tracker.last_update_timestamp = Date.now();
@@ -514,9 +517,6 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
         .join("\n");
     }
 
-    // ==========================================================
-    // 【【【核心改造区域：日期与时间处理逻辑】】】
-    // ==========================================================
     try {
       const moment = SillyTavern.libs.moment;
       let timeUpdated = false;
@@ -576,11 +576,7 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
 
           if (newDateStr !== state.dynamic.time_tracker.story_date) {
             console.log(`[Butter Tracker] 侦测到仅日期同步指令: ${newDateStr}`);
-            // ====================【核心修正 2/2】====================
-            // 将未定义的 currentTime 替换为从状态中获取的当前时间。
-            // 这解决了 currentTime is not defined 的致命错误。
             await setDateTime(newDateStr, state.dynamic.time_tracker.time);
-            // =======================================================
             state = getButterState();
             timeUpdated = true;
           }
@@ -589,9 +585,6 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     } catch (e) {
       console.error("[Butter Tracker] 自动日期侦测与设定失败:", e);
     }
-    // ==========================================================
-    // 【【【改造结束】】】
-    // ==========================================================
 
     if (pluginSettings.apiRegexFilter) {
       try {
@@ -610,9 +603,6 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
       }
     }
 
-    // ==========================================================
-    // 【【【液压引擎燃料供应线 - 重建工程】】】
-    // ==========================================================
     let elapsedHours = 0;
     try {
       const moment = SillyTavern.libs.moment;
@@ -670,7 +660,12 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     );
 
     const toolCalls = safelyExtractToolCalls(rawApiResponse);
+
+    // ====================【核心修改点 2/3】====================
+    // 在解析完AI的回复后，根据是否有工具调用来显示不同的结束提示。
     if (toolCalls.length > 0) {
+      // 如果有工具调用，说明填表成功
+      toastr.success("分析完成，状态已根据AI指令自动更新。", "填表结束");
       for (const call of toolCalls) {
         const functionName = call.name || call.function?.name;
         const args = call.arguments || call.function?.arguments;
@@ -689,14 +684,17 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
       await injectButterSystemPrompt();
       context.eventSource.emit("BUTTER_DATA_UPDATED");
     } else {
+      // 如果没有工具调用，说明AI认为无需填表
+      toastr.info("分析完成，AI判断当前无需更新状态。", "追踪结束");
       console.log("[Butter Tracker] AI分析完成，但未返回任何工具调用指令。");
     }
+    // =======================================================
   } catch (error) {
     console.error("[Butter Tracker] 引擎运行期间发生致命错误:", error);
-    toastr.error(
-      "Tracker引擎运行失败，请按F12在Console中查看详细错误。",
-      "系统异常",
-    );
+    // ====================【核心修改点 3/3】====================
+    // 在捕获到错误时，显示一个失败的提示。
+    toastr.error("后台分析失败，请按F12在控制台查看错误详情。", "追踪引擎异常");
+    // =======================================================
   } finally {
     isTrackingActive = false;
     console.log("[Butter Tracker] 追踪器运行结束，锁已释放。");
@@ -712,79 +710,75 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
  * @returns {Promise<string>} The fully constructed prompt string.
  */
 async function buildAnalysisPrompt(
-    state,
-    recentChatText,
-    context,
-    isFirstRun = false,
+  state,
+  recentChatText,
+  context,
+  isFirstRun = false,
 ) {
-    const p = state.semi_fixed.pronoun || "她";
-    const settings = context.extensionSettings[SETTINGS_KEY] || {};
+  const p = state.semi_fixed.pronoun || "她";
+  const settings = context.extensionSettings[SETTINGS_KEY] || {};
 
-    // ====================【核心修改点】====================
-    // 从插件设置中读取您在UI上输入的自定义顶部指令。
-    // 如果没有设置，则提供一个后备的默认指令。
-    const customTopText = settings.apiTopPrompt
-        ? `${settings.apiTopPrompt}\n\n`
-        : `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.\n\n`;
-    // =======================================================
+  // ====================【核心修改点】====================
+  // 从插件设置中读取您在UI上输入的自定义顶部指令。
+  // 如果没有设置，则提供一个后备的默认指令。
+  const customTopText = settings.apiTopPrompt
+    ? `${settings.apiTopPrompt}\n\n`
+    : `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.\n\n`;
+  // =======================================================
 
-    // --- 1. 【异步】抓取世界书 ---
-    const worldLoreStr = await extractFilteredWorldLore(
-        recentChatText,
-        context,
-    );
+  // --- 1. 【异步】抓取世界书 ---
+  const worldLoreStr = await extractFilteredWorldLore(recentChatText, context);
 
-    // --- 2. 抓取角色设定 (同步) ---
-    let characterContext = "";
-    if (
-        context.characterId !== undefined &&
-        context.characters[context.characterId]
-    ) {
-        const charData = context.characters[context.characterId].data;
-        const charInfo = [];
-        if (charData.description)
-            charInfo.push(`[角色描述]\n${charData.description}`);
-        if (charData.personality)
-            charInfo.push(`[角色性格]\n${charData.personality}`);
-        if (charData.scenario)
-            charInfo.push(`[场景设定]\n${charData.scenario}`);
-        if (charInfo.length > 0) {
-            characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
-        }
+  // --- 2. 抓取角色设定 (同步) ---
+  let characterContext = "";
+  if (
+    context.characterId !== undefined &&
+    context.characters[context.characterId]
+  ) {
+    const charData = context.characters[context.characterId].data;
+    const charInfo = [];
+    if (charData.description)
+      charInfo.push(`[角色描述]\n${charData.description}`);
+    if (charData.personality)
+      charInfo.push(`[角色性格]\n${charData.personality}`);
+    if (charData.scenario) charInfo.push(`[场景设定]\n${charData.scenario}`);
+    if (charInfo.length > 0) {
+      characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
     }
+  }
 
-    // --- 4. 组装最终提示词 ---
-    const firstRunInstruction = isFirstRun
-        ? `
+  // --- 4. 组装最终提示词 ---
+  const firstRunInstruction = isFirstRun
+    ? `
 **Urgent Initial Calibration Directive:**
 This is the very first analysis for this character. Their current state values (like hunger, energy) are at default 100%. This is incorrect. You MUST scrutinize the "Recent Activity Log" (which contains the character's opening message) and infer their true initial state. For example, if the log says "I haven't eaten in three days," you MUST call the \`bt_report_metabolism_changes\` tool with a significant negative \`hunger_change\` value to reflect this. Your primary goal in this first run is to correct the initial state based on the context.
 `
-        : "";
+    : "";
 
-    const availableFunctionsDoc = JSON.stringify(
-        {
-            Instructions:
-                'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
-            Available_Tools: ButterToolsDefinition,
-        },
-        null,
-        2,
-    );
+  const availableFunctionsDoc = JSON.stringify(
+    {
+      Instructions:
+        'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
+      Available_Tools: ButterToolsDefinition,
+    },
+    null,
+    2,
+  );
 
-    const succubusRules =
-        state.fixed.race === "魅魔"
-            ? `
+  const succubusRules =
+    state.fixed.race === "魅魔"
+      ? `
 8. 【魅魔专属】当${p}摄入体液或食物时，调用 bt_succubus_feed。
 9. 【魅魔专属】当${p}与人完成饮血、性交等灵魂绑定仪式时，调用 bt_bind_soul_contract。`
-            : "";
+      : "";
 
-    let traitsInfo = "";
-    if (state.semi_fixed.traits?.length > 0) {
-        traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
-    }
+  let traitsInfo = "";
+  if (state.semi_fixed.traits?.length > 0) {
+    traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
+  }
 
-    // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
-    return `${customTopText}${characterContext}${worldLoreStr}[SYSTEM NOTE]
+  // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
+  return `${customTopText}${characterContext}${worldLoreStr}[SYSTEM NOTE]
 You are a meticulous, silent data analysis AI. Your sole purpose is to analyze the provided "Recent Activity Log" and call the appropriate tools. Your response MUST be ONLY a valid JSON array of tool calls.
 ${firstRunInstruction}
 // ==================================================================
