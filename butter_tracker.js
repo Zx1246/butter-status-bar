@@ -704,7 +704,7 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
 }
 
 /**
- * 【重构】构建用于AI分析的完整提示词
+ * 【改造版】构建用于AI分析的完整提示词
  * @param {object} state - The current butter state.
  * @param {string} recentChatText - The recent chat history text.
  * @param {object} context - The SillyTavern context.
@@ -712,91 +712,79 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
  * @returns {Promise<string>} The fully constructed prompt string.
  */
 async function buildAnalysisPrompt(
-  state,
-  recentChatText,
-  context,
-  isFirstRun = false,
+    state,
+    recentChatText,
+    context,
+    isFirstRun = false,
 ) {
-  const p = state.semi_fixed.pronoun || "她";
+    const p = state.semi_fixed.pronoun || "她";
+    const settings = context.extensionSettings[SETTINGS_KEY] || {};
 
-  // --- 1. 【异步】抓取世界书 ---
-  const worldLoreStr = await extractFilteredWorldLore(recentChatText, context);
+    // ====================【核心修改点】====================
+    // 从插件设置中读取您在UI上输入的自定义顶部指令。
+    // 如果没有设置，则提供一个后备的默认指令。
+    const customTopText = settings.apiTopPrompt
+        ? `${settings.apiTopPrompt}\n\n`
+        : `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.\n\n`;
+    // =======================================================
 
-  // --- 2. 抓取角色设定 (同步) ---
-  let characterContext = "";
-  if (
-    context.characterId !== undefined &&
-    context.characters[context.characterId]
-  ) {
-    const charData = context.characters[context.characterId].data;
-    const charInfo = [];
-    if (charData.description)
-      charInfo.push(`[角色描述]\n${charData.description}`);
-    if (charData.personality)
-      charInfo.push(`[角色性格]\n${charData.personality}`);
-    if (charData.scenario) charInfo.push(`[场景设定]\n${charData.scenario}`);
-    if (charInfo.length > 0) {
-      characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
+    // --- 1. 【异步】抓取世界书 ---
+    const worldLoreStr = await extractFilteredWorldLore(
+        recentChatText,
+        context,
+    );
+
+    // --- 2. 抓取角色设定 (同步) ---
+    let characterContext = "";
+    if (
+        context.characterId !== undefined &&
+        context.characters[context.characterId]
+    ) {
+        const charData = context.characters[context.characterId].data;
+        const charInfo = [];
+        if (charData.description)
+            charInfo.push(`[角色描述]\n${charData.description}`);
+        if (charData.personality)
+            charInfo.push(`[角色性格]\n${charData.personality}`);
+        if (charData.scenario)
+            charInfo.push(`[场景设定]\n${charData.scenario}`);
+        if (charInfo.length > 0) {
+            characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
+        }
     }
-  }
 
-  // --- 3. 抓取对话预设 (同步) ---
-  // 我将之前的 getPresetWrapper 逻辑直接整合到这里，并增加健壮性
-  let presetWrapperStr = "";
-  const settings = context.extensionSettings[SETTINGS_KEY] || {};
-  if (settings.injectPreset && settings.injectPreset !== "default") {
-    try {
-      const presetManager = context.getPresetManager();
-      const preset = presetManager?.presets?.find(
-        (p) => p.name === settings.injectPreset,
-      );
-      if (preset?.system_prompt) {
-        presetWrapperStr = `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
-      } else {
-        console.warn(
-          `[Butter Tracker] 预设 '${settings.injectPreset}' 被选中，但未找到或其中不含 'system_prompt'。`,
-        );
-      }
-    } catch (e) {
-      console.error(
-        `[Butter Tracker] 获取预设 '${settings.injectPreset}' 失败`,
-        e,
-      );
-    }
-  }
-
-  // --- 4. 组装最终提示词 ---
-  const firstRunInstruction = isFirstRun
-    ? `
+    // --- 4. 组装最终提示词 ---
+    const firstRunInstruction = isFirstRun
+        ? `
 **Urgent Initial Calibration Directive:**
 This is the very first analysis for this character. Their current state values (like hunger, energy) are at default 100%. This is incorrect. You MUST scrutinize the "Recent Activity Log" (which contains the character's opening message) and infer their true initial state. For example, if the log says "I haven't eaten in three days," you MUST call the \`bt_report_metabolism_changes\` tool with a significant negative \`hunger_change\` value to reflect this. Your primary goal in this first run is to correct the initial state based on the context.
 `
-    : "";
+        : "";
 
-  const availableFunctionsDoc = JSON.stringify(
-    {
-      Instructions:
-        'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
-      Available_Tools: ButterToolsDefinition,
-    },
-    null,
-    2,
-  );
+    const availableFunctionsDoc = JSON.stringify(
+        {
+            Instructions:
+                'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
+            Available_Tools: ButterToolsDefinition,
+        },
+        null,
+        2,
+    );
 
-  const succubusRules =
-    state.fixed.race === "魅魔"
-      ? `
+    const succubusRules =
+        state.fixed.race === "魅魔"
+            ? `
 8. 【魅魔专属】当${p}摄入体液或食物时，调用 bt_succubus_feed。
 9. 【魅魔专属】当${p}与人完成饮血、性交等灵魂绑定仪式时，调用 bt_bind_soul_contract。`
-      : "";
+            : "";
 
-  let traitsInfo = "";
-  if (state.semi_fixed.traits?.length > 0) {
-    traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
-  }
+    let traitsInfo = "";
+    if (state.semi_fixed.traits?.length > 0) {
+        traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
+    }
 
-  // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
-  return `${presetWrapperStr}${characterContext}${worldLoreStr}[SYSTEM NOTE]
+    // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
+    return `${customTopText}${characterContext}${worldLoreStr}[SYSTEM NOTE]
 You are a meticulous, silent data analysis AI. Your sole purpose is to analyze the provided "Recent Activity Log" and call the appropriate tools. Your response MUST be ONLY a valid JSON array of tool calls.
 ${firstRunInstruction}
 // ==================================================================

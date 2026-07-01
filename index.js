@@ -1038,32 +1038,30 @@ function initDebugPanelEvents(root) {
 }
 
 /**
- * 【重构核心】初始化“属性注入”面板，现在它只负责UI事件和数据刷新
+ * 【重构核心】初始化“属性注入”面板，现在改造为API指令和世界书控制中心
  */
 async function initInjectPanel() {
     const root = $(`#${ROOT_CONTAINER_ID}`);
 
-    // 使用 isInjectPanelInitialized 标志确保事件只被绑定一次，防止重复监听
     if (!uiManager.isInjectPanelInitialized) {
-        // 【核心修正】移除此处的 settings 定义，将其移入事件处理器内部。
-
-        // 1. 预设选择下拉菜单的事件绑定
-        root.on("change", "#butter-inject-preset-select", function () {
-            // 实时获取设置并修改
-            const liveSettings =
-                SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
-            if (liveSettings) {
-                liveSettings.injectPreset = $(this).val();
-                context.saveSettingsDebounced();
-                console.log(
-                    `[Butter] 注入预设已切换为: ${liveSettings.injectPreset}`,
-                );
-            }
+        // 1. API顶部指令输入框的事件绑定
+        root.on("input", "#butter-api-top-prompt", function () {
+            // 使用防抖，避免频繁写入设置
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => {
+                const liveSettings =
+                    SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
+                if (liveSettings) {
+                    // 保存到一个新的键名下，例如 'apiTopPrompt'
+                    liveSettings.apiTopPrompt = $(this).val();
+                    context.saveSettingsDebounced();
+                    console.log(`[Butter] API 顶部指令已更新。`);
+                }
+            }, 500); // 500毫秒防抖
         });
 
-        // 2. 世界书传输模式下拉菜单的事件绑定
+        // 2. 世界书传输模式下拉菜单的事件绑定 (不变)
         root.on("change", "#butter-inject-mode-select", function () {
-            // 实时获取设置并修改
             const liveSettings =
                 SillyTavern.getContext().extensionSettings[SETTINGS_KEY];
             if (liveSettings) {
@@ -1075,24 +1073,19 @@ async function initInjectPanel() {
             }
         });
 
-        // 3. 【核心恢复】角色/全局世界书标签页切换事件
+        // 3. 角色/全局世界书标签页切换事件 (不变)
         root.on("click", ".butter-wi-tab-btn", function () {
             if ($(this).hasClass("active")) return;
-
             root.find(".butter-wi-tab-btn").removeClass("active");
             $(this).addClass("active");
-
             $(
                 "#butter-inject-char-wb-list, #butter-inject-global-wb-list",
             ).hide();
             const targetListId = $(this).data("target");
             $(`#${targetListId}`).show();
-
-            // 注意：此处无需调用 updateInjectPanelData()，因为切换Tab只是显示/隐藏，数据已加载。
-            // 调用反而可能引起不必要的重复加载。
         });
 
-        // 4. 世界书搜索框的实时输入过滤事件
+        // 4. 世界书搜索框的实时输入过滤事件 (不变)
         root.on("input", "#butter-inject-search-input", function () {
             const keyword = $(this).val().toLowerCase();
             $(
@@ -1106,7 +1099,6 @@ async function initInjectPanel() {
             });
         });
 
-        // 标记为已初始化
         uiManager.isInjectPanelInitialized = true;
     }
 
@@ -1115,36 +1107,27 @@ async function initInjectPanel() {
 }
 
 /**
- * 【新增】负责从可靠API获取预设和世界书数据并触发渲染
+ * 【改造版】负责从设置中读取数据并更新 "属性注入" 面板的UI
  */
 async function updateInjectPanelData() {
     const root = $(`#${ROOT_CONTAINER_ID}`);
 
-    // --- 1. 加载并填充预设下拉菜单 ---
+    // --- 1. 加载并填充API顶部指令输入框 ---
     try {
-        const presetManager = context.getPresetManager();
-        if (presetManager) {
-            const allPresets = presetManager.getAllPresets();
-            const $presetSelect = $("#butter-inject-preset-select");
-            const currentSettings = extensionSettings[SETTINGS_KEY] || {};
-            const currentVal = currentSettings.injectPreset || ""; // 从设置中获取当前值
-            $presetSelect
-                .empty()
-                .append('<option value="">跟随酒馆当前预设</option>');
-            if (allPresets && allPresets.length > 0) {
-                allPresets.forEach((preset) => {
-                    $presetSelect.append(
-                        `<option value="${preset.name}">${preset.name}</option>`,
-                    );
-                });
-            }
-            $presetSelect.val(currentVal); // 恢复之前的选择
-        }
+        const currentSettings = extensionSettings[SETTINGS_KEY] || {};
+        // 从新的键名 'apiTopPrompt' 读取内容，如果不存在则提供一个默认值
+        const currentPrompt =
+            currentSettings.apiTopPrompt ||
+            `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.`;
+        $("#butter-api-top-prompt").val(currentPrompt);
+
+        // 恢复世界书传输模式的选择
+        $("#butter-inject-mode-select").val(currentSettings.wiMode || "normal");
     } catch (e) {
-        console.error("[Butter] 更新预设列表失败:", e);
+        console.error("[Butter] 更新API指令输入框失败:", e);
     }
 
-    // --- 2. 加载并填充世界书列表 ---
+    // --- 2. 加载并填充世界书列表 (这部分逻辑不变) ---
     const charListContainer = $("#butter-inject-char-wb-list");
     const globalListContainer = $("#butter-inject-global-wb-list");
 
@@ -1158,8 +1141,6 @@ async function updateInjectPanelData() {
     try {
         const characterId = context.characterId;
         const character = context.characters[characterId];
-
-        // 【核心修正】使用可选链和空值合并，确保 characterBooks 永远是数组。
         const characterBooks = character?.world_books || [];
         renderWorldInfoList(characterBooks, charListContainer);
 

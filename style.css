@@ -15,75 +15,75 @@
 
 /* 1. 站酷快乐体 */
 @font-face {
-  font-family: "ZCOOL KuaiLe";
-  src: url("fonts/ZCOOLKuaiLe-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+    font-family: "ZCOOL KuaiLe";
+    src: url("fonts/ZCOOLKuaiLe-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
 }
 
 /* 2. 思源宋体 */
 @font-face {
-  font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+    font-family: "Noto Serif SC";
+    src: url("fonts/NotoSerifSC-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
 }
 
 /* 3. 马善政毛笔楷书 */
 @font-face {
-  font-family: "Ma Shan Zheng";
-  src: url("fonts/MaShanZheng-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+    font-family: "Ma Shan Zheng";
+    src: url("fonts/MaShanZheng-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
 }
 
 /* 4. 站酷小薇体 (用于标签文本) */
 @font-face {
-  font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+    font-family: "ZCOOL XiaoWei";
+    src: url("fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
 }
 
 /* 5. Cinzel 古典英文字体 (用于高精数字与英文) */
 @font-face {
-  font-family: "Cinzel";
-  src: url("fonts/Cinzel-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
+    font-family: "Cinzel";
+    src: url("fonts/Cinzel-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
 }
 
 :root {
-  /* 从图片吸取的配色方案 */
-  --butter-frame-bg: #fdf7f8;
-  --butter-frame-border-light: #ead8da;
-  --butter-frame-border-dark: #d3b8bb;
-  --butter-frame-shadow: rgba(186, 150, 155, 0.3);
+    /* 从图片吸取的配色方案 */
+    --butter-frame-bg: #fdf7f8;
+    --butter-frame-border-light: #ead8da;
+    --butter-frame-border-dark: #d3b8bb;
+    --butter-frame-shadow: rgba(186, 150, 155, 0.3);
 
-  --butter-deco-pink: #e8c8cb;
-  --butter-deco-blue: #c5d9e8;
+    --butter-deco-pink: #e8c8cb;
+    --butter-deco-blue: #c5d9e8;
 
-  --butter-text-dark: #6c5458;
-  --butter-text-light: #8b7377;
-  --butter-text-title: #594448;
+    --butter-text-dark: #6c5458;
+    --butter-text-light: #8b7377;
+    --butter-text-title: #594448;
 
-  --butter-lust-bar-bg: #ead3d6;
-  --butter-lust-bar-fill: #d98197;
-  --butter-lust-bar-thumb: white;
+    --butter-lust-bar-bg: #ead3d6;
+    --butter-lust-bar-fill: #d98197;
+    --butter-lust-bar-thumb: white;
 
-  --butter-tab-icon-bg: #f8e9ec;
-  --butter-tab-icon-border: #e8c8cb;
-  --butter-tab-active-bg: #f5e5e7;
-  --butter-tab-active-text: #b4737a;
+    --butter-tab-icon-bg: #f8e9ec;
+    --butter-tab-icon-border: #e8c8cb;
+    --butter-tab-active-bg: #f5e5e7;
+    --butter-tab-active-text: #b4737a;
 
-  --butter-bottom-nav-icon-bg: #617a94;
-  --butter-bottom-nav-icon-border: #4e6277;
-  --butter-bottom-nav-icon-shadow: rgba(0, 0, 0, 0.3);
+    --butter-bottom-nav-icon-bg: #617a94;
+    --butter-bottom-nav-icon-border: #4e6277;
+    --butter-bottom-nav-icon-shadow: rgba(0, 0, 0, 0.3);
 
-  --butter-success-color: #5a9e7a;
-  --butter-warning-color: #d4a26a;
-  --butter-danger-color: #c76b7c;
-  --butter-info-color: #7aa2c3;
+    --butter-success-color: #5a9e7a;
+    --butter-warning-color: #d4a26a;
+    --butter-danger-color: #c76b7c;
+    --butter-info-color: #7aa2c3;
 }
 
 /* ==================================================
@@ -92,9 +92,9 @@
 
 #butter-root-container,
 #butter-root-container * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 #butter-root-container,
@@ -102,9 +102,9 @@
 #butter-root-container textarea,
 #butter-root-container select,
 #butter-root-container button {
-  font-family: "ZCOOL KuaiLe", "Noto Serif SC", "Microsoft YaHei", serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: "ZCOOL KuaiLe", "Noto Serif SC", "Microsoft YaHei", serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /*
@@ -113,43 +113,43 @@
  * ==========================================
  */
 #butter-floating-eye {
-  position: fixed;
-  top: 150px;
-  right: 25px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: white;
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
-  z-index: 100001;
-  cursor: pointer;
-  user-select: none;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  transition:
-    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    box-shadow 0.3s ease;
-  animation: eye-breathe 4s infinite ease-in-out;
+    position: fixed;
+    top: 150px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: white;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
+    z-index: 100001;
+    cursor: pointer;
+    user-select: none;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition:
+        transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        box-shadow 0.3s ease;
+    animation: eye-breathe 4s infinite ease-in-out;
 }
 
 #butter-floating-eye:hover {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
 }
 
 #butter-floating-eye:active {
-  transform: scale(0.95);
+    transform: scale(0.95);
 }
 
 @keyframes eye-breathe {
-  0%,
-  100% {
-    box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
-  }
-  50% {
-    box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
-  }
+    0%,
+    100% {
+        box-shadow: 0 5px 15px rgba(217, 129, 151, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(217, 129, 151, 0.6);
+    }
 }
 
 /*
@@ -159,73 +159,73 @@
  */
 
 #butter-status-modal {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 100000;
-  width: 504px;
-  max-width: 92vw;
-  height: 563px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100000;
+    width: 504px;
+    max-width: 92vw;
+    height: 563px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 #butter-root-container .butter-mobile-frame {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_transparent.png");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 10px;
-  overflow: hidden;
-  min-height: 0;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_transparent.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 0;
 }
 
 #butter-root-container .butter-content-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 10;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 #butter-root-container .butter-frame-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png");
-  background-size: 100% 100%;
-  pointer-events: none;
-  z-index: 500;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png");
+    background-size: 100% 100%;
+    pointer-events: none;
+    z-index: 500;
 }
 
 /* 🎯 【深度修复】解封古典主相框，并将其作为绝对定位的底层羊皮纸背景渲染 */
 #butter-root-container .butter-frame-decoration {
-  display: block !important; /* 强行解除 display: none */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  pointer-events: none; /* 防止鼠标点击穿透被相框图层拦截 */
-  z-index: 1; /* 至于底层，作为精致的羊皮纸相框背景 */
+    display: block !important; /* 强行解除 display: none */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none; /* 防止鼠标点击穿透被相框图层拦截 */
+    z-index: 1; /* 至于底层，作为精致的羊皮纸相框背景 */
 }
 
 /*
@@ -235,71 +235,71 @@
  */
 
 .butter-top-bar {
-  position: relative;
-  z-index: 20;
-  flex-shrink: 0;
-  height: 85px;
-  cursor: grab;
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    height: 85px;
+    cursor: grab;
 }
 
 .butter-top-bar span {
-  position: absolute;
-  top: 60%;
-  transform: translateY(-50%);
-  font-family: "Noto Serif SC", "Microsoft YaHei", serif;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--butter-text-light);
+    position: absolute;
+    top: 60%;
+    transform: translateY(-50%);
+    font-family: "Noto Serif SC", "Microsoft YaHei", serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--butter-text-light);
 }
 
 #bs-user-title {
-  left: 75px;
+    left: 75px;
 }
 
 #bs-date-time {
-  right: 75px;
+    right: 75px;
 }
 
 #butter-root-container .butter-content-grid {
-  flex-grow: 1;
-  display: grid;
-  grid-template-columns: 86px 1fr;
-  grid-template-rows: 1fr auto;
-  grid-template-areas:
-    "sidebar main"
-    "sidebar footer";
-  overflow: hidden;
-  padding: 5px 5px 10px 12px;
-  min-height: 0;
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 86px 1fr;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+        "sidebar main"
+        "sidebar footer";
+    overflow: hidden;
+    padding: 5px 5px 10px 12px;
+    min-height: 0;
 }
 
 #butter-root-container .butter-sidebar {
-  grid-area: sidebar;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  overflow-y: auto;
-  align-items: center;
-  padding: 5px 1px 28px 5px;
-  border-bottom-left-radius: 90px;
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    align-items: center;
+    padding: 5px 1px 28px 5px;
+    border-bottom-left-radius: 90px;
 }
 
 #butter-root-container .butter-main-content {
-  grid-area: main;
-  overflow-y: auto;
-  padding: 5px 15px 5px 15px;
+    grid-area: main;
+    overflow-y: auto;
+    padding: 5px 15px 5px 15px;
 }
 
 #butter-root-container .butter-bottom-nav {
-  grid-area: footer;
-  height: 92px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 15px 0px 0px 0px;
-  margin-bottom: 2px;
-  border-bottom-right-radius: 90px;
-  overflow: hidden;
+    grid-area: footer;
+    height: 92px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 15px 0px 0px 0px;
+    margin-bottom: 2px;
+    border-bottom-right-radius: 90px;
+    overflow: hidden;
 }
 
 /*
@@ -312,17 +312,17 @@
 #butter-root-container .butter-mobile-frame ::-webkit-scrollbar,
 #butter-root-container .butter-main-content::-webkit-scrollbar,
 #butter-root-container .butter-sidebar::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-  background: transparent;
-  display: none;
+    width: 0px;
+    height: 0px;
+    background: transparent;
+    display: none;
 }
 
 #butter-root-container,
 #butter-root-container .butter-main-content,
 #butter-root-container .butter-sidebar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 /*
@@ -332,103 +332,103 @@
  */
 
 .butter-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    user-select: none;
 }
 
 .butter-tab-icon {
-  width: 48px;
-  height: 48px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 48px;
+    height: 48px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .butter-tab span {
-  font-size: 12px;
-  color: var(--butter-text-light);
-  font-weight: 500;
-  font-family: "ZCOOL XiaoWei", serif;
+    font-size: 12px;
+    color: var(--butter-text-light);
+    font-weight: 500;
+    font-family: "ZCOOL XiaoWei", serif;
 }
 
 .butter-tab:hover .butter-tab-icon {
-  transform: scale(1.08);
+    transform: scale(1.08);
 }
 
 .butter-tab.active .butter-tab-icon {
-  filter: drop-shadow(0 0 5px var(--butter-tab-active-text));
+    filter: drop-shadow(0 0 5px var(--butter-tab-active-text));
 }
 
 .butter-tab.active span {
-  color: var(--butter-tab-active-text);
-  font-weight: 700;
+    color: var(--butter-tab-active-text);
+    font-weight: 700;
 }
 
 /* --- 底栏按钮 --- */
 .butter-nav-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  position: relative;
-  width: 60px;
-  user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    width: 60px;
+    user-select: none;
 }
 
 .butter-nav-icon-wrapper {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background-color: var(--butter-bottom-nav-icon-bg);
-  border: 1px solid var(--butter-bottom-nav-icon-border);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: inset 0 2px 3px var(--butter-bottom-nav-icon-shadow);
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background-color: var(--butter-bottom-nav-icon-bg);
+    border: 1px solid var(--butter-bottom-nav-icon-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 2px 3px var(--butter-bottom-nav-icon-shadow);
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .butter-nav-icon {
-  width: 85%;
-  height: 85%;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transition: transform 0.2s ease;
+    width: 85%;
+    height: 85%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: transform 0.2s ease;
 }
 
 .butter-nav-btn span {
-  font-size: 11px;
-  color: var(--butter-text-light);
-  font-weight: 500;
-  font-family: "ZCOOL XiaoWei", serif;
+    font-size: 11px;
+    color: var(--butter-text-light);
+    font-weight: 500;
+    font-family: "ZCOOL XiaoWei", serif;
 }
 
 .butter-nav-btn:hover .butter-nav-icon-wrapper {
-  background-color: #7d96b1;
-  box-shadow:
-    inset 0 2px 3px var(--butter-bottom-nav-icon-shadow),
-    0 0 10px #7d96b1;
+    background-color: #7d96b1;
+    box-shadow:
+        inset 0 2px 3px var(--butter-bottom-nav-icon-shadow),
+        0 0 10px #7d96b1;
 }
 
 .butter-nav-btn:hover .butter-nav-icon {
-  transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 .butter-nav-btn:active .butter-nav-icon-wrapper {
-  transform: translateY(1px);
-  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.4);
+    transform: translateY(1px);
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.4);
 }
 
 /*
@@ -438,37 +438,37 @@
  */
 
 .butter-tab-content {
-  display: none;
-  padding-top: 5px;
+    display: none;
+    padding-top: 5px;
 }
 
 #butter-tab-home {
-  display: block;
+    display: block;
 }
 
 #butter-root-container .butter-content-title h4 {
-  font-family: "ZCOOL XiaoWei", serif;
-  font-size: 16px;
-  color: #b4737a;
-  margin: 0;
-  letter-spacing: 1px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-family: "ZCOOL XiaoWei", serif;
+    font-size: 16px;
+    color: #b4737a;
+    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 #butter-root-container .butter-tab-content .butter-content-title {
-  display: none;
+    display: none;
 }
 
 #butter-root-container
-  .butter-tab-content
-  .butter-content-title:has(h4:contains("生理需求")),
+    .butter-tab-content
+    .butter-content-title:has(h4:contains("生理需求")),
 #butter-root-container .butter-tab-content .butter-content-title:first-of-type,
 #butter-root-container .bs-data-group .butter-content-title {
-  display: flex;
+    display: flex;
 }
 
 #butter-root-container .butter-content-title::before {
-  display: none;
+    display: none;
 }
 
 /*
@@ -481,247 +481,247 @@
  * 1. 外层总包裹容器
  * =================================================== */
 .butter-lust-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 5px;
-  margin-bottom: 20px;
-  width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 5px;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 /* ===================================================
  * 2. 能量条轨道底座（🌟 图二的核心：做出带阴影的空凹槽）
  * =================================================== */
 #butter-root-container .lust-bar-track {
-  flex-grow: 1;
+    flex-grow: 1;
 
-  /* 🎛️ 微调旋钮：进度条液体的真实粗细 */
-  height: 18px; /* 👈 调小这个值，整个进度条液体就会变细 */
+    /* 🎛️ 微调旋钮：进度条液体的真实粗细 */
+    height: 18px; /* 👈 调小这个值，整个进度条液体就会变细 */
 
-  /* 🌟 图二效果：让轨道两端变成胶囊圆角 */
-  border-radius: 10px; /* 👈 必须是 height 的一半（或者写 99px），才能变成两端半圆的胶囊形 */
+    /* 🌟 图二效果：让轨道两端变成胶囊圆角 */
+    border-radius: 10px; /* 👈 必须是 height 的一半（或者写 99px），才能变成两端半圆的胶囊形 */
 
-  /* 🌟 图二效果：空轨道的凹陷质感底色 */
-  background-color: #f2e8e8; /* 👈 进度条没满时，露出来的偏白粉色底色 */
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15); /* 👈 凹陷下去的内阴影 */
+    /* 🌟 图二效果：空轨道的凹陷质感底色 */
+    background-color: #f2e8e8; /* 👈 进度条没满时，露出来的偏白粉色底色 */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15); /* 👈 凹陷下去的内阴影 */
 
-  position: relative;
-  padding: 0;
-  overflow: visible;
-  container-type: inline-size;
-  container-name: track;
-  z-index: 1;
+    position: relative;
+    padding: 0;
+    overflow: visible;
+    container-type: inline-size;
+    container-name: track;
+    z-index: 1;
 }
 
 /* ===================================================
  * 3. 古典相框前置罩子（🌟 解决图一边缘被切、包不住液体的问题）
  * =================================================== */
 #butter-root-container .lust-bar-track::before {
-  content: "";
-  position: absolute;
+    content: "";
+    position: absolute;
 
-  /* 🎛️ 微调旋钮：相框的缩放与包裹范围（负值代表向外扩大） */
-  /* 如果发现相框包不住进度条，就把负数改大（比如 -10px）；如果相框太宽了，就改成正数或 0 */
-  top: -8px;
-  bottom: -8px;
-  left: -12px; /* 👈 图一左边包不住，把这里的负数调大，相框就会往左边延伸去包住它 */
-  right: -8px;
+    /* 🎛️ 微调旋钮：相框的缩放与包裹范围（负值代表向外扩大） */
+    /* 如果发现相框包不住进度条，就把负数改大（比如 -10px）；如果相框太宽了，就改成正数或 0 */
+    top: -8px;
+    bottom: -8px;
+    left: -12px; /* 👈 图一左边包不住，把这里的负数调大，相框就会往左边延伸去包住它 */
+    right: -8px;
 
-  /* --- 相框贴图设置 --- */
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
+    /* --- 相框贴图设置 --- */
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
 
-  background-size: 100% 100%; /* 强行拉伸整张图，不会产生切缝 */
-  background-position: center;
-  background-repeat: no-repeat;
-  /* 👇 备用方案：如果你的相框图中间有个菱形（如图二），border-image 会把它拉变形。
+    background-size: 100% 100%; /* 强行拉伸整张图，不会产生切缝 */
+    background-position: center;
+    background-repeat: no-repeat;
+    /* 👇 备用方案：如果你的相框图中间有个菱形（如图二），border-image 会把它拉变形。
          如果是这种情况，请删掉上面 border-image 开头的 3 行，取消下面 3 行的注释 👇 */
-  /* background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png"); */
-  /* background-size: 100% 100%; */
-  /* background-repeat: no-repeat; */
+    /* background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png"); */
+    /* background-size: 100% 100%; */
+    /* background-repeat: no-repeat; */
 
-  pointer-events: none;
-  z-index: 4; /* 盖在液体上面 */
+    pointer-events: none;
+    z-index: 4; /* 盖在液体上面 */
 }
 
 /* ===================================================
  * 4. 进度条内部填充液体（🌟 图二效果：胶囊形状的液体）
  * =================================================== */
 #butter-root-container .lust-bar-fill {
-  width: 0%;
-  height: 100%; /* 高度填满凹槽 */
-  top: 0; /* 紧贴顶部 */
-  transform: none; /* 清除之前可能加的位移 */
-  /* 🌟 图二效果：让液体也变成圆角，严丝合缝地填在凹槽里 */
-  border-radius: inherit; /* 👈 自动继承轨道的 10px 胶囊圆角，解决图一的直角刺穿问题 */
+    width: 0%;
+    height: 100%; /* 高度填满凹槽 */
+    top: 0; /* 紧贴顶部 */
+    transform: none; /* 清除之前可能加的位移 */
+    /* 🌟 图二效果：让液体也变成圆角，严丝合缝地填在凹槽里 */
+    border-radius: inherit; /* 👈 自动继承轨道的 10px 胶囊圆角，解决图一的直角刺穿问题 */
 
-  /* 液体的 3D 渐变颜色 */
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.5) 0%,
-      /* 顶部高光 */ rgba(255, 255, 255, 0.1) 30%,
-      rgba(0, 0, 0, 0) 50%,
-      rgba(0, 0, 0, 0.1) 100% /* 底部暗面 */
-    ),
-    linear-gradient(to right, #fca9b7, #e6738f, #cd4b6b);
+    /* 液体的 3D 渐变颜色 */
+    background-image:
+        linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.5) 0%,
+            /* 顶部高光 */ rgba(255, 255, 255, 0.1) 30%,
+            rgba(0, 0, 0, 0) 50%,
+            rgba(0, 0, 0, 0.1) 100% /* 底部暗面 */
+        ),
+        linear-gradient(to right, #fca9b7, #e6738f, #cd4b6b);
 
-  background-size: 100% 100%;
-  background-position: left center;
-  background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-position: left center;
+    background-repeat: no-repeat;
 
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
-  transition: width 0.5s cubic-bezier(0.1, 0.8, 0.2, 1);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    transition: width 0.5s cubic-bezier(0.1, 0.8, 0.2, 1);
 
-  position: relative;
-  z-index: 2; /* 必须低于相框(4)，高于底座(1) */
+    position: relative;
+    z-index: 2; /* 必须低于相框(4)，高于底座(1) */
 }
 
 /* ===================================================
  * 5. 金色指针贴图（图二中间的那个滑块）
  * =================================================== */
 #butter-root-container .lust-bar-fill::after {
-  content: "";
-  position: absolute;
+    content: "";
+    position: absolute;
 
-  /* 🎛️ 微调旋钮：指针的对齐位置 */
-  top: 50%;
-  right: 0;
-  transform: translate(
-    50%,
-    -50%
-  ); /* 👈 永远让指针的中心，对准进度条液体的最右侧边缘 */
+    /* 🎛️ 微调旋钮：指针的对齐位置 */
+    top: 50%;
+    right: 0;
+    transform: translate(
+        50%,
+        -50%
+    ); /* 👈 永远让指针的中心，对准进度条液体的最右侧边缘 */
 
-  /* 🎛️ 微调旋钮：指针的真实大小 */
-  width: 18px; /* 👈 调大/调小它来适配你的指针贴图 */
-  height: 23px; /* 👈 高度通常比轨道要高一点，营造出立体感 */
+    /* 🎛️ 微调旋钮：指针的真实大小 */
+    width: 18px; /* 👈 调大/调小它来适配你的指针贴图 */
+    height: 23px; /* 👈 高度通常比轨道要高一点，营造出立体感 */
 
-  /* 引入你的滑块指针图片 */
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_icon.png");
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
+    /* 引入你的滑块指针图片 */
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_icon.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
 
-  z-index: 6; /* 🌟 设为最高层级，绝对骑在相框上方游走 */
+    z-index: 6; /* 🌟 设为最高层级，绝对骑在相框上方游走 */
 }
 
 /* ===================================================
  * 6. 标注文字
  * =================================================== */
 #butter-root-container .lust-text-value {
-  font-size: 14px; /* 稍微调大了字号配合粗一点的进度条 */
-  color: var(--butter-text-dark);
-  font-weight: bold; /* 加粗更有游戏 UI 的感觉 */
-  white-space: nowrap;
-  position: relative;
-  z-index: 7;
-  flex-shrink: 0;
+    font-size: 14px; /* 稍微调大了字号配合粗一点的进度条 */
+    color: var(--butter-text-dark);
+    font-weight: bold; /* 加粗更有游戏 UI 的感觉 */
+    white-space: nowrap;
+    position: relative;
+    z-index: 7;
+    flex-shrink: 0;
 }
 .butter-womb-section {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
-  position: relative;
-  margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    position: relative;
+    margin-bottom: 25px;
 }
 
 #butter-root-container .butter-womb-section {
-  padding-bottom: 15px;
+    padding-bottom: 15px;
 }
 
 .home-womb-img {
-  width: 165px;
-  height: 185px;
-  flex-shrink: 0;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
-  border-radius: 0;
+    width: 165px;
+    height: 185px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
 }
 
 .home-womb-img::before {
-  content: "";
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .home-womb-img img {
-  position: relative;
-  max-width: 75%;
-  max-height: 75%;
-  top: 4px;
+    position: relative;
+    max-width: 75%;
+    max-height: 75%;
+    top: 4px;
 }
 
 .home-womb-stats {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .stat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .stat-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .stat-text {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .stat-text span {
-  font-size: 12px;
-  color: var(--butter-text-light);
+    font-size: 12px;
+    color: var(--butter-text-light);
 }
 
 .stat-text b {
-  font-size: 13px;
-  color: var(--butter-text-dark);
-  font-weight: 500;
+    font-size: 13px;
+    color: var(--butter-text-dark);
+    font-weight: 500;
 }
 
 .butter-additional-stats {
-  display: flex;
-  justify-content: space-around;
-  font-size: 12px;
-  margin-top: 25px;
-  color: var(--butter-text-light);
+    display: flex;
+    justify-content: space-around;
+    font-size: 12px;
+    margin-top: 25px;
+    color: var(--butter-text-light);
 }
 
 #butter-root-container
-  .butter-tab-content
-  > div:has(+ .butter-additional-stats),
+    .butter-tab-content
+    > div:has(+ .butter-additional-stats),
 #butter-root-container .home-womb-stats + div,
 #butter-root-container .butter-additional-stats + div {
-  margin-top: 15px;
+    margin-top: 15px;
 }
 
 .additional-stat-item b {
-  color: var(--butter-text-dark);
+    color: var(--butter-text-dark);
 }
 
 /* ===================================================
@@ -731,21 +731,21 @@
 /* 1. 瞄准【穴口/积乳状态栏 (.butter-additional-stats)】正下方的那个纯文字 div */
 #butter-root-container .butter-additional-stats + div,
 #butter-root-container .butter-additional-stats ~ div {
-  margin-top: 25px !important; /* 👈 核心修改：拉开与上方的间距，觉得不够可以改到 30px */
-  padding-top: 5px !important;
-  color: var(
-    --butter-danger-color
-  ); /* 👈 核心修改：将原本的暗绿色强行覆盖为暗粉红 */
-  font-weight: bold;
-  line-height: 1.6; /* 让两行字（标题和暂为净处）之间看起来不那么挤 */
+    margin-top: 25px !important; /* 👈 核心修改：拉开与上方的间距，觉得不够可以改到 30px */
+    padding-top: 5px !important;
+    color: var(
+        --butter-danger-color
+    ); /* 👈 核心修改：将原本的暗绿色强行覆盖为暗粉红 */
+    font-weight: bold;
+    line-height: 1.6; /* 让两行字（标题和暂为净处）之间看起来不那么挤 */
 }
 
 /* 2. 防御性染色：如果这段文字内部被插件加上了 <span> 或 <b> 标签，一并强制染色为深蔷薇色 */
 #butter-root-container .butter-additional-stats ~ div span,
 #butter-root-container .butter-additional-stats ~ div b,
 #butter-root-container .butter-additional-stats ~ div strong {
-  color: #77494d !important;
-  text-shadow: 0 0 4px rgba(217, 129, 151, 0.2) !important;
+    color: #77494d !important;
+    text-shadow: 0 0 4px rgba(217, 129, 151, 0.2) !important;
 }
 
 /*
@@ -755,204 +755,204 @@
  */
 
 .bs-grid {
-  gap: 10px 12px;
-  margin-top: 20px;
+    gap: 10px 12px;
+    margin-top: 20px;
 }
 
 .bs-grid.bs-grid-two-column {
-  grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
 }
 
 .bs-grid.bs-grid-three-column {
-  grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .bs-g-item.stack {
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--butter-frame-bg);
-  border: 1px solid var(--butter-frame-border-light);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 5px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--butter-frame-bg);
+    border: 1px solid var(--butter-frame-border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
 }
 
 .bs-g-item.stack > span {
-  font-size: 12px;
-  color: var(--butter-text-light);
+    font-size: 12px;
+    color: var(--butter-text-light);
 }
 
 .bs-g-item.stack code {
-  font-size: 14px;
-  color: var(--butter-text-dark);
-  font-weight: 500;
-  background: none;
-  padding: 0;
+    font-size: 14px;
+    color: var(--butter-text-dark);
+    font-weight: 500;
+    background: none;
+    padding: 0;
 }
 
 #butter-root-container .butter-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px 10px;
-  margin-top: 35px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px 10px;
+    margin-top: 35px;
 }
 
 .butter-grid-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
 }
 
 .butter-fill-box {
-  width: 65px;
-  height: 65px;
-  border: 1px solid var(--butter-frame-border-dark);
-  border-radius: 8px;
-  position: relative;
-  background-color: #f8e9ec;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+    width: 65px;
+    height: 65px;
+    border: 1px solid var(--butter-frame-border-dark);
+    border-radius: 8px;
+    position: relative;
+    background-color: #f8e9ec;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .butter-fill-inner {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 0%;
-  transition:
-    height 0.4s ease,
-    background-color 0.4s ease;
-  z-index: 1;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    transition:
+        height 0.4s ease,
+        background-color 0.4s ease;
+    z-index: 1;
 }
 
 .butter-fill-icon {
-  position: relative;
-  z-index: 2;
-  font-size: 30px;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+    position: relative;
+    z-index: 2;
+    font-size: 30px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 #butter-root-container .butter-grid-item span {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--butter-text-light);
-  margin-top: 2px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--butter-text-light);
+    margin-top: 2px;
 }
 
 .butter-grid-item small {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--butter-text-dark);
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--butter-text-dark);
 }
 
 .virgin-status-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 .virgin-icon {
-  width: 48px;
-  height: 48px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  margin-bottom: 5px;
+    width: 48px;
+    height: 48px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-bottom: 5px;
 }
 
 h5.section-subtitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--butter-text-title);
-  margin-bottom: 10px;
-  text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--butter-text-title);
+    margin-bottom: 10px;
+    text-align: center;
 }
 
 #butter-root-container code#bs-virgin-status.virgin {
-  padding: 4px 8px;
-  border-radius: 5px;
-  font-size: 13px;
-  color: var(--butter-info-color);
-  background-color: rgba(122, 162, 195, 0.1);
-  border: 1px solid rgba(122, 162, 195, 0.4);
-  font-family: "ZCOOL KuaiLe", sans-serif;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--butter-info-color);
+    background-color: rgba(122, 162, 195, 0.1);
+    border: 1px solid rgba(122, 162, 195, 0.4);
+    font-family: "ZCOOL KuaiLe", sans-serif;
 }
 
 #butter-root-container code#bs-virgin-status.not-virgin {
-  padding: 4px 8px;
-  border-radius: 5px;
-  font-size: 13px;
-  color: var(--butter-danger-color);
-  background-color: rgba(199, 107, 124, 0.1);
-  border: 1px solid rgba(199, 107, 124, 0.4);
-  font-family: "ZCOOL KuaiLe", sans-serif;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--butter-danger-color);
+    background-color: rgba(199, 107, 124, 0.1);
+    border: 1px solid rgba(199, 107, 124, 0.4);
+    font-family: "ZCOOL KuaiLe", sans-serif;
 }
 
 .bs-data-pair {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 4px;
-  border-bottom: 1px dashed var(--butter-frame-border-light);
-  font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    border-bottom: 1px dashed var(--butter-frame-border-light);
+    font-size: 15px;
 }
 
 .bs-data-pair.thick {
-  padding: 12px 8px;
-  font-size: 14px;
-  border-bottom: 1px solid var(--butter-frame-border-light);
+    padding: 12px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--butter-frame-border-light);
 }
 
 #butter-root-container .bs-data-pair span:first-child {
-  font-family: "Ma Shan Zheng", cursive;
-  color: var(--butter-text-light);
+    font-family: "Ma Shan Zheng", cursive;
+    color: var(--butter-text-light);
 }
 
 #butter-root-container .bs-data-pair span:last-child {
-  font-family: "Cinzel", serif;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--butter-text-dark);
+    font-family: "Cinzel", serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--butter-text-dark);
 }
 
 .dev-right-col {
-  padding-left: 20px;
-  border-left: 1px dashed var(--butter-frame-border-light);
+    padding-left: 20px;
+    border-left: 1px dashed var(--butter-frame-border-light);
 }
 
 #bs-children-container {
-  margin-top: 25px;
-  border-top: 1px solid var(--butter-frame-border-light);
-  padding-top: 20px;
+    margin-top: 25px;
+    border-top: 1px solid var(--butter-frame-border-light);
+    padding-top: 20px;
 }
 
 .bs-child-record {
-  border-left: 3px solid var(--butter-info-color);
-  padding-left: 15px;
-  margin-bottom: 10px;
+    border-left: 3px solid var(--butter-info-color);
+    padding-left: 15px;
+    margin-bottom: 10px;
 }
 
 .bs-child-record.pregnant {
-  border-left-color: var(--butter-lust-bar-fill);
+    border-left-color: var(--butter-lust-bar-fill);
 }
 
 .bs-child-record .bs-data-pair {
-  border-bottom: none;
-  padding: 4px 0;
+    border-bottom: none;
+    padding: 4px 0;
 }
 
 .bs-child-record .bs-data-pair span:first-child {
-  color: var(--butter-text-dark);
+    color: var(--butter-text-dark);
 }
 
 /*
@@ -962,106 +962,106 @@ h5.section-subtitle {
  */
 
 #butter-root-container .settings_section {
-  margin-bottom: 15px;
+    margin-bottom: 15px;
 }
 #butter-root-container .settings_section label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--butter-text-light);
-  font-size: 13px;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--butter-text-light);
+    font-size: 13px;
 }
 #butter-root-container .settings_section.flex-gap {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  justify-content: space-between;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: space-between;
 }
 #butter-root-container .settings_section.flex-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 #butter-root-container .settings_section small {
-  display: block;
-  font-size: 11px;
-  color: var(--butter-text-light);
-  opacity: 0.8;
-  margin-top: 5px;
+    display: block;
+    font-size: 11px;
+    color: var(--butter-text-light);
+    opacity: 0.8;
+    margin-top: 5px;
 }
 
 /* --- 1. 单行输入框（升级通用覆盖版：不依赖任何class，凡是容器内的input一律全控） --- */
 #butter-root-container input,
 #butter-root-container input.text_pole,
 #butter-root-container input[type="text"] {
-  width: 100% !important;
-  background: rgba(245, 235, 237, 0.6) !important; /* 强制粉色天鹅绒 */
-  border: 1px solid #d3b8bb !important; /* 强制玫瑰金边框 */
-  color: #6c5458 !important; /* 强制暗蔷薇木字 */
-  border-radius: 6px !important;
-  padding: 8px 12px !important;
-  font-size: 13px !important;
-  font-family: "Noto Serif SC", serif !important;
-  box-shadow:
-    inset 2px 2px 5px rgba(186, 150, 155, 0.2),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
+    width: 100% !important;
+    background: rgba(245, 235, 237, 0.6) !important; /* 强制粉色天鹅绒 */
+    border: 1px solid #d3b8bb !important; /* 强制玫瑰金边框 */
+    color: #6c5458 !important; /* 强制暗蔷薇木字 */
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    font-family: "Noto Serif SC", serif !important;
+    box-shadow:
+        inset 2px 2px 5px rgba(186, 150, 155, 0.2),
+        inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
 
-  /* ⚡ 性能优化核心：绝对不用 all！只对特定颜色属性做过渡，打字极速响应 */
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    /* ⚡ 性能优化核心：绝对不用 all！只对特定颜色属性做过渡，打字极速响应 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 /* 单行输入框聚焦 */
 #butter-root-container input:focus,
 #butter-root-container input.text_pole:focus,
 #butter-root-container input[type="text"]:focus {
-  outline: none !important;
-  background: #f2ddeae8 !important; /* 呼吸灯变白 */
-  border-color: #b4737a !important; /* 边框加深 */
-  box-shadow:
-    0 0 8px rgba(180, 115, 122, 0.4),
-    inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+    outline: none !important;
+    background: #f2ddeae8 !important; /* 呼吸灯变白 */
+    border-color: #b4737a !important; /* 边框加深 */
+    box-shadow:
+        0 0 8px rgba(180, 115, 122, 0.4),
+        inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
 }
 
 /* --- 2. 多行输入框（升级通用覆盖版：强制锁定所有新老多行输入区域） --- */
 #butter-root-container textarea,
 #butter-root-container textarea.text_pole {
-  width: 100% !important;
-  background: rgba(245, 235, 237, 0.6) !important;
-  border: 1px solid #d3b8bb !important;
-  color: #6c5458 !important;
-  border-radius: 6px !important;
-  padding: 8px 12px !important;
-  font-size: 13px !important;
-  font-family: "Noto Serif SC", serif !important;
-  box-shadow:
-    inset 2px 2px 5px rgba(186, 150, 155, 0.2),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
+    width: 100% !important;
+    background: rgba(245, 235, 237, 0.6) !important;
+    border: 1px solid #d3b8bb !important;
+    color: #6c5458 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    font-family: "Noto Serif SC", serif !important;
+    box-shadow:
+        inset 2px 2px 5px rgba(186, 150, 155, 0.2),
+        inset -1px -1px 2px rgba(255, 255, 255, 0.8) !important;
 
-  /* 多行版型微调 */
-  height: auto !important;
-  min-height: 80px !important;
-  line-height: 1.5 !important;
-  resize: vertical !important;
+    /* 多行版型微调 */
+    height: auto !important;
+    min-height: 80px !important;
+    line-height: 1.5 !important;
+    resize: vertical !important;
 
-  /* ⚡ 同样拒绝 transition: all，防止长文本滚动或打字时卡顿 */
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    /* ⚡ 同样拒绝 transition: all，防止长文本滚动或打字时卡顿 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 /* 多行输入框聚焦 */
 #butter-root-container textarea:focus,
 #butter-root-container textarea.text_pole:focus {
-  outline: none !important;
-  background: #f2ddeae8 !important;
-  border-color: #b4737a !important;
-  box-shadow:
-    0 0 8px rgba(180, 115, 122, 0.4),
-    inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+    outline: none !important;
+    background: #f2ddeae8 !important;
+    border-color: #b4737a !important;
+    box-shadow:
+        0 0 8px rgba(180, 115, 122, 0.4),
+        inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
 }
 
 /* --- 3. 下拉选择框（Select - 升级全局统领强控版，防止被任何后写样式洗掉） --- */
@@ -1070,80 +1070,80 @@ h5.section-subtitle {
 #butter-root-container .preset-loader-section select,
 #butter-root-container .preset-save-section select,
 #butter-root-container .settings_section select {
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-  background-color: rgba(245, 235, 237, 0.6) !important;
-  border: 1px solid #d3b8bb !important;
-  color: #6c5458 !important;
-  border-radius: 6px !important;
-  font-family: "Noto Serif SC", serif !important;
-  font-size: 13px !important;
-  padding: 6px 30px 6px 12px !important;
-  cursor: pointer !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-color: rgba(245, 235, 237, 0.6) !important;
+    border: 1px solid #d3b8bb !important;
+    color: #6c5458 !important;
+    border-radius: 6px !important;
+    font-family: "Noto Serif SC", serif !important;
+    font-size: 13px !important;
+    padding: 6px 30px 6px 12px !important;
+    cursor: pointer !important;
 
-  /* 自定义古典小箭头 */
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%238b666d" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') !important;
-  background-repeat: no-repeat !important;
-  background-position: right 10px center !important;
-  background-size: 16px !important;
-  box-shadow: inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
+    /* 自定义古典小箭头 */
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%238b666d" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 16px !important;
+    box-shadow: inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
 
-  /* ⚡ 移除全开销全局动画 */
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    /* ⚡ 移除全开销全局动画 */
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 /* 下拉框聚焦与兼容消除 */
 #butter-root-container select:focus,
 #butter-root-container .butter-tab-content select:focus,
 #butter-root-container .preset-loader-section select:focus {
-  outline: none !important;
-  background-color: #f2ddeae8 !important;
-  border-color: #b4737a !important;
-  box-shadow: 0 0 6px rgba(180, 115, 122, 0.2) !important;
+    outline: none !important;
+    background-color: #f2ddeae8 !important;
+    border-color: #b4737a !important;
+    box-shadow: 0 0 6px rgba(180, 115, 122, 0.2) !important;
 }
 
 #butter-root-container select::-ms-expand {
-  display: none !important;
+    display: none !important;
 }
 
 #butter-root-container input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--butter-lust-bar-fill);
-  cursor: pointer;
-  flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--butter-lust-bar-fill);
+    cursor: pointer;
+    flex-shrink: 0;
 }
 #butter-root-container .settings_section.flex-container label {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 #butter-root-container .menu_button {
-  background-color: var(--butter-tab-active-text);
-  color: white;
-  padding: 8px 15px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  white-space: nowrap;
+    background-color: var(--butter-tab-active-text);
+    color: white;
+    padding: 8px 15px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
 }
 #butter-root-container .menu_button:hover {
-  background-color: #a4656d;
+    background-color: #a4656d;
 }
 #butter-root-container .menu_button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  opacity: 0.7;
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 #butter-root-container .submit-button {
-  padding: 10px 30px;
-  font-size: 14px;
+    padding: 10px 30px;
+    font-size: 14px;
 }
 
 /*
@@ -1153,257 +1153,266 @@ h5.section-subtitle {
  */
 
 .centered-message {
-  text-align: center;
-  color: var(--butter-text-light);
-  padding: 40px 20px;
-  font-size: 13px;
-  border-radius: 8px;
-  background: rgba(186, 150, 155, 0.05);
+    text-align: center;
+    color: var(--butter-text-light);
+    padding: 40px 20px;
+    font-size: 13px;
+    border-radius: 8px;
+    background: rgba(186, 150, 155, 0.05);
 }
 
 /* 🟢 注入设置面板 */
 #butter-tab-inject .butter-content-title h4,
 #butter-tab-inject h5,
 #butter-tab-inject .bs-wi-tab-btn.active {
-  color: #521808;
+    color: #521808;
 }
 
+/* 🎯 精准控制：将注入面板的提示文字调小、调淡 */
+#butter-root-container .butter-setting-description {
+    font-size: 11px; /* 👈 调小：从默认大小压缩至 11px */
+    color: #a48f92; /* 👈 调暗：改用低饱和度的优雅暮色，不再刺眼 */
+    opacity: 0.85; /* 👈 辅助调暗：叠加轻微透明度，使其更具高级感 */
+    margin-top: 4px; /* 微调：与上方标题的间距 */
+    margin-bottom: 8px; /* 微调：与下方输入框的间距 */
+    line-height: 1.4; /* 优化行高，防止字小了之后粘连 */
+}
 #butter-tab-inject .butter-content-title::before {
-  background-color: #521808;
-  border-color: #76311e;
+    background-color: #521808;
+    border-color: #76311e;
 }
 
 #butter-tab-inject .bs-inject-group {
-  background: rgba(245, 235, 237, 0.4);
-  border: 1px dashed #d3b8bb;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed #d3b8bb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
 }
 
 .bs-wi-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .bs-wi-tab-btn {
-  flex: 1;
-  padding: 8px;
-  text-align: center;
-  background: rgba(245, 235, 237, 0.6);
-  border: 1px solid var(--butter-frame-border-light);
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 13px;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-  color: var(--butter-text-light);
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    background: rgba(245, 235, 237, 0.6);
+    border: 1px solid var(--butter-frame-border-light);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+    color: var(--butter-text-light);
 }
 
 .bs-wi-tab-btn:hover {
-  background: #ffffff;
-  border-color: var(--butter-frame-border-dark);
+    background: #ffffff;
+    border-color: var(--butter-frame-border-dark);
 }
 
 .bs-wi-tab-btn.active {
-  background-color: #ffffff;
-  border-color: #521808;
-  color: #521808;
-  font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+    border-color: #521808;
+    color: #521808;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .bs-wi-list-container {
-  max-height: 150px;
-  overflow-y: auto;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 6px;
-  padding: 8px;
-  border: 1px solid var(--butter-frame-border-light);
+    max-height: 150px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid var(--butter-frame-border-light);
 }
 
 .bs-wi-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 10px;
-  border-bottom: 1px dashed rgba(139, 90, 131, 0.1);
-  transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px dashed rgba(139, 90, 131, 0.1);
+    transition: background-color 0.2s ease;
 }
 
 .bs-wi-item:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .bs-wi-item:hover {
-  background: rgba(245, 235, 237, 0.5);
+    background: rgba(245, 235, 237, 0.5);
 }
 
 .bs-wi-item input[type="checkbox"] {
-  flex-shrink: 0;
-  margin-right: 15px;
-  accent-color: #521808;
+    flex-shrink: 0;
+    margin-right: 15px;
+    accent-color: #521808;
 }
 
 .bs-wi-name {
-  flex-grow: 1;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--butter-text-dark);
+    flex-grow: 1;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--butter-text-dark);
 }
 
 /* 🔵 API设置面板 */
 #butter-tab-api .butter-content-title h4,
 #butter-tab-api h5 {
-  color: #6c82b3;
+    color: #6c82b3;
 }
 
 #butter-tab-api .butter-content-title::before {
-  background-color: #6c82b3;
-  border-color: #56688f;
+    background-color: #6c82b3;
+    border-color: #56688f;
 }
 
 #butter-tab-api .menu_button {
-  background: linear-gradient(135deg, #6c82b3 0%, #56688f 100%);
-  border-color: #56688f;
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
+    background: linear-gradient(135deg, #6c82b3 0%, #56688f 100%);
+    border-color: #56688f;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
 }
 
 #butter-tab-api .menu_button:hover {
-  background: linear-gradient(135deg, #7c92c3 0%, #6377a0 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(108, 130, 179, 0.3);
+    background: linear-gradient(135deg, #7c92c3 0%, #6377a0 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(108, 130, 179, 0.3);
 }
 
 /* 🟡 Debug监控面板 */
 #butter-tab-debug .butter-content-title h4,
 #butter-tab-debug h5 {
-  color: #bfa07a;
+    color: #bfa07a;
 }
 
 #butter-tab-debug .butter-content-title::before {
-  background-color: #bfa07a;
-  border-color: #ab8154;
+    background-color: #bfa07a;
+    border-color: #ab8154;
 }
 
 .debug-textarea {
-  width: 100%;
-  height: 110px;
-  font-family: "Consolas", "Monaco", monospace;
-  font-size: 12px;
-  background: rgba(18, 12, 24, 0.03);
-  border: 1px solid var(--butter-frame-border-light);
-  border-radius: 6px;
-  color: var(--butter-text-dark);
-  padding: 8px;
-  box-sizing: border-box;
+    width: 100%;
+    height: 110px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 12px;
+    background: rgba(18, 12, 24, 0.03);
+    border: 1px solid var(--butter-frame-border-light);
+    border-radius: 6px;
+    color: var(--butter-text-dark);
+    padding: 8px;
+    box-sizing: border-box;
 }
 
 .debug-io-group {
-  background: rgba(245, 235, 237, 0.4);
-  border: 1px dashed var(--butter-frame-border-light);
-  border-radius: 8px;
-  padding: 15px;
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed var(--butter-frame-border-light);
+    border-radius: 8px;
+    padding: 15px;
 }
 
 .debug-io-group h4 {
-  text-align: center;
-  margin-bottom: 15px;
-  font-size: 14px;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 14px;
 }
 
 .debug-io-group label {
-  font-size: 11px;
-  text-align: center;
-  opacity: 0.7;
+    font-size: 11px;
+    text-align: center;
+    opacity: 0.7;
 }
 
 /* 🔴 user注册面板 */
 .preset-loader-section {
-  background: rgba(245, 235, 237, 0.4);
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px dashed #d3b8bb;
+    background: rgba(245, 235, 237, 0.4);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed #d3b8bb;
 }
 
 .preset-loader-section label {
-  color: var(--butter-tab-active-text);
-  font-weight: bold;
+    color: var(--butter-tab-active-text);
+    font-weight: bold;
 }
 
 #butter-root-container .preset-loader-section .menu_button,
 #butter-root-container #user-register-submit,
 #butter-root-container .preset-save-section .menu_button {
-  background: linear-gradient(135deg, #8b666d 0%, #6c4e54 100%);
-  border: 1px solid #b4737a;
-  border-radius: 6px;
-  color: #fdf7f8;
-  padding: 12px 22px;
-  width: 80%;
-  margin: 0 auto;
-  display: block;
-  font-family: "ZCOOL XiaoWei", serif;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    background: linear-gradient(135deg, #8b666d 0%, #6c4e54 100%);
+    border: 1px solid #b4737a;
+    border-radius: 6px;
+    color: #fdf7f8;
+    padding: 12px 22px;
+    width: 80%;
+    margin: 0 auto;
+    display: block;
+    font-family: "ZCOOL XiaoWei", serif;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 #butter-root-container .preset-loader-section .menu_button:hover,
 #butter-root-container #user-register-submit:hover,
 #butter-root-container .preset-save-section .menu_button:hover {
-  background: linear-gradient(135deg, #9c757c 0%, #7c5a61 100%);
-  border-color: #d3b8bb;
-  box-shadow: 0 4px 8px rgba(180, 115, 122, 0.25);
+    background: linear-gradient(135deg, #9c757c 0%, #7c5a61 100%);
+    border-color: #d3b8bb;
+    box-shadow: 0 4px 8px rgba(180, 115, 122, 0.25);
 }
 
 #b-reg-obscene-section {
-  padding-left: 20px;
-  margin-top: 15px;
-  border-left: 2px solid var(--butter-lust-bar-fill);
+    padding-left: 20px;
+    margin-top: 15px;
+    border-left: 2px solid var(--butter-lust-bar-fill);
 }
 
 #butter-root-container #b-reg-submit-btn {
-  font-size: 16px;
-  font-weight: bold;
-  padding: 12px 40px;
-  width: 60%;
-  max-width: 280px;
-  font-family: "ZCOOL XiaoWei", serif;
-  letter-spacing: 2px;
-  line-height: normal;
-  transition: all 0.2s ease;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 12px 40px;
+    width: 60%;
+    max-width: 280px;
+    font-family: "ZCOOL XiaoWei", serif;
+    letter-spacing: 2px;
+    line-height: normal;
+    transition: all 0.2s ease;
 }
 
 .preset-save-section {
-  background: rgba(245, 235, 237, 0.4);
-  border: 1px dashed #d3b8bb;
-  padding: 15px;
-  border-radius: 8px;
-  align-items: center;
+    background: rgba(245, 235, 237, 0.4);
+    border: 1px dashed #d3b8bb;
+    padding: 15px;
+    border-radius: 8px;
+    align-items: center;
 }
 
 .preset-save-section label {
-  color: #521808;
-  font-weight: 500;
+    color: #521808;
+    font-weight: 500;
 }
 
 .preset-save-section input[type="text"] {
-  margin-left: 10px;
+    margin-left: 10px;
 }
 
 /*
@@ -1412,333 +1421,333 @@ h5.section-subtitle {
  * ==========================================
  */
 .butter-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  padding: 2px;
-  background: rgba(18, 12, 24, 0.6);
-  border: 1px solid rgba(232, 200, 203, 0.2);
-  border-radius: 6px;
-  margin-top: 6px;
-  max-width: 70%;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    padding: 2px;
+    background: rgba(18, 12, 24, 0.6);
+    border: 1px solid rgba(232, 200, 203, 0.2);
+    border-radius: 6px;
+    margin-top: 6px;
+    max-width: 70%;
 }
 
 .butter-calendar-day {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 12px;
-  color: #ead8da;
-  background-color: transparent;
-  border: 3px solid transparent;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+    color: #ead8da;
+    background-color: transparent;
+    border: 3px solid transparent;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .butter-calendar-day:hover {
-  background-color: rgba(232, 200, 203, 0.15);
+    background-color: rgba(232, 200, 203, 0.15);
 }
 
 .butter-calendar-day.selected {
-  background-color: #b0697b;
-  border-color: #e8c8cb;
-  color: white;
-  font-weight: bold;
-  transform: scale(1.02);
-  box-shadow: 0 0 6px rgba(176, 105, 123, 0.6);
+    background-color: #b0697b;
+    border-color: #e8c8cb;
+    color: white;
+    font-weight: bold;
+    transform: scale(1.02);
+    box-shadow: 0 0 6px rgba(176, 105, 123, 0.6);
 }
 
 /* ==========================================
  * XIII. 手机端响应式适配（图二全屏完整 + 图三精致排版）
  * ========================================== */
 @media screen and (max-width: 768px) {
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 1. 模态框外壳：采用【图二】的 100% 全屏尺寸，确保大画框边缘完整不被裁切
    * 🚨 绝不加上 display: ，完美保留 JS 的正常开/关隐藏功能
    * ---------------------------------------------------- */
-  #butter-root-container #butter-status-modal {
-    position: fixed;
-    width: 100vw;
-    height: 60vh; /* 📐 整体高度：全屏的 80%，让整体面板变矮 */
-    top: 10vh; /* 📐 上下边距：保持垂直居中 */
-    left: 0;
-    transform: none;
-    border-radius: 12px; /* 给变矮后的面板加一点精致圆角 */
-    display: flex;
-    flex-direction: column;
-  }
+    #butter-root-container #butter-status-modal {
+        position: fixed;
+        width: 100vw;
+        height: 60vh; /* 📐 整体高度：全屏的 80%，让整体面板变矮 */
+        top: 10vh; /* 📐 上下边距：保持垂直居中 */
+        left: 0;
+        transform: none;
+        border-radius: 12px; /* 给变矮后的面板加一点精致圆角 */
+        display: flex;
+        flex-direction: column;
+    }
 
-  /* 强行让内部所有的装饰背景、内容包装器拉满全屏，呈现完美无缺的画框 */
-  #butter-root-container .butter-mobile-frame,
-  #butter-root-container .butter-content-wrapper,
-  #butter-root-container .butter-frame-decoration {
-    width: 100%;
-    height: 100%;
-    min-width: 0px;
-    max-width: 100%;
-    border-radius: 0;
-    box-sizing: border-box;
-  }
+    /* 强行让内部所有的装饰背景、内容包装器拉满全屏，呈现完美无缺的画框 */
+    #butter-root-container .butter-mobile-frame,
+    #butter-root-container .butter-content-wrapper,
+    #butter-root-container .butter-frame-decoration {
+        width: 100%;
+        height: 100%;
+        min-width: 0px;
+        max-width: 100%;
+        border-radius: 0;
+        box-sizing: border-box;
+    }
 
-  /* 核心核心：确保羊皮纸主背景图以 100% 宽高严丝合缝填充手机屏幕，不丢任何细节 */
-  #butter-root-container .butter-frame-decoration {
-    background-size: 100% 100%;
-  }
+    /* 核心核心：确保羊皮纸主背景图以 100% 宽高严丝合缝填充手机屏幕，不丢任何细节 */
+    #butter-root-container .butter-frame-decoration {
+        background-size: 100% 100%;
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 2. 顶栏样式控制：【🌟核心修改：头衔一行，时间一行，纵向堆叠】
    * ---------------------------------------------------- */
-  #butter-root-container .butter-top-bar {
-    height: 75px; /* 压低顶栏高度 */
-    display: flex;
-    flex-direction: column; /* 🌟 核心：改为纵向排列，强制分行 */
-    justify-content: center; /* 🌟 核心：内容在顶栏内垂直居中 */
-    align-items: center; /* 🌟 核心：居中对齐。如果想整体靠左，可以改为 flex-start 并加 padding */
-    padding-top: 17px !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
-  }
-  #butter-root-container .butter-top-bar span {
-    position: static; /* 🌟 核心：解除原本电脑端的绝对定位(left/right) */
-    transform: none; /* 🌟 核心：解除原本的居中偏移 */
-    font-size: 11px; /* 手机端字号 */
-    line-height: 1.4; /* 行高保证舒适舒适间距 */
-    white-space: nowrap; /* 🌟 核心：单行不准换行，确保各自一行拉直 */
-    max-width: 90vw;
-    text-align: center;
-  }
-  #butter-root-container #bs-user-title {
-    margin-bottom: 2px; /* 📐 第一行（头衔）和第二行（时间）之间的上下间距 */
-  }
-  #butter-root-container #bs-date-time {
-    /* 自动顺延到第二行，不再受 right: 75px 限制 */
-  }
+    #butter-root-container .butter-top-bar {
+        height: 75px; /* 压低顶栏高度 */
+        display: flex;
+        flex-direction: column; /* 🌟 核心：改为纵向排列，强制分行 */
+        justify-content: center; /* 🌟 核心：内容在顶栏内垂直居中 */
+        align-items: center; /* 🌟 核心：居中对齐。如果想整体靠左，可以改为 flex-start 并加 padding */
+        padding-top: 17px !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
+    }
+    #butter-root-container .butter-top-bar span {
+        position: static; /* 🌟 核心：解除原本电脑端的绝对定位(left/right) */
+        transform: none; /* 🌟 核心：解除原本的居中偏移 */
+        font-size: 11px; /* 手机端字号 */
+        line-height: 1.4; /* 行高保证舒适舒适间距 */
+        white-space: nowrap; /* 🌟 核心：单行不准换行，确保各自一行拉直 */
+        max-width: 90vw;
+        text-align: center;
+    }
+    #butter-root-container #bs-user-title {
+        margin-bottom: 2px; /* 📐 第一行（头衔）和第二行（时间）之间的上下间距 */
+    }
+    #butter-root-container #bs-date-time {
+        /* 自动顺延到第二行，不再受 right: 75px 限制 */
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 3. 核心网格布局：保留【图三】的经典左边栏双列网格架构
    * 🚨 拒绝图二的顶部横向堆叠，坚守左侧边栏的美学设计
    * ---------------------------------------------------- */
-  #butter-root-container div.butter-content-grid {
-    display: grid;
-    grid-template-columns: 55px 1fr; /* 左侧栏固定 55px 宽，右侧主区占满剩下所有空间 */
-    width: 100%;
-    height: 100%;
-    flex-grow: 1;
-    min-height: 0; /* 防止 flex 弹性计算导致主区域溢出 */
-    padding: 5px 8px 8px 8px; /* 内边距控制，使网格完美缩进在古典画框内部 */
-  }
+    #butter-root-container div.butter-content-grid {
+        display: grid;
+        grid-template-columns: 55px 1fr; /* 左侧栏固定 55px 宽，右侧主区占满剩下所有空间 */
+        width: 100%;
+        height: 100%;
+        flex-grow: 1;
+        min-height: 0; /* 防止 flex 弹性计算导致主区域溢出 */
+        padding: 5px 8px 8px 8px; /* 内边距控制，使网格完美缩进在古典画框内部 */
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 4. 左侧边栏：采用【图三】的纵向图标排列与精细比例
    * ---------------------------------------------------- */
-  #butter-root-container .butter-sidebar {
-    display: flex;
-    flex-direction: column; /* 坚守纵向排列 */
-    gap: 10px; /* 按钮间距 */
-    padding: 5px 1px 5px 1px;
-    overflow-y: auto; /* 标签过多时允许侧边栏纵向滚动 */
-    overflow-x: hidden;
-    border-right: none;
-    border-bottom: none;
-  }
-  #butter-root-container .butter-sidebar::-webkit-scrollbar {
-    display: none; /* 彻底隐藏侧边栏滚动条，保持画面干净 */
-  }
-  #butter-root-container .butter-tab {
-    padding: 4px 0;
-    gap: 2px;
-    flex-direction: column;
-  }
-  #butter-root-container .butter-tab-icon {
-    width: 34px;
-    height: 34px;
-  }
-  #butter-root-container .butter-tab span {
-    font-size: 11px;
-    transform: scale(0.9); /* 强行微缩，使小字体在手机端精致利落 */
-    transform-origin: center top;
-    white-space: nowrap; /* 禁止换行撑乱布局 */
-  }
+    #butter-root-container .butter-sidebar {
+        display: flex;
+        flex-direction: column; /* 坚守纵向排列 */
+        gap: 10px; /* 按钮间距 */
+        padding: 5px 1px 5px 1px;
+        overflow-y: auto; /* 标签过多时允许侧边栏纵向滚动 */
+        overflow-x: hidden;
+        border-right: none;
+        border-bottom: none;
+    }
+    #butter-root-container .butter-sidebar::-webkit-scrollbar {
+        display: none; /* 彻底隐藏侧边栏滚动条，保持画面干净 */
+    }
+    #butter-root-container .butter-tab {
+        padding: 4px 0;
+        gap: 2px;
+        flex-direction: column;
+    }
+    #butter-root-container .butter-tab-icon {
+        width: 34px;
+        height: 34px;
+    }
+    #butter-root-container .butter-tab span {
+        font-size: 11px;
+        transform: scale(0.9); /* 强行微缩，使小字体在手机端精致利落 */
+        transform-origin: center top;
+        white-space: nowrap; /* 禁止换行撑乱布局 */
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 5. 右侧主内容区顶部的“古典页面标题便签”
    * ---------------------------------------------------- */
-  #butter-root-container #butter-page-title-tag {
-    top: 74px !important;
-    left: 68px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
-    width: 140px;
-    height: 38px;
-    font-size: 12px;
-    padding: 2px 25px 15px 15px;
-  }
-  #butter-root-container .butter-tab-content {
-    padding-top: 35px; /* 空出顶部高度，防业务内容钻到悬浮标题标签下方 */
-  }
-  #butter-root-container .butter-main-content {
-    padding: 5px 10px;
-    overflow-y: auto; /* 允许主面板内容独立上下滚动 */
-    overflow-x: hidden;
-  }
+    #butter-root-container #butter-page-title-tag {
+        top: 74px !important;
+        left: 68px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
+        width: 140px;
+        height: 38px;
+        font-size: 12px;
+        padding: 2px 25px 15px 15px;
+    }
+    #butter-root-container .butter-tab-content {
+        padding-top: 35px; /* 空出顶部高度，防业务内容钻到悬浮标题标签下方 */
+    }
+    #butter-root-container .butter-main-content {
+        padding: 5px 10px;
+        overflow-y: auto; /* 允许主面板内容独立上下滚动 */
+        overflow-x: hidden;
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 6. 右下角精致底栏与五个功能按钮（保留图三小字）
    * ---------------------------------------------------- */
-  #butter-root-container .butter-bottom-nav {
-    height: 76px;
-    padding: 10px 0 0 0;
-    flex-shrink: 0; /* 严禁底部导航栏被上方高弹性内容挤扁 */
-  }
-  #butter-root-container .butter-nav-btn {
-    width: 40px;
-  }
-  #butter-root-container .butter-nav-btn span {
-    display: block; /* 🚨 绝不隐藏！完整保留图三的底部分类说明文字 */
-    font-size: 11px;
-    transform: scale(0.85);
-    white-space: nowrap;
-  }
-  #butter-root-container .butter-nav-icon-wrapper {
-    width: 33px;
-    height: 33px;
-  }
+    #butter-root-container .butter-bottom-nav {
+        height: 76px;
+        padding: 10px 0 0 0;
+        flex-shrink: 0; /* 严禁底部导航栏被上方高弹性内容挤扁 */
+    }
+    #butter-root-container .butter-nav-btn {
+        width: 40px;
+    }
+    #butter-root-container .butter-nav-btn span {
+        display: block; /* 🚨 绝不隐藏！完整保留图三的底部分类说明文字 */
+        font-size: 11px;
+        transform: scale(0.85);
+        white-space: nowrap;
+    }
+    #butter-root-container .butter-nav-icon-wrapper {
+        width: 33px;
+        height: 33px;
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
     * 7. 核心内部业务组件微调（欲望条、子宫图、表单）
     * ---------------------------------------------------- */
-  #butter-root-container .butter-lust-container {
-    margin-bottom: 12px;
-    gap: 6px;
-    padding-left: 3px !important;
-  }
+    #butter-root-container .butter-lust-container {
+        margin-bottom: 12px;
+        gap: 6px;
+        padding-left: 3px !important;
+    }
 
-  /* 🌟 轨道底座：手机端只控制它自身的高度 */
-  #butter-root-container .lust-bar-track {
-    box-sizing: content-box !important;
-    height: 18px; /* 👈 建议手机端调到 16px~18px，24px 在手机上依然会显得有点太粗 */
-  }
+    /* 🌟 轨道底座：手机端只控制它自身的高度 */
+    #butter-root-container .lust-bar-track {
+        box-sizing: content-box !important;
+        height: 18px; /* 👈 建议手机端调到 16px~18px，24px 在手机上依然会显得有点太粗 */
+    }
 
-  /* 🌟 核心修正：把相框缩小的控制权，精准交给 ::before 伪元素 */
-  #butter-root-container .lust-bar-track::before {
-    border-width: 8px 16px; /* 👈 缩小的古典花纹厚度（前上下，后左右） */
+    /* 🌟 核心修正：把相框缩小的控制权，精准交给 ::before 伪元素 */
+    #butter-root-container .lust-bar-track::before {
+        border-width: 8px 16px; /* 👈 缩小的古典花纹厚度（前上下，后左右） */
 
-    /* 🎛️ 手机端微调旋钮：如果发现相框两头太长把粉色液体逼紧了，
+        /* 🎛️ 手机端微调旋钮：如果发现相框两头太长把粉色液体逼紧了，
         可以把这里的负值稍微缩小一点（比如改成 -4px 或 -6px） */
-    top: -5px;
-    bottom: -5px;
-    left: -7px;
-    right: -5px;
-  }
+        top: -5px;
+        bottom: -5px;
+        left: -7px;
+        right: -5px;
+    }
 
-  /* 🌟 子宫区域与图片缩放（这部分你写得完全正确，完美保留） */
-  #butter-root-container .butter-womb-section {
-    margin-bottom: 15px;
-    gap: 10px;
-  }
-  #butter-root-container .home-womb-img {
-    width: 110px;
-    height: 125px;
-    flex-shrink: 0; /* 防止图片被弹性盒子挤压变形 */
-  }
+    /* 🌟 子宫区域与图片缩放（这部分你写得完全正确，完美保留） */
+    #butter-root-container .butter-womb-section {
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+    #butter-root-container .home-womb-img {
+        width: 110px;
+        height: 125px;
+        flex-shrink: 0; /* 防止图片被弹性盒子挤压变形 */
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 8. 表单输入网格的极致响应式压缩
    * ---------------------------------------------------- */
-  #butter-root-container .bs-grid.bs-grid-three-column {
-    grid-template-columns: repeat(
-      2,
-      1fr
-    ); /* 电脑端三列改手机端两列，继承图三完美排版 */
-  }
-  #butter-root-container input.text_pole,
-  #butter-root-container input[type="text"].text_pole,
-  #butter-root-container select {
-    padding: 6px 10px;
-    font-size: 12px;
-    width: 100%;
-  }
+    #butter-root-container .bs-grid.bs-grid-three-column {
+        grid-template-columns: repeat(
+            2,
+            1fr
+        ); /* 电脑端三列改手机端两列，继承图三完美排版 */
+    }
+    #butter-root-container input.text_pole,
+    #butter-root-container input[type="text"].text_pole,
+    #butter-root-container select {
+        padding: 6px 10px;
+        font-size: 12px;
+        width: 100%;
+    }
 
-  #butter-root-container select {
-    box-sizing: border-box;
-    font-size: 11px; /* 保持精致微缩字号 */
+    #butter-root-container select {
+        box-sizing: border-box;
+        font-size: 11px; /* 保持精致微缩字号 */
 
-    /* 1. 强控行高：这是解决中文字体在手机上被切边缘的关键 */
-    line-height: 1.5;
+        /* 1. 强控行高：这是解决中文字体在手机上被切边缘的关键 */
+        line-height: 1.5;
 
-    /* 2. 释放高度：绝不锁死 height，让容器靠内容和 padding 自然撑开 */
-    height: auto;
-    min-height: 28px; /* 给一个舒适的最小高度大盘 */
+        /* 2. 释放高度：绝不锁死 height，让容器靠内容和 padding 自然撑开 */
+        height: auto;
+        min-height: 28px; /* 给一个舒适的最小高度大盘 */
 
-    /* 3. 优化内边距：上下留出足够的纵向空间（5px），右侧保留 24px 留给古典小箭头 */
-    padding: 5px 24px 5px 8px;
+        /* 3. 优化内边距：上下留出足够的纵向空间（5px），右侧保留 24px 留给古典小箭头 */
+        padding: 5px 24px 5px 8px;
 
-    width: 100%;
-    display: inline-block;
-    vertical-align: middle;
-  }
+        width: 100%;
+        display: inline-block;
+        vertical-align: middle;
+    }
 
-  /* ----------------------------------------------------
+    /* ----------------------------------------------------
    * 9. 悬浮框（全视之眼）手机端防护控制
    * ---------------------------------------------------- */
-  #butter-root-container #butter-floating-eye {
-    position: fixed;
-    /* 📐 1. 在这里控制悬浮按钮的整体大小（从原来的 55px 缩小到 38px） */
-    width: 45px !important;
-    height: 45px !important;
-    /* 📐 2. 在这里控制小眼睛图标本身的大小，保持居中等比缩放 */
-    background-size: 42px 42px;
-    background-repeat: no-repeat;
-    background-position: center;
-    /* 📐 3. 在这里控制它在手机屏幕上的悬浮位置 */
-    top: 20px; /* 距离手机屏幕顶部的距离（调大往下移） */
-    left: 20px; /* 距离手机屏幕左侧的距离（调大往右移） */
-    touch-action: none;
-  }
+    #butter-root-container #butter-floating-eye {
+        position: fixed;
+        /* 📐 1. 在这里控制悬浮按钮的整体大小（从原来的 55px 缩小到 38px） */
+        width: 45px !important;
+        height: 45px !important;
+        /* 📐 2. 在这里控制小眼睛图标本身的大小，保持居中等比缩放 */
+        background-size: 42px 42px;
+        background-repeat: no-repeat;
+        background-position: center;
+        /* 📐 3. 在这里控制它在手机屏幕上的悬浮位置 */
+        top: 20px; /* 距离手机屏幕顶部的距离（调大往下移） */
+        left: 20px; /* 距离手机屏幕左侧的距离（调大往右移） */
+        touch-action: none;
+    }
 
-  /* ===================================================
+    /* ===================================================
   * 🎯 精准强控：夺回 User 注册与 API 设置按钮的文字颜色
   * （仅在 color 上使用 !important 反制酒馆主题的暴力覆盖）
   * =================================================== */
 
-  /* 🟢 1. 强控：User 注册界面的所有相关按钮文字颜色 */
-  #butter-root-container .preset-loader-section .menu_button,
-  #butter-root-container #user-register-submit,
-  #butter-root-container .preset-save-section .menu_button,
-  #butter-root-container #b-reg-submit-btn {
-    color: #fdf7f8 !important; /* 👈 精准反击：强制恢复原版优雅的淡粉白 */
-  }
+    /* 🟢 1. 强控：User 注册界面的所有相关按钮文字颜色 */
+    #butter-root-container .preset-loader-section .menu_button,
+    #butter-root-container #user-register-submit,
+    #butter-root-container .preset-save-section .menu_button,
+    #butter-root-container #b-reg-submit-btn {
+        color: #fdf7f8 !important; /* 👈 精准反击：强制恢复原版优雅的淡粉白 */
+    }
 
-  /* 🔵 2. 强控：API 设置界面的所有相关按钮文字颜色 */
-  #butter-root-container #butter-tab-api .menu_button {
-    color: #ffffff !important; /* 👈 精准反击：强制恢复纯白 */
-  }
+    /* 🔵 2. 强控：API 设置界面的所有相关按钮文字颜色 */
+    #butter-root-container #butter-tab-api .menu_button {
+        color: #ffffff !important; /* 👈 精准反击：强制恢复纯白 */
+    }
 
-  /* ===================================================
+    /* ===================================================
   * 🎯 修复手机端复选框“勾选看不见”的样式污染 Bug
   * =================================================== */
-  #butter-root-container input[type="checkbox"] {
-    /* 1. 强行恢复移动端标准复选框的外观，剥离单行输入框的阴影污染 */
-    -webkit-appearance: checkbox;
-    appearance: checkbox;
-    box-shadow: none;
+    #butter-root-container input[type="checkbox"] {
+        /* 1. 强行恢复移动端标准复选框的外观，剥离单行输入框的阴影污染 */
+        -webkit-appearance: checkbox;
+        appearance: checkbox;
+        box-shadow: none;
 
-    /* 2. 适当放大尺寸，更方便手机大拇指戳中 */
-    width: 18px;
-    height: 18px;
-    display: inline-block;
-    vertical-align: middle;
+        /* 2. 适当放大尺寸，更方便手机大拇指戳中 */
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        vertical-align: middle;
 
-    /* 3. 强制底色为纯白，确保未勾选时看得很清楚 */
-    background-color: #ffffff;
-    border: 1px solid #c8b3b6;
+        /* 3. 强制底色为纯白，确保未勾选时看得很清楚 */
+        background-color: #ffffff;
+        border: 1px solid #c8b3b6;
 
-    /* 4. 【核心】设置高亮勾选主色调（这里使用优雅的蔷薇红，你也可以改成其他颜色） */
-    accent-color: var(--butter-lust-bar-fill) !important;
-  }
+        /* 4. 【核心】设置高亮勾选主色调（这里使用优雅的蔷薇红，你也可以改成其他颜色） */
+        accent-color: var(--butter-lust-bar-fill) !important;
+    }
 }
 
 /*
@@ -1747,29 +1756,29 @@ h5.section-subtitle {
  * ==========================================
  */
 #butter-root-container #butter-page-title-tag {
-  position: absolute;
-  top: 80px;
-  left: 101px;
-  z-index: 70;
-  width: 190px;
-  height: 50px;
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/page_title_bg.png");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  font-family: "Noto Serif SC", "Microsoft YaHei", serif;
-  font-weight: 700;
-  font-size: 16px;
-  color: #4a2e35;
-  text-shadow: 1px 1px 0px rgba(255, 245, 245, 0.7);
-  display: flex;
-  align-items: center;
-  padding: 5px 45px 20px 25px;
-  pointer-events: none;
+    position: absolute;
+    top: 80px;
+    left: 101px;
+    z-index: 70;
+    width: 190px;
+    height: 50px;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/page_title_bg.png");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    font-family: "Noto Serif SC", "Microsoft YaHei", serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #4a2e35;
+    text-shadow: 1px 1px 0px rgba(255, 245, 245, 0.7);
+    display: flex;
+    align-items: center;
+    padding: 5px 45px 20px 25px;
+    pointer-events: none;
 }
 
 #butter-root-container .butter-tab-content {
-  padding-top: 45px;
+    padding-top: 45px;
 }
 
 /*
@@ -1780,71 +1789,71 @@ h5.section-subtitle {
 
 /* --- 侧边栏图标 --- */
 #butter-icon-home {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_home.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_home.png");
 }
 #butter-icon-overview {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_overview.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_overview.png");
 }
 #butter-icon-body {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_body.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_body.png");
 }
 #butter-icon-history {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_history.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_history.png");
 }
 #butter-icon-special {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_special.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_special.png");
 }
 #butter-icon-skills {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_skills.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_skills.png");
 }
 #butter-icon-succubus {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_succubus.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_succubus.png");
 }
 
 /* --- 底栏图标 --- */
 #butter-icon-inject {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_inject.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_inject.png");
 }
 #butter-icon-register {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_register.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_register.png");
 }
 #butter-icon-api {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_api.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_api.png");
 }
 #butter-icon-debug {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_debug.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_debug.png");
 }
 #butter-icon-theme {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_theme.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_theme.png");
 }
 
 /* --- 状态文本图标 --- */
 #butter-icon-stat-semen {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_semen.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_semen.png");
 }
 #butter-icon-stat-cycle {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_cycle.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_cycle.png");
 }
 #butter-icon-stat-egg {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_egg.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_egg.png");
 }
 #butter-icon-stat-estrus {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_estrus.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_stat_estrus.png");
 }
 
 /* --- 画框与UI元素背景图 --- */
 /* 🌟 核心修复：同时给 overlay 和 decoration 加上主相框路径，确保万无一失 */
 #butter-root-container .butter-frame-overlay,
 .butter-frame-decoration {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png") !important;
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_main.png") !important;
 }
 .home-womb-img::before {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
 }
 #butter-floating-eye {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lotus_icon.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lotus_icon.png");
 }
 .virgin-icon {
-  background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_virgin_status.png");
+    background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_virgin_status.png");
 }
 /* 🌟 核心修复：此处已安全结束，没有任何多余的 } */
