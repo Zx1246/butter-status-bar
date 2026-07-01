@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "display_name": "butter-status-bar",
     "loading_order": 1,
     "requires": [],
@@ -12,4 +13,19 @@
     "homePage": "",
     "auto_update": false,
     "minimum_client_version": "1.11.0"
+=======
+  "display_name": "Butter Status Bar",
+  "loading_order": 1,
+  "requires": [],
+  "optional": [],
+  "dependencies": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "My Master",
+  "version": "0.1.0",
+  "description": "极度深度的动态生理/情欲状态追踪面板，用于完美记录并向AI同步使用者的堕落与沉沦进度。",
+  "homePage": "",
+  "auto_update": false,
+  "minimum_client_version": "1.11.0"
+>>>>>>> 09960a334ee6f1be15c8eb49131c387bcd130cb5
 }
