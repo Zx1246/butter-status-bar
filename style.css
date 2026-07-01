@@ -747,6 +747,7 @@
   color: #77494d !important;
   text-shadow: 0 0 4px rgba(217, 129, 151, 0.2) !important;
 }
+
 /*
  * ==========================================
  * IX. 概览、开发、经历等其他面板样式
@@ -1697,29 +1698,47 @@ h5.section-subtitle {
     left: 20px; /* 距离手机屏幕左侧的距离（调大往右移） */
     touch-action: none;
   }
-}
 
-/* ===================================================
- * 🎯 修复手机端复选框“勾选看不见”的样式污染 Bug
- * =================================================== */
-#butter-root-container input[type="checkbox"] {
-  /* 1. 强行恢复移动端标准复选框的外观，剥离单行输入框的阴影污染 */
-  -webkit-appearance: checkbox;
-  appearance: checkbox;
-  box-shadow: none;
+  /* ===================================================
+  * 🎯 精准强控：夺回 User 注册与 API 设置按钮的文字颜色
+  * （仅在 color 上使用 !important 反制酒馆主题的暴力覆盖）
+  * =================================================== */
 
-  /* 2. 适当放大尺寸，更方便手机大拇指戳中 */
-  width: 18px;
-  height: 18px;
-  display: inline-block;
-  vertical-align: middle;
+  /* 🟢 1. 强控：User 注册界面的所有相关按钮文字颜色 */
+  #butter-root-container .preset-loader-section .menu_button,
+  #butter-root-container #user-register-submit,
+  #butter-root-container .preset-save-section .menu_button,
+  #butter-root-container #b-reg-submit-btn {
+    color: #fdf7f8 !important; /* 👈 精准反击：强制恢复原版优雅的淡粉白 */
+  }
 
-  /* 3. 强制底色为纯白，确保未勾选时看得很清楚 */
-  background-color: #ffffff;
-  border: 1px solid #c8b3b6;
+  /* 🔵 2. 强控：API 设置界面的所有相关按钮文字颜色 */
+  #butter-root-container #butter-tab-api .menu_button {
+    color: #ffffff !important; /* 👈 精准反击：强制恢复纯白 */
+  }
 
-  /* 4. 【核心】设置高亮勾选主色调（这里使用优雅的蔷薇红，你也可以改成其他颜色） */
-  accent-color: var(--butter-lust-bar-fill) !important;
+  /* ===================================================
+  * 🎯 修复手机端复选框“勾选看不见”的样式污染 Bug
+  * =================================================== */
+  #butter-root-container input[type="checkbox"] {
+    /* 1. 强行恢复移动端标准复选框的外观，剥离单行输入框的阴影污染 */
+    -webkit-appearance: checkbox;
+    appearance: checkbox;
+    box-shadow: none;
+
+    /* 2. 适当放大尺寸，更方便手机大拇指戳中 */
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    vertical-align: middle;
+
+    /* 3. 强制底色为纯白，确保未勾选时看得很清楚 */
+    background-color: #ffffff;
+    border: 1px solid #c8b3b6;
+
+    /* 4. 【核心】设置高亮勾选主色调（这里使用优雅的蔷薇红，你也可以改成其他颜色） */
+    accent-color: var(--butter-lust-bar-fill) !important;
+  }
 }
 
 /*
@@ -1751,20 +1770,6 @@ h5.section-subtitle {
 
 #butter-root-container .butter-tab-content {
   padding-top: 45px;
-}
-
-/* ===================================================
- * 🎨 优雅防御：利用选择器特异性（无 !important）克制酒馆主题
- * =================================================== */
-
-#butter-root-container#butter-root-container
-  .preset-loader-section
-  .menu_button,
-#butter-root-container#butter-root-container #user-register-submit {
-  color: #fdf7f8;
-}
-#butter-root-container#butter-root-container #butter-tab-api .menu_button {
-  color: #ffffff;
 }
 
 /*
