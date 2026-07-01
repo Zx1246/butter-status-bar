@@ -292,38 +292,6 @@ export const ButterToolsDefinition = [
                 },
             },
         },
-<<<<<<< HEAD
-=======
-        time_of_day: {
-          type: "string",
-          // 【核心修正】移除了末尾多余的右括号
-          description:
-            "推测当前具体时间，必须使用24小时制 HH:mm 格式 (例如 '08:30' 或 '23:15'）。如果无法判断则留空。",
-        },
-        sleep_occurred: {
-          type: "boolean",
-          description: "判断是否在这期间发生了完整的睡眠休息",
-        },
-        energy_change: {
-          type: "number",
-          description:
-            "精力变动(数值需克制)。睡眠恢复+15~30，熬夜/性爱消耗-10~20",
-        },
-        hunger_change: {
-          type: "number",
-          description: "饱腹感变动。进食恢复，受饿或时间流逝扣除",
-        },
-        cleanliness_change: {
-          type: "number",
-          description: "整洁度。洗澡恢复，性交弄脏扣除",
-        },
-        social_change: {
-          type: "number",
-          description:
-            "社交能量。结合底层特征，内向者独处恢复/喧闹扣除，外向反之",
-        },
-      },
->>>>>>> 09960a334ee6f1be15c8eb49131c387bcd130cb5
     },
     {
         name: "bt_give_birth",
