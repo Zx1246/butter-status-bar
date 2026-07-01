@@ -5,7 +5,7 @@
 
 import { getButterState, saveButterState } from "./butter_state.js";
 import { advanceDay } from "./menstrual_cycle_manager.js";
-const LEAKAGE_RATE_PER_HOUR = 5; // 每小时浊液自然流失量 (ml)
+export const LEAKAGE_RATE_PER_HOUR = 5; // 每小时浊液自然流失量 (ml)
 
 // 定义提供给AI的工具清单
 export const ButterToolsDefinition = [

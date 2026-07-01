@@ -486,6 +486,12 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
   isTrackingActive = true;
   console.log("[Butter Tracker] 引擎已点火并上锁。");
 
+  // ====================【核心修正 1/2】====================
+  // 在所有操作之前，创建一个当前状态的深拷贝快照。
+  // 这解决了 oldStateSnapshot 未定义的致命错误。
+  const oldStateSnapshot = JSON.parse(JSON.stringify(state));
+  // =======================================================
+
   try {
     state.dynamic.time_tracker.last_update_timestamp = Date.now();
     saveButterState(state);
@@ -513,9 +519,8 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     // ==========================================================
     try {
       const moment = SillyTavern.libs.moment;
-      let timeUpdated = false; // 新增一个标志，防止重复处理
+      let timeUpdated = false;
 
-      // --- 模式1：匹配相对时间，如“3天后”、“过去了三天” (最高优先级) ---
       const relativeTimeRegex =
         /(?:过去|过|过了|after|pass(?:ed)?)\s*(\d{1,2})\s*(?:天|day)/i;
       const relativeMatch = recentChatText.match(relativeTimeRegex);
@@ -526,17 +531,13 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
           console.log(
             `[Butter Tracker] 侦测到相对时间推进: ${daysToAdvance} 天。`,
           );
-
           await advanceDay(daysToAdvance);
-
-          state = getButterState(); // 重新获取状态
-          timeUpdated = true; // 标记已处理
+          state = getButterState();
+          timeUpdated = true;
         }
       }
 
-      // --- 模式2：匹配绝对日期和时间 (如果模式1未触发) ---
       if (!timeUpdated) {
-        // 这个正则现在可以匹配 "YYYY-MM-DD HH:mm", "YYYY年M月D日 H:m" 等多种组合
         const absoluteDateTimeRegex =
           /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日\s]*.*?(\d{1,2}):(\d{1,2})/;
         const absoluteMatch = recentChatText.match(absoluteDateTimeRegex);
@@ -553,23 +554,18 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
             console.log(
               `[Butter Tracker] 侦测到绝对时间同步指令: ${newDateStr} ${newTimeStr}`,
             );
-            // 静默调用 setDateTime
             await setDateTime(newDateStr, newTimeStr);
-            // context.sendSystemMessage(...) 已被移除
-            // toastr.info(...) 已被移除
             state = getButterState();
             timeUpdated = true;
           }
         }
       }
 
-      // --- 模式3：只匹配绝对日期 (如果前两个模式都未触发) ---
       if (!timeUpdated) {
         const dateOnlyRegex =
           /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日]?/g;
-        let dateOnlyMatch;
-        // 我们需要找到最后一个匹配项，因为它最可能是当前的日期
         let lastMatch = null;
+        let dateOnlyMatch;
         while ((dateOnlyMatch = dateOnlyRegex.exec(recentChatText)) !== null) {
           lastMatch = dateOnlyMatch;
         }
@@ -580,11 +576,11 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
 
           if (newDateStr !== state.dynamic.time_tracker.story_date) {
             console.log(`[Butter Tracker] 侦测到仅日期同步指令: ${newDateStr}`);
-            // ...
-            // 静默调用 setDateTime
-            await setDateTime(newDateStr, currentTime);
-            // context.sendSystemMessage(...) 已被移除
-            // toastr.info(...) 已被移除
+            // ====================【核心修正 2/2】====================
+            // 将未定义的 currentTime 替换为从状态中获取的当前时间。
+            // 这解决了 currentTime is not defined 的致命错误。
+            await setDateTime(newDateStr, state.dynamic.time_tracker.time);
+            // =======================================================
             state = getButterState();
             timeUpdated = true;
           }
@@ -604,10 +600,8 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
           .filter((rule) => rule.trim() !== "");
 
         regexRules.forEach((ruleStr) => {
-          // 使用新的翻译函数
           const regex = translateSimpleRuleToRegex(ruleStr);
           if (regex) {
-            // 仅在翻译成功时执行替换
             recentChatText = recentChatText.replace(regex, "");
           }
         });
@@ -619,7 +613,6 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     // ==========================================================
     // 【【【液压引擎燃料供应线 - 重建工程】】】
     // ==========================================================
-    // 3. 【核心计算】精确计算剧情时间差
     let elapsedHours = 0;
     try {
       const moment = SillyTavern.libs.moment;
@@ -630,14 +623,12 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
       const newMoment = moment(newDateTimeStr, "YYYY-MM-DD HH:mm");
 
       if (oldMoment.isValid() && newMoment.isValid()) {
-        // 使用 moment.diff() 计算出精确的小时差
-        elapsedHours = newMoment.diff(oldMoment, "hours", true); // true 表示可以返回浮点数
+        elapsedHours = newMoment.diff(oldMoment, "hours", true);
       }
     } catch (e) {
       console.error("[Butter Tracker] 剧情时间差计算失败:", e);
     }
 
-    // 4. 将精确的小时差注入到待分析文本中，引导AI
     if (elapsedHours > 0.1) {
       const timeLapseLog = `\n\n[System Time-Lapse Log: Based on the narrative, approximately ${elapsedHours.toFixed(1)} hours have passed.]`;
       recentChatText += timeLapseLog;
@@ -681,11 +672,10 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
     const toolCalls = safelyExtractToolCalls(rawApiResponse);
     if (toolCalls.length > 0) {
       for (const call of toolCalls) {
-        // 使用 for...of 循环以支持 await
         const functionName = call.name || call.function?.name;
         const args = call.arguments || call.function?.arguments;
         if (functionName && args) {
-          await handleToolExecution(functionName, args); // 等待每个工具执行完毕
+          await handleToolExecution(functionName, args);
         }
       }
       if (isFirstRun) {
