@@ -1757,33 +1757,15 @@ h5.section-subtitle {
  * 🎨 优雅防御：利用选择器特异性（无 !important）克制酒馆主题
  * =================================================== */
 
-/* 🟢 1. 压制：User 注册界面的所有按钮字体颜色 */
-html body #butter-root-container .preset-loader-section .menu_button,
-html body #butter-root-container #user-register-submit,
-html body #butter-root-container .preset-save-section .menu_button,
-html body #butter-root-container #b-reg-submit-btn {
-  color: #fdf7f8; /* 恢复原版高雅的淡粉白 */
-}
-
-/* 🔵 2. 压制：API 设置界面的所有按钮字体颜色 */
-html body #butter-root-container #butter-tab-api .menu_button {
-  color: #ffffff; /* 恢复纯白 */
-}
-
-/* ===================================================
- * 💡 备用终极杀招（黑科技）：双重 ID 锁
- * 如果酒馆某些极端主题连上面的 html body 路径都能污染，
- * 请取消下方代码的注释。#id#id 在 CSS 里代表权重直接翻倍，能直接绝杀。
- * =================================================== */
-/*
-#butter-root-container#butter-root-container .preset-loader-section .menu_button,
+#butter-root-container#butter-root-container
+  .preset-loader-section
+  .menu_button,
 #butter-root-container#butter-root-container #user-register-submit {
-    color: #fdf7f8;
+  color: #fdf7f8;
 }
 #butter-root-container#butter-root-container #butter-tab-api .menu_button {
-    color: #ffffff;
+  color: #ffffff;
 }
-*/
 
 /*
  * ==========================================
