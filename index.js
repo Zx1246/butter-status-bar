@@ -714,16 +714,14 @@ function bindGlobalEventListeners() {
         }
     });
 
-    // 当接收到AI生成的消息并已写入chat对象后，立即触发后台追踪
-    eventSource.on(event_types.MESSAGE_RECEIVED, (data) => {
-        // 增加一个判断，确保我们只处理来自AI的消息，而不是系统消息等
-        if (data.is_user === false && data.is_system === false) {
-            console.log(
-                "[Butter Tracker] MESSAGE_RECEIVED 事件触发，AI回复已就绪，即将执行后台追踪...",
-            );
-            // 无需延迟，直接执行
+    // 当AI生成回合结束时，触发后台追踪
+    eventSource.on(event_types.GENERATION_ENDED, () => {
+        console.log(
+            "[Butter Tracker] generation_ended 事件触发，即将执行后台追踪...",
+        );
+        setTimeout(() => {
             runButterTrackingEngine();
-        }
+        }, 500); // 延迟以确保所有数据已写入
     });
 
     // 当插件内部工具更新了状态时，刷新UI
