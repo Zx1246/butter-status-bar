@@ -431,7 +431,7 @@ export async function handleToolExecution(functionName, args) {
           // 在排卵期，受孕概率达到顶峰
           // 越接近排卵日，概率越高
           const distanceToOvulationDay = Math.abs(day - ovulationDay);
-          prob = Math.max(8, 40 - distanceToOvulationDay * 2);
+          prob = Math.max(8, 40 - distanceToOvulationDay * 5);
         } else {
           // 对于卵泡期和黄体期，定义一个“绝对安全期”
           const isAbsolutelySafe =
