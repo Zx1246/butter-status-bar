@@ -429,7 +429,7 @@ function renderHistoryPage(state) {
     childHtml += `
             <div class="bs-child-record pregnant">
                 <div class="bs-data-pair">
-                    <span>【耻辱的孕期中】</span>
+                    <span>【孕期中】</span>
                     <span>已历经 ${months}月 ${days}天</span>
                 </div>
             </div>`;

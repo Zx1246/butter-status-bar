@@ -431,14 +431,14 @@ export async function handleToolExecution(functionName, args) {
           // 在排卵期，受孕概率达到顶峰
           // 越接近排卵日，概率越高
           const distanceToOvulationDay = Math.abs(day - ovulationDay);
-          prob = Math.max(20, 80 - distanceToOvulationDay * 15);
+          prob = Math.max(8, 40 - distanceToOvulationDay * 2);
         } else {
           // 对于卵泡期和黄体期，定义一个“绝对安全期”
           const isAbsolutelySafe =
             (phase === "卵泡期" && day <= menstrualDuration + 3) || // 月经刚结束的几天
             (phase === "黄体期" && day >= avgCycle - 4); // 下次月经快来的几天
 
-          prob = isAbsolutelySafe ? 5 : 15; // 绝对安全期5%，其他时间15%
+          prob = isAbsolutelySafe ? 3 : 8; // 绝对安全期3%，其他时间15%
         }
 
         let roll = getRandomInt(1, 100);
