@@ -144,7 +144,7 @@ function renderHomePage(state) {
       currentImgUrl = WOMB_IMAGES.partially;
     } else if (currentVolume < 60) {
       currentImgUrl = WOMB_IMAGES.half;
-    } else if (currentVolume < 100) {
+    } else if (currentVolume < 80) {
       currentImgUrl = WOMB_IMAGES.full;
     } else {
       currentImgUrl = WOMB_IMAGES.overflow;
