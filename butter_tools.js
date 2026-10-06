@@ -406,6 +406,20 @@ export async function handleToolExecution(functionName, args) {
 
       logOutHintTxtResultForItOnly += ` 无套中出！注入 ${volumeToInject}ml 浓精。`;
 
+      // 【新增】中出时额外增加子宫敏感度（深度射精刺激宫口）
+      const growthFactor = bState.semi_fixed.sensitivity_growth_mode || 1;
+      if (
+        growthFactor > 0 &&
+        growthFactor < 100 &&
+        bState.dynamic.sensitivity.cervix !== undefined
+      ) {
+        const cervixBonus = growthFactor * 0.5; // 中出时子宫额外获得50%的刺激
+        bState.dynamic.sensitivity.cervix = Math.min(
+          1000,
+          bState.dynamic.sensitivity.cervix + cervixBonus,
+        );
+      }
+
       // 【核心机制：受孕概率轮盘 - 终极修复版】
       if (
         !bState.semi_fixed.disable_pregnancy &&
@@ -687,24 +701,35 @@ export async function handleToolExecution(functionName, args) {
     }
     // =======================================================
 
-    // 执行敏感度累加并封顶100
+    // 【修正】执行敏感度累加并封顶1000（经验无上限）
     if (modeMult > 0 && modeMult < 100) {
       bState.dynamic.sensitivity.genital = Math.min(
-        100,
+        1000,
         bState.dynamic.sensitivity.genital + sensIncreases.genital,
       );
       bState.dynamic.sensitivity.oral = Math.min(
-        100,
+        1000,
         bState.dynamic.sensitivity.oral + sensIncreases.oral,
       );
       bState.dynamic.sensitivity.breast = Math.min(
-        100,
+        1000,
         bState.dynamic.sensitivity.breast + sensIncreases.breast,
       );
       bState.dynamic.sensitivity.butt = Math.min(
-        100,
+        1000,
         bState.dynamic.sensitivity.butt + sensIncreases.butt,
       );
+
+      // 【新增】子宫敏感度增长（只在阴道插入时增长）
+      const pussyCount = argumentsProcessed.pussy || 0;
+      if (pussyCount > 0 && bState.dynamic.sensitivity.cervix !== undefined) {
+        // 子宫开发速度为阴道的40%（更难开发）
+        const cervixIncrease = pussyCount * modeMult * 0.4;
+        bState.dynamic.sensitivity.cervix = Math.min(
+          1000,
+          bState.dynamic.sensitivity.cervix + cervixIncrease,
+        );
+      }
     }
 
     logOutHintTxtResultForItOnly += ` 【行为清算报告】接受了 ${totalActs} 次淫乱行为，敏感度依据倍率(x${modeMult})同步增长结算完毕！`;

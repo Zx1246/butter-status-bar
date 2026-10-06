@@ -57,73 +57,23 @@ function translateSimpleRuleToRegex(rule) {
 const SETTINGS_KEY = "butterPluginSettings";
 let isTrackingActive = false; // 防止并发调用的全局锁
 
-// ==========================================
-// I. 状态注入模块
-// 负责将肉体档案转化为AI可理解的文本，并注入酒馆
-// ==========================================
-
 /**
- * 状态降维翻译器 (核心)：将数值化的经验转化为富有描述性的文本。
- * @param {object} state - The butter state object.
- * @returns {string} - A descriptive string of the character's physical state.
+ * 状态降维翻译器 (简化版)：只输出代谢和魅魔状态
+ * 性器开发状态已移到独立函数
  */
 function translatePhysicalState(state) {
-  const exp = state.dynamic.experience;
   const descriptions = [];
   const p = state.semi_fixed.pronoun || "她";
 
-  // 【核心修正】sens 变量未定义，应从 state.dynamic.sensitivity 获取
-  const sens = state.dynamic.sensitivity;
-
-  const stateMap = {
-    pussy: {
-      virgin: "私处(处女): 紧锁抗拒，初次进入会有撕裂痛感。",
-      developed: `私处(湿热): 懂得放松分泌爱液，迎合抽插。`,
-      fallen: `私处(淫穴): 极度淫荡，主动收缩吮吸，贪婪吞食。`,
-    },
-    anal: {
-      virgin: "后庭(紧锁): 完全未经开发，极度抗拒。",
-      developed: `后庭(开拓): 括约肌学会放松，享受酸胀。`,
-      fallen: `后庭(幽穴): 湿滑可自如收缩，敞开迎接挞伐。`,
-    },
-    oral: {
-      virgin: "口腔(青涩): 深喉会干呕，动作笨拙。",
-      developed: `口腔(适应): 放松喉部，用舌唇取悦。`,
-      fallen: `口腔(熟练): 喉咙柔软贪婪，渴求精液灌满。`,
-    },
-    breast: {
-      virgin: "乳房(蓓蕾): 快感轻微伴随羞耻。",
-      developed: `乳房(敏感): 主动挺起胸膛作为高潮开关。`,
-      fallen: `乳房(淫具): 丰满柔软，渴望被粗暴揉捏。`,
-    },
-  };
-
-  for (const key of Object.keys(stateMap)) {
-    // 【核心修正】兼容旧的 pussy 键和新的 genital 键
-    const sensitivityValue = sens[key] ?? sens.genital ?? 0;
-
-    if (sensitivityValue >= 80) {
-      descriptions.push(stateMap[key].fallen);
-    } else if (sensitivityValue >= 30) {
-      descriptions.push(stateMap[key].developed);
-    } else {
-      descriptions.push(stateMap[key].virgin);
-    }
-  }
-
-  if (state.semi_fixed.custom_erogenous_zones) {
-    descriptions.push(
-      `致命弱点(${state.semi_fixed.custom_erogenous_zones}): 一旦被触碰，会瞬间产生强烈快感。`,
-    );
-  }
-
+  // 只保留代谢状态
   const meta = state.dynamic.metabolism;
-  let metabolismDesc = `【当前生理需求】饱腹感:${meta.hunger}% | 清洁度:${meta.cleanliness}% | 精力:${meta.energy}% | 膀胱/肠道:${meta.excretion}%(越低越憋胀) | 积乳值:${meta.lactation}% | 社交需求:${meta.social}%`;
+  let metabolismDesc = `【代谢】饱腹:${meta.hunger}% 清洁:${meta.cleanliness}% 精力:${meta.energy}% 膀胱/肠道:${meta.excretion}%(越低越憋胀) 积乳:${meta.lactation}% 社交:${meta.social}%`;
   descriptions.push(metabolismDesc);
 
+  // 魅魔专属状态
   if (state.fixed.race === "魅魔" && state.dynamic.succubus_status) {
     descriptions.push(
-      `【魔力饥饿度】: ${state.dynamic.succubus_status.hunger_percent}% (<10%将进入强制发情)`,
+      `【魔力饥饿度】:${state.dynamic.succubus_status.hunger_percent}% (<10%将进入强制发情)`,
     );
   }
 
@@ -131,37 +81,346 @@ function translatePhysicalState(state) {
 }
 
 /**
- * 泌乳状态翻译器：将数值转化为文本描述。
+ * 获取生理周期阶段提示词（≤60字）
+ * 只在非孕期时调用
+ */
+function getMenstrualPhasePrompt(state) {
+  const phase = state.dynamic.status.menstrual_phase;
+  const cycleDay = state.dynamic.status.cycle_day;
+  const avgCycle = state.fixed.cycle_base.average_cycle || 28;
+  const daysToNextPeriod = avgCycle - cycleDay;
+
+  if (phase === "排卵期") {
+    return "【排卵期·发情中】性欲旺盛，阴道分泌大量粘稠透明拉丝状爱液,穴肉敏感贪婪,渴望被插入填满,乳头肿胀,身体本能散发催情信息素诱惑交配对象";
+  } else if (phase === "生理期") {
+    return "【生理期·不适】子宫剥落出血,小腹坠痛抽搐,腰酸背痛,乳房胀痛,情绪暴躁易怒,疲惫嗜睡,性欲低迷,阴道排出经血不宜插入";
+  } else if (phase === "黄体期") {
+    if (daysToNextPeriod <= 5) {
+      return "【黄体期后期·躁动】体温升高,阴道敏感湿润,乳房发胀,情欲高涨身体饥渴,强烈渴求性交和被射精填满的满足感";
+    }
+    return "【黄体期·活力】精力充沛思维敏捷,工作效率高涨,心情愉悦积极向上,性欲平稳";
+  } else if (phase === "卵泡期") {
+    return "【卵泡期·恢复】经期刚过体力恢复中,心情平和,子宫内膜增厚,性欲逐渐回升";
+  }
+
+  return "";
+}
+
+/**
+ * 获取孕期阶段提示词（按5%进度细分，共20阶段）
+ */
+function getPregnancyStagePrompt(state) {
+  if (!state.dynamic.status.is_pregnant) return "";
+
+  const moment = SillyTavern.libs.moment;
+  const currentDate = moment(state.dynamic.time_tracker.story_date);
+  const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
+  const daysElapsed = currentDate.diff(pregStartDate, "days");
+
+  // 获取总孕期天数
+  const totalMonths = state.semi_fixed.gestation_duration || 10;
+  const totalDays = totalMonths * 30;
+
+  // 计算孕期进度百分比
+  const progress = (daysElapsed / totalDays) * 100;
+
+  // 根据5%进度细分返回对应提示词
+  if (progress < 5) {
+    return "【受孕初期·无感】受精卵刚着床,外表和感觉完全正常,身体尚未察觉怀孕,偶尔轻微疲倦但易被忽略";
+  } else if (progress < 10) {
+    return "【早孕反应】晨起恶心干呕,嗜睡乏力,乳房开始微微发胀刺痛,小腹依然平坦,尿频但易误认为普通不适";
+  } else if (progress < 15) {
+    return "【孕吐期·痛苦】孕吐严重食欲不振,极度疲倦嗜睡,乳头敏感胀痛乳晕加深,小腹微微隆起但衣物可遮掩,性欲低迷";
+  } else if (progress < 20) {
+    return "【早孕后期·煎熬】持续孕吐和反胃,尿频加剧,乳房明显增大变重刺痛感强,小腹微凸但仍不明显,情绪波动大易哭,性欲极低";
+  } else if (progress < 25) {
+    return "【过渡期·初显孕相】孕吐开始减轻,腹部开始微微凸起可见弧度,乳房持续胀大变软,乳头高度敏感,阴道分泌物增多,性欲缓慢回升";
+  } else if (progress < 30) {
+    return "【症状缓解期】孕吐基本消失胃口恢复,小腹隆起更明显紧身衣难遮,乳房丰满柔软开始分泌初乳,乳头勃起敏感渴望触碰,性欲逐渐苏醒";
+  } else if (progress < 35) {
+    return "【胎动初感】腹部明显鼓起呈小球状,感受到微弱胎动,精力恢复,乳房丰满柔软持续产初乳,乳头长期勃起,性欲回升阴道开始湿润,食欲旺盛";
+  } else if (progress < 40) {
+    return "【孕中期·显怀】孕肚明显凸起浑圆,胎动频繁可感,精力充沛,性欲强烈高涨,阴道敏感湿滑淫水增多,乳房饱满产乳量增加,渴望性爱和乳头刺激";
+  } else if (progress < 45) {
+    return "【性欲巅峰期】孕肚浑圆沉甸,胎动活跃,荷尔蒙激增导致性欲爆发,阴道异常敏感湿润淫水泛滥,乳房胀满溢乳,乳头极度敏感,强烈渴求性交和被抚摸";
+  } else if (progress < 50) {
+    return "【孕中期盛期·旺盛】孕肚高高隆起,胎动强劲,身体适应孕期状态,性欲持续高涨,阴道湿热紧致淫水充沛,乳房丰满产奶,乳首勃起渴望吸吮,皮肤润泽";
+  } else if (progress < 55) {
+    return "【负重渐增】孕肚继续增大开始感到沉重,胎动有力,腰部开始酸痛,性欲依然旺盛,阴道敏感多汁,乳房持续产奶偶尔溢出,需更频繁休息";
+  } else if (progress < 60) {
+    return "【孕中后期·转折】孕肚明显沉重影响行动,双腿开始轻微浮肿,腰酸背痛加剧,性欲依然高但体力开始跟不上,阴道湿润敏感,乳房胀满溢乳频繁";
+  } else if (progress < 65) {
+    return "【行动受限初期】孕肚巨大沉重,双腿水肿明显,腰背持续酸痛,弯腰困难,性欲矛盾地高涨但身体疲惫,阴道松软湿润淫水多,乳房肿胀溢乳,尿频加剧";
+  } else if (progress < 70) {
+    return "【疲惫期·力不从心】孕肚如抱大球沉重难耐,双腿严重水肿,腰酸背痛难以久站,行动迟缓,性欲高涨但体力不支,阴道敏感多汁,乳房胀痛溢乳不止";
+  } else if (progress < 75) {
+    return "【孕后期初·沉重】孕肚巨大压迫内脏,双腿肿胀行走困难,呼吸略感压迫,性欲依然存在但需温柔对待,阴道松软湿润淫液泛滥,乳房胀满随时喷乳,尿频严重";
+  } else if (progress < 80) {
+    return "【极度沉重期】孕肚达到巨大体积,双腿水肿严重难以久站,腰酸背痛剧烈,行动极为迟缓,阴道极度敏感湿润,子宫压迫膀胱频繁尿意,乳房胀痛溢乳频繁,身心疲惫";
+  } else if (progress < 85) {
+    return "【假性宫缩期】孕肚巨大腹部紧绷,时常出现假性宫缩阵痛,双腿肿胀如灌铅,腰背剧痛难忍,阴道分泌大量粘液,子宫开始为分娩做准备,乳房胀满溢乳,焦虑不安";
+  } else if (progress < 90) {
+    return "【临产准备·不安】孕肚达到极限随时可能分娩,宫缩越发频繁,子宫口开始软化,阴道大量分泌粘稠液体,双腿严重水肿几乎无法行走,乳房胀痛喷乳,紧张与期待交织";
+  } else if (progress < 95) {
+    return "【临盆倒计时·紧迫】孕肚巨大随时临盆,宫缩阵痛密集,子宫口持续软化扩张,阴道流出大量分泌物,双腿肿胀行动困难,乳房肿胀随时喷乳,内心焦虑恐惧,本能地寻求安全感";
+  } else {
+    return "【羊水将破·分娩在即】孕肚达到生理极限腹部紧绷,宫缩剧痛频繁,羊水随时可能破裂,子宫口松软扩张,阴道湿滑大量粘液流出,双腿肿胀无法站立,乳房胀满持续喷乳,恐惧与母性本能激烈冲突";
+  }
+}
+
+/**
+ * 获取子宫/生殖腔开发状态描述
+ */
+function getCervixDevelopmentDesc(state) {
+  const cervix = state.dynamic.sensitivity.cervix || 0;
+  const isOvulation = state.dynamic.status.menstrual_phase === "排卵期";
+  const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
+  const isEstrus = isOvulation || isForcedEstrus;
+
+  // 根据设定判断使用"子宫"还是"生殖腔"
+  const traits = state.semi_fixed.traits || [];
+  const useReproductiveCavity = traits.some(
+    (t) =>
+      t.includes("ABO") ||
+      t.includes("兽世") ||
+      t.includes("哨向") ||
+      t.includes("兽人"),
+  );
+  const organName = useReproductiveCavity ? "生殖腔" : "子宫";
+
+  let desc = "";
+  if (cervix < 10) {
+    desc = `${organName}口紧闭坚硬,被触碰时剧痛抗拒,无法承受深入插入`;
+  } else if (cervix < 40) {
+    desc = `${organName}口开始学会放松,被顶弄时酸胀刺痛但已能忍受,偶尔会从深处涌出快感`;
+  } else if (cervix < 70) {
+    desc = `${organName}口已被调教得柔软,能吞吃龟头深入,被顶开时产生酸麻快感,宫腔开始渴求填充`;
+  } else if (cervix < 90) {
+    desc = `${organName}口湿软可轻松吞入,被捅入宫腔时淫荡痉挛,${organName}深处已成为新的性感带,渴望被精液直接灌满`;
+  } else {
+    desc = `${organName}口彻底沦为淫穴,主动收缩吸附肉棒,宫腔深处极度敏感,被贯穿时能直接达到宫交高潮,成为专属肉便器`;
+  }
+
+  // 发情期加成
+  if (isEstrus) {
+    desc += `(发情期)宫口异常柔软湿润,本能地渴望被贯穿直射精卵`;
+  }
+
+  return desc;
+}
+
+/**
+ * 【核心重构】获取性器开发状态描述（考虑破处状态和经验值）
+ */
+function getSexualDevelopmentDesc(state) {
+  const exp = state.dynamic.experience;
+  const sens = state.dynamic.sensitivity;
+  const isVirgin = state.dynamic.status.is_virgin;
+  const descriptions = [];
+
+  // 1. 阴道开发描述（考虑处女状态）
+  if (isVirgin) {
+    descriptions.push("阴道(处女):处女膜完整紧锁,首次插入会撕裂剧痛出血");
+  } else {
+    const pussy = exp.pussy || 0;
+    if (pussy < 50) {
+      descriptions.push(
+        "阴道(破处):处女膜已破,穴口紧涩生疏,插入时仍感紧绷刺痛,爱液分泌少",
+      );
+    } else if (pussy < 150) {
+      descriptions.push(
+        "阴道(适应):穴肉学会放松吞吐,能主动分泌爱液润滑,开始享受抽插快感",
+      );
+    } else if (pussy < 300) {
+      descriptions.push(
+        "阴道(淫化):穴肉湿热贪婪,会主动收缩吮吸肉棒,爱液充沛,渴望被狠狠贯穿",
+      );
+    } else {
+      descriptions.push(
+        "阴道(名器):已被调教成淫荡肉穴,穴肉极度敏感会自主蠕动榨精,仅靠插入就能连续高潮",
+      );
+    }
+  }
+
+  // 2. 后庭开发描述
+  const anal = exp.anal || 0;
+  if (anal === 0) {
+    descriptions.push(
+      "后庭(紧闭):肛门完全未经开发,括约肌紧锁,强行插入会撕裂剧痛",
+    );
+  } else if (anal < 50) {
+    descriptions.push(
+      "后庭(初启):括约肌开始学会放松,插入时仍酸胀刺痛,需大量润滑",
+    );
+  } else if (anal < 150) {
+    descriptions.push("后庭(开拓):肠道已适应异物,能放松吞入,酸胀中带来快感");
+  } else if (anal < 300) {
+    descriptions.push(
+      "后庭(淫穴):肠壁敏感湿滑,会主动收缩夹紧,深处被顶弄时产生强烈快感",
+    );
+  } else {
+    descriptions.push(
+      "后庭(失禁):后穴彻底沦陷,随时敞开迎接侵犯,肠道深处成为敏感性器",
+    );
+  }
+
+  // 3. 口腔开发描述
+  const oral = exp.oral || 0;
+  if (oral < 30) {
+    descriptions.push("口腔(青涩):深喉会干呕,舌头笨拙,口交技巧生疏");
+  } else if (oral < 100) {
+    descriptions.push("口腔(学习):开始掌握吞吐技巧,能忍受深喉,舌头灵活取悦");
+  } else if (oral < 200) {
+    descriptions.push(
+      "口腔(熟练):喉咙柔软能深度吞咽,口交技巧娴熟,渴望被精液灌喉",
+    );
+  } else {
+    descriptions.push(
+      "口腔(淫器):咽喉彻底被开发,视口交为享受,主动舔舐吸吮榨精,吞精成癖",
+    );
+  }
+
+  // 4. 乳房开发描述
+  const breast = exp.breast || 0;
+  if (breast < 50) {
+    descriptions.push("乳房(蓓蕾):乳头敏感度低,揉捏时快感微弱伴随羞耻");
+  } else if (breast < 150) {
+    descriptions.push(
+      "乳房(觉醒):乳头开始敏感,被吸吮揉捏时产生快感,挺起胸膛渴求爱抚",
+    );
+  } else if (breast < 300) {
+    descriptions.push(
+      "乳房(敏感):乳房成为性感带,乳头高度敏感,粗暴揉捏可引发高潮",
+    );
+  } else {
+    descriptions.push(
+      "乳房(淫具):乳房彻底沦为性器,仅通过乳交和乳头刺激就能达到乳首高潮",
+    );
+  }
+
+  return descriptions.join(" | ");
+}
+
+/**
+ * 【完善版】泌乳状态翻译器：考虑孕期、高潮、持续产乳模式
  * @param {object} state - The butter state object.
  * @returns {string} - The lactation status description string, or an empty string.
  */
 function getLactationDescription(state) {
-  const lacSet = state.semi_fixed.lactation_setting;
-  const breastSens = state.dynamic.sensitivity.breast;
+  const lacSet = state.semi_fixed.lactation_setting || "孕后哺乳期产乳";
+  const breastSens = state.dynamic.sensitivity.breast || 0;
   const isPregnant = state.dynamic.status.is_pregnant;
   const hasChildren = state.dynamic.relationships.children_list?.length > 0;
   const isOvulating = state.dynamic.status.menstrual_phase === "排卵期";
   const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
+  const lacVal = state.dynamic.metabolism.lactation || 0;
+
+  // 计算孕期进度（如果怀孕）
+  let pregnancyProgress = 0;
+  if (isPregnant) {
+    const moment = SillyTavern.libs.moment;
+    const currentDate = moment(state.dynamic.time_tracker.story_date);
+    const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
+    const daysElapsed = currentDate.diff(pregStartDate, "days");
+    const totalMonths = state.semi_fixed.gestation_duration || 10;
+    const totalDays = totalMonths * 30;
+    pregnancyProgress = (daysElapsed / totalDays) * 100;
+  }
 
   let canLactate = false;
-  if (lacSet === "随胸部开发度产乳" && breastSens >= 100) canLactate = true;
-  else if (lacSet === "孕后哺乳期产乳" && (isPregnant || hasChildren))
+  let lactationReason = "";
+
+  // 判断是否可以产乳
+  if (lacSet === "持续产乳") {
+    // 【修正】持续产乳模式也遵循孕期和高潮规则
     canLactate = true;
-  else if (lacSet === "发情期产乳" && (isOvulating || isForcedEstrus))
+    lactationReason = "持续产乳";
+  } else if (lacSet === "随胸部开发度产乳" && breastSens >= 100) {
     canLactate = true;
-  else if (lacSet === "高潮后产乳") canLactate = true;
+    lactationReason = "胸部开发";
+  } else if (lacSet === "孕后哺乳期产乳" && (isPregnant || hasChildren)) {
+    canLactate = true;
+    lactationReason = "孕期/哺乳期";
+  } else if (lacSet === "发情期产乳" && (isOvulating || isForcedEstrus)) {
+    canLactate = true;
+    lactationReason = "发情期";
+  } else if (lacSet === "高潮后产乳") {
+    canLactate = true;
+    lactationReason = "高潮刺激";
+  } else if (lacSet === "不产乳") {
+    return "";
+  }
 
   if (!canLactate) return "";
 
-  const lacVal = state.dynamic.metabolism.lactation || 0;
+  // 根据孕期阶段和积乳量生成描述
   let lacDesc = "";
-  if (lacVal <= 30) lacDesc = "触感柔软，无异常。";
-  else if (lacVal < 60) lacDesc = "乳腺充盈，微胀。";
-  else if (lacVal < 80) lacDesc = "乳房饱胀，触碰时会分泌乳汁。";
-  else if (lacVal < 100) lacDesc = "极度肿胀，轻压即漏奶，高潮时会喷射。";
-  else lacDesc = "乳汁持续溢出，渗透衣物。";
 
-  return `\n[泌乳状态: ${lacDesc}]`;
+  if (isPregnant) {
+    // 孕期产乳描述（更细致）
+    if (pregnancyProgress < 25) {
+      // 孕早期：不产奶或极少量
+      if (lacVal > 0) {
+        lacDesc = "乳房胀痛但尚未产乳,乳腺准备中";
+      } else {
+        lacDesc = "孕早期,未产乳";
+      }
+    } else if (pregnancyProgress < 50) {
+      // 孕中期前期：初乳
+      if (lacVal > 80) {
+        lacDesc = "初乳充盈,乳头轻触即溢出透明乳汁";
+      } else if (lacVal > 50) {
+        lacDesc = "可挤出少量粘稠初乳";
+      } else if (lacVal > 20) {
+        lacDesc = "乳头偶有乳珠渗出";
+      } else {
+        lacDesc = "开始分泌初乳";
+      }
+    } else if (pregnancyProgress < 70) {
+      // 孕中期：产奶增加
+      if (lacVal > 90) {
+        lacDesc = "乳房胀满,乳汁不断溢出浸湿衣物,乳头长期勃起";
+      } else if (lacVal > 70) {
+        lacDesc = "乳房饱胀沉重,轻压即喷射乳汁";
+      } else if (lacVal > 40) {
+        lacDesc = "可挤出大量温热乳汁";
+      } else if (lacVal > 10) {
+        lacDesc = "乳房产奶中,乳头湿润";
+      } else {
+        lacDesc = "乳房被吸空,恢复中";
+      }
+    } else {
+      // 孕后期：大量产奶
+      if (lacVal > 90) {
+        lacDesc = "乳房极度肿胀,乳汁不受控制地持续喷涌,衣物被浸透";
+      } else if (lacVal > 70) {
+        lacDesc = "乳房胀满到疼痛,轻触即喷射乳汁";
+      } else if (lacVal > 40) {
+        lacDesc = "产奶旺盛,挤压射出大量乳汁";
+      } else if (lacVal > 10) {
+        lacDesc = "持续产乳,乳头湿润滴乳";
+      } else {
+        lacDesc = "刚被吸空,乳头敏感";
+      }
+    }
+  } else {
+    // 非孕期产乳描述
+    if (lacVal > 90) {
+      lacDesc = "乳房极度肿胀,乳汁不受控制地持续喷涌溢出,乳头勃起滴乳";
+    } else if (lacVal > 70) {
+      lacDesc = "乳房胀满沉重,轻触即喷射乳汁,乳头敏感勃起";
+    } else if (lacVal > 50) {
+      lacDesc = "乳房饱胀,挤压可射出大量乳汁,乳晕肿胀";
+    } else if (lacVal > 30) {
+      lacDesc = "乳房微胀,乳头可挤出温热乳汁";
+    } else if (lacVal > 10) {
+      lacDesc = "乳腺分泌微量乳汁,乳头轻挤有乳珠渗出";
+    } else {
+      lacDesc = "乳房刚被吸空,乳头湿润,乳腺恢复中";
+    }
+  }
+
+  return `\n[泌乳状态(${lactationReason}): ${lacDesc}]`;
 }
 
 // 【架构终极版】使用 setExtensionPrompt 的高级形式，实现精准的D2深度注入
@@ -200,16 +459,27 @@ export async function injectButterSystemPrompt() {
     }
   }
 
-  // 小腹状态描述
-  let wombVolume = state.dynamic.womb.semen_volume;
-  let abdomenDesc = "小腹平坦紧实。";
-  if (wombVolume > 90)
-    abdomenDesc = "小腹被大量精液撑得极度高耸，呈现出如同孕三月般的浑圆鼓胀。";
-  else if (wombVolume > 50)
-    abdomenDesc = "宫腔内灌满浊液，下腹部明显鼓胀，轮廓分明。";
-  else if (wombVolume > 20)
-    abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
-  else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
+  // 小腹状态描述 - 孕期与非孕期分离逻辑
+  let abdomenDesc = "";
+  const isPregnant = state.dynamic.status.is_pregnant;
+  const reproductionType = state.semi_fixed.reproduction_type || "胎生";
+
+  if (isPregnant && reproductionType === "胎生") {
+    // 孕期：隐藏精液腹部，显示孕肚（通过孕期提示词体现，这里留空）
+    abdomenDesc = "";
+  } else {
+    // 非孕期：显示精液腹部
+    let wombVolume = state.dynamic.womb.semen_volume;
+    if (wombVolume > 90)
+      abdomenDesc =
+        "小腹被大量精液撑得极度高耸，呈现出如同孕三月般的浑圆鼓胀。";
+    else if (wombVolume > 50)
+      abdomenDesc = "宫腔内灌满浊液，下腹部明显鼓胀，轮廓分明。";
+    else if (wombVolume > 20)
+      abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
+    else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
+    else abdomenDesc = "小腹:平坦紧实";
+  }
 
   // 泌乳状态描述
   const lactationDescription = getLactationDescription(state).trim();
@@ -236,30 +506,51 @@ export async function injectButterSystemPrompt() {
     : "【无套/未佩戴】";
   // ===================================================
 
-  // --- 3. 模板构建：使用模板字符串组装最终的提示词 ---
+  // --- 3. 模板构建：分阶段注入，避免冲突 ---
 
+  // 阶段A：生理/孕期状态（互斥）
+  let stagePrompt = "";
+  if (isPregnant) {
+    stagePrompt = getPregnancyStagePrompt(state);
+  } else {
+    stagePrompt = getMenstrualPhasePrompt(state);
+  }
+
+  // 阶段B：性器开发状态（独立）
+  const developmentDesc = getSexualDevelopmentDesc(state);
+
+  // 阶段C：子宫开发状态（独立）
+  const cervixDesc = getCervixDevelopmentDesc(state);
+
+  // 阶段D：代谢状态（来自旧函数）
+  const metabolismDesc = translatePhysicalState(state);
+
+  // 组装最终提示词
   const finalPrompt = `
-${personaAddon}[生理状态参考，请自然融入：]
-- 小腹状态: ${abdomenDesc}
-- 泌乳状态: ${lactationDescription || "无泌乳迹象。"}
-- 灵魂契约: ${soulContractDesc}
-- 年龄档案: ${ageString}
-- 身体适应度:【${physicalDescriptions}】
-- 当前状态: 生理周期(${state.dynamic.status.menstrual_phase}) | 情欲(Lust:${state.dynamic.status.lust}/100)
-- 子宫滞留液: ${state.dynamic.womb.semen_volume.toFixed(1)}ml
-- 穴口状态: ${state.dynamic.womb.is_plugged ? "【堵住/夹紧，无法流出】" : "【敞开/放松，缓慢流出】"}
-- 避孕套状态: ${condomStatusDesc}  
+${personaAddon}[生理状态 请自然融入]
+${stagePrompt}
+${abdomenDesc ? `- ${abdomenDesc}` : ""}
+- 泌乳:${lactationDescription || "无"}
+- 灵魂契约:${soulContractDesc}
+- 年龄:${ageString}
+- 性器开发:${developmentDesc}
+- 宫腔开发:${cervixDesc}
+- ${metabolismDesc}
+- Lust:${state.dynamic.status.lust}/100
+- 子宫液:${state.dynamic.womb.semen_volume.toFixed(1)}ml
+- 穴口:${state.dynamic.womb.is_plugged ? "堵住" : "敞开"}
+- 避孕套:${condomStatusDesc}
 ${
   state.dynamic.status.menstrual_phase === "生理期" &&
   !state.dynamic.status.is_pregnant
-    ? `[系统最高指令: 生理期间，绝对禁止插入式性交。请展现身体疲惫与腹部坠胀，婉拒实质性插入。]`
+    ? `[系统指令:生理期间禁止插入式性交。请展现身体疲惫与腹部坠胀,婉拒实质性插入]`
     : ""
 }
 ${
   state.dynamic.status.is_pregnant
     ? !state.dynamic.status.is_pregnancy_known_to_user
-      ? `[系统最高指令: ${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等【轻微变化】。绝对禁止使用“怀孕”、“胎儿”等词剧透！]`
-      : `[状态提示: ${p}已知悉受孕，请合理展现该阶段的心理与生理特征。]`
+      ? `[系统指令:${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等轻微变化。禁用"怀孕"、"胎儿"等词剧透]`
+      : `[状态提示:${p}已知悉受孕,请合理展现该阶段的心理与生理特征]`
     : ""
 }
 ${
@@ -267,7 +558,7 @@ ${
   state.dynamic.succubus_status &&
   (state.dynamic.succubus_status.hunger_percent < 10 ||
     state.dynamic.succubus_status.is_forced_estrus)
-    ? `[状态提示: 魔力濒临枯竭。生理本能将压倒理智，产生强烈的体液渴求。]`
+    ? `[状态提示:魔力濒临枯竭。生理本能将压倒理智,产生强烈的体液渴求]`
     : ""
 }
 `.trim();

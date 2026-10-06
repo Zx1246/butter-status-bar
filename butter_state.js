@@ -75,7 +75,7 @@ const defaultButterUserState = {
       semen_sources: [],
       is_plugged: false, // 【主人指定的塞子】默认子宫口未堵塞，精液可流出
     },
-    sensitivity: { genital: 0, oral: 0, breast: 0, butt: 0 },
+    sensitivity: { genital: 0, oral: 0, breast: 0, butt: 0, cervix: 0 },
     experience: {
       exposure: 0,
       oral: 0,
