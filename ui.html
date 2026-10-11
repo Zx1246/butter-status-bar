@@ -161,6 +161,50 @@
                 </div>
               </div>
 
+              <!-- 兽人种族状态（概览页只显示名称和发情状态，详情在特殊技能页） -->
+              <div id="bs-beast-features-section" style="display: none; margin-top: 20px;">
+                <div class="bs-grid bs-grid-three-column">
+                  <div class="bs-g-item stack">
+                    <span>细分种族</span>
+                    <code id="bs-beast-race-type">...</code>
+                  </div>
+                  <div class="bs-g-item stack">
+                    <span>发情期状态</span>
+                    <code id="bs-beast-heat-status">...</code>
+                  </div>
+                  <div class="bs-g-item stack">
+                    <span>距上次交配</span>
+                    <code id="bs-beast-days-since-mating">...</code>
+                  </div>
+                </div>
+              </div>
+
+            <!-- 【修改】第二性别信息整合到这里（条件显示） -->
+              <div id="bs-secondary-gender-inline" style="display: none; margin-top: 10px;">
+                <div class="bs-grid bs-grid-three-column">
+                  <div class="bs-g-item stack">
+                    <span>第二性别</span>
+                    <code id="bs-secondary-gender-type">...</code>
+                  </div>
+                  <div class="bs-g-item stack" id="bs-secondary-pheromone-item" style="display: none;">
+                    <span>信息素</span>
+                    <code id="bs-secondary-pheromone">...</code>
+                  </div>
+                  <div class="bs-g-item stack" id="bs-secondary-heat-row" style="display: none;">
+                    <span>发情状态</span>
+                    <code id="bs-secondary-heat-status">...</code>
+                  </div>
+                  <div class="bs-g-item stack" id="bs-secondary-spirit-item" style="display: none;">
+                    <span>精神体</span>
+                    <code id="bs-secondary-spirit">...</code>
+                  </div>
+                  <div class="bs-g-item stack" style="display: none;">
+                    <span>精神海</span>
+                    <code id="bs-secondary-sea-desc">...</code>
+                  </div>
+                </div>
+              </div>
+
               <div class="butter-content-title" style="margin-top: 20px;"><h4>生理需求</h4></div>
               <div class="butter-stats-grid">
                 <!-- 饥饿 -->
@@ -245,6 +289,7 @@
                   <div class="bs-data-pair"><span>阴蒂经验</span><span id="bs-exp-clitoris">0</span></div>
                   <div class="bs-data-pair"><span>臀部经验</span><span id="bs-exp-butt">0</span></div>
                   <div class="bs-data-pair"><span>肛交经验</span><span id="bs-exp-anal">0</span></div>
+                  <div class="bs-data-pair"><span>手部经验</span><span id="bs-exp-handjob">0</span></div>
                   <hr class="sysHR_half" />
                   <div class="bs-data-pair"><span>经验人数</span><span id="bs-partners-count">0</span></div>
                   <div class="bs-data-pair"><span>自慰次数</span><span id="bs-masturbation-count">0</span></div>
@@ -262,6 +307,7 @@
                   </div>
                   <h5 class="section-subtitle">各部敏感度</h5>
                   <div class="bs-data-pair"><span>性器敏感度</span><span id="bs-sens-genital">0</span></div>
+                  <div class="bs-data-pair"><span>宫颈敏感度</span><span id="bs-sens-cervix">0</span></div>
                   <div class="bs-data-pair"><span>口敏感度</span><span id="bs-sens-oral">0</span></div>
                   <div class="bs-data-pair"><span>胸敏感度</span><span id="bs-sens-breast">0</span></div>
                   <div class="bs-data-pair"><span>臀部敏感度</span><span id="bs-sens-butt">0</span></div>
@@ -287,6 +333,15 @@
               </div>
               <div class="bs-data-pair thick">
                 <span>灵魂契约</span><span id="bs-rel-soul">无</span>
+              </div>
+              <!-- 【新增】第二性别标记对象（仅ABO/天乾地坤显示） -->
+              <div class="bs-data-pair thick" id="bs-rel-mark-permanent-row" style="display: none;">
+                <span id="bs-rel-mark-permanent-label">永久标记对象</span>
+                <span id="bs-rel-mark-permanent">无</span>
+              </div>
+              <div class="bs-data-pair thick" id="bs-rel-mark-temporary-row" style="display: none;">
+                <span id="bs-rel-mark-temporary-label">临时标记对象</span>
+                <span id="bs-rel-mark-temporary">无</span>
               </div>
               <!-- 繁衍记录将由JS动态追加到这里 -->
               <div id="bs-children-container"></div>
@@ -350,11 +405,109 @@
                   min="1"
                 />
               </div>
+
+              <hr class="sysHR_half" />
+              <div class="butter-content-title" style="margin-top: 20px;">
+                <h5 style="color: var(--butter-text-light);">注入控制</h5>
+              </div>
+
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="bs-inject-race-features" checked />
+                <label for="bs-inject-race-features">
+                  注入种族特征（兽人♀特征 + 发情期特供）
+                </label>
+              </div>
+
+              <div class="settings_section flex-container">
+                <input type="checkbox" id="bs-inject-secondary-features" checked />
+                <label for="bs-inject-secondary-features">
+                  注入第二性别（哨向精神体/精神海，ABO/天乾地坤信息素）
+                </label>
+              </div>
+
             </div>
 
             <!-- ==================== 页面6: 特殊技能 (动态内容) ==================== -->
             <div id="butter-tab-skills" class="butter-tab-content" style="display: none">
               <!-- JS将根据种族动态显示/隐藏以下内容 -->
+              <!-- 兽人专属部分 -->
+              <div id="bs-skills-beast-section" style="display: none;">
+                <div class="butter-content-title">
+                  <h4><i class="fa-solid fa-paw"></i> 兽人种族档案</h4>
+                </div>
+
+                <div class="settings_section flex-gap">
+                  <label>细分种族</label>
+                  <input type="text" id="bs-beast-skill-subrace" class="text_pole"
+                    placeholder="例如：北长尾山雀">
+                </div>
+
+                <div class="settings_section">
+                  <label>种族习性与特征</label>
+                  <textarea id="bs-beast-skill-features" class="text_pole" rows="8"
+                    placeholder="AI生成的细分种族详细习性和特征将显示在这里，也可手动修改..."></textarea>
+                </div>
+
+                <div class="settings_section">
+                  <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button id="bs-beast-save-btn" class="menu_button">
+                      <i class="fa-solid fa-floppy-disk"></i> 保存修改
+                    </button>
+                  </div>
+                </div>
+
+                <hr class="sysHR" />
+
+                <div class="settings_section">
+                  <label style="color: var(--butter-text-light); font-size: 12px;">
+                    <i class="fa-solid fa-info-circle"></i>
+                    发情期状态和距上次交配信息请在首页查看。♀特征由系统后台自动注入，无需手动设置。
+                  </label>
+                </div>
+              </div>
+
+                            <!-- 哨向专属部分 -->
+              <div id="bs-skills-sentinel-section" style="display: none;">
+                <div class="butter-content-title">
+                  <h4><i class="fa-solid fa-dove"></i> 哨向·精神体档案</h4>
+                </div>
+
+                <div class="settings_section flex-gap">
+                  <label>精神体</label>
+                  <input type="text" id="bs-sentinel-skill-spirit-animal" class="text_pole"
+                    placeholder="例如：帕拉斯猫、藏狐、军舰鸟...">
+                </div>
+
+                <div class="settings_section">
+                  <label>精神体描述与性格</label>
+                  <textarea id="bs-sentinel-skill-personality" class="text_pole" rows="5"
+                    placeholder="精神体的外形描述与独立性格，由AI生成，也可手动修改..."></textarea>
+                </div>
+
+                <div class="settings_section">
+                  <label>精神海描述</label>
+                  <textarea id="bs-sentinel-skill-spiritual-sea" class="text_pole" rows="4"
+                    placeholder="精神海的景观与氛围描述，由AI生成，也可手动修改..."></textarea>
+                </div>
+
+                <div class="settings_section">
+                  <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button id="bs-sentinel-save-btn" class="menu_button">
+                      <i class="fa-solid fa-floppy-disk"></i> 保存修改
+                    </button>
+                  </div>
+                </div>
+
+                <hr class="sysHR" />
+
+                <div class="settings_section">
+                  <label style="color: var(--butter-text-light); font-size: 12px;">
+                    <i class="fa-solid fa-info-circle"></i>
+                    修改后点击保存，精神体性格会立即同步到后台注入。
+                  </label>
+                </div>
+              </div>
+
 
               <!-- 魅魔专属部分 -->
               <div id="bs-skills-succubus-section">
@@ -610,9 +763,155 @@
                 <select id="b-reg-race" class="text_pole">
                   <option value="人类">人类</option>
                   <option value="魅魔">魅魔</option>
+                  <option value="兽人">兽人</option>
                   <option value="自设">自设</option>
                 </select>
               </div>
+
+              <!-- 兽人种族详细设置 -->
+              <div id="b-reg-beast-section" style="display: none;">
+                <div class="settings_section flex-gap">
+                  <label>种族大类</label>
+                  <select id="b-reg-beast-category" class="text_pole">
+                    <option value="随机">随机（根据user设定自动匹配）</option>
+                    <option value="犬">犬族</option>
+                    <option value="狼">狼族</option>
+                    <option value="猫">猫族</option>
+                    <option value="马">马族</option>
+                    <option value="牛">牛族</option>
+                    <option value="狐">狐族</option>
+                    <option value="鸟">鸟族</option>
+                    <option value="蛇">蛇族</option>
+                    <option value="豹">豹族</option>
+                    <option value="虎">虎族</option>
+                    <option value="鲛人">鲛人</option>
+                    <option value="兔">兔族</option>
+                    <option value="羊">羊族</option>
+                  </select>
+                </div>
+
+                <!-- 细分种族输入框（随机时隐藏） -->
+                <div class="settings_section" id="b-reg-beast-subrace-container">
+                  <label>细分种族（可选，留空由AI自动选择）</label>
+                  <input type="text" id="b-reg-beast-subrace" class="text_pole"
+                    placeholder="例如：北长尾山雀、柴犬、北极狐...">
+                </div>
+
+                <!-- 大发情期（支持一年多次，动态时段列表） -->
+                <div class="settings_section">
+                  <label>大发情期设置 <small style="color:var(--butter-text-light);">（可添加多个时段，支持一年多次发情）</small></label>
+
+                  <!-- 时段列表容器：由 JS 动态填充 -->
+                  <div id="b-reg-heat-events-container" style="margin-top: 8px;"></div>
+
+                  <!-- 空状态提示 -->
+                  <div id="b-reg-heat-events-empty" style="font-size:12px; color:var(--butter-text-light); margin-top: 8px; display: none;">
+                    当前无大发情期（全年可发情）
+                  </div>
+
+                  <!-- 添加按钮 -->
+                  <div id="b-reg-add-heat-event" class="menu_button" style="margin-top: 8px; display: inline-block;">
+                    <i class="fa-solid fa-plus"></i> 添加发情期时段
+                  </div>
+
+                  <small>每个时段 = 开始月份 + 持续月数。如兔族一年六次，可添加 6 个时段（各持续 1 个月）。</small>
+                </div>
+
+
+                <div class="settings_section">
+                  <label><i class="fa-solid fa-robot"></i> AI将根据细分种族真实习性生成专属特征</label>
+                  <p style="font-size: 12px; color: var(--butter-text-light); margin-top: 4px;">
+                    生成内容：外形特征、感官能力、本能行为、发情期表现、生殖特征，将在注册后显示在特殊技能页
+                  </p>
+                </div>
+              </div>
+
+              <!-- 【新增】第二性别系统设置 -->
+              <hr class="sysHR_half"/>
+              <div class="butter-content-title"><h4><i class="fa-solid fa-venus-mars"></i> 第二性别系统</h4></div>
+              <div class="settings_section flex-gap">
+                <label>第二性别世界观</label>
+                <select id="b-reg-secondary-type" class="text_pole">
+                  <option value="无">无（不启用）</option>
+                  <option value="ABO">ABO（现代/科幻）</option>
+                  <option value="天乾地坤">天乾地坤（古代/东方）</option>
+                  <option value="哨向">哨向（精神系）</option>
+                </select>
+              </div>
+
+              <!-- ABO 第二性别选择 -->
+              <div id="b-reg-secondary-abo-section" style="display: none;">
+                <div class="settings_section flex-gap">
+                  <label>ABO性别</label>
+                  <select id="b-reg-abo-gender" class="text_pole">
+                    <option value="Omega">Omega（易孕·发情体）</option>
+                    <option value="Beta">Beta（普通体）</option>
+                    <option value="Alpha">Alpha（支配体·有结节）</option>
+                  </select>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>信息素气味（可选，留空由AI生成）</label>
+                  <input type="text" id="b-reg-abo-scent" class="text_pole" placeholder="Omega示例：花香/焦糖/巧克力；Alpha示例：木质香/金属味/辛辣">
+                </div>
+
+                <div class="settings_section">
+                  <label><i class="fa-solid fa-robot"></i> AI将自动生成ABO特征</label>
+                  <p style="font-size: 12px; color: var(--butter-text-light); margin-top: 4px;">
+                    包括：信息素气味、发情期机制、生殖腔特化、标记反应等
+                  </p>
+                </div>
+              </div>
+
+              <!-- 天乾地坤 第二性别选择 -->
+              <div id="b-reg-secondary-tiangan-section" style="display: none;">
+                <div class="settings_section flex-gap">
+                  <label>体质</label>
+                  <select id="b-reg-tiangan-gender" class="text_pole">
+                    <option value="坤">坤体（阴柔·花期体质）</option>
+                    <option value="平">平体（中和体质）</option>
+                    <option value="乾">乾体（阳刚·有锁合）</option>
+                  </select>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>体香描述（可选，留空由AI生成）</label>
+                  <input type="text" id="b-reg-tiangan-scent" class="text_pole" placeholder="坤体示例：清雅花露/脂粉香；乾体示例：沉稳墨香/药香">
+                </div>
+
+                <div class="settings_section">
+                  <label><i class="fa-solid fa-robot"></i> AI将生成古风第二性别特征</label>
+                </div>
+              </div>
+
+              <!-- 哨向 第二性别选择 -->
+              <div id="b-reg-secondary-sentinel-section" style="display: none;">
+                <div class="settings_section flex-gap">
+                  <label>身份</label>
+                    <select id="b-reg-sentinel-gender" class="text_pole">
+                        <option value="">请选择</option>
+                        <option value="哨兵">哨兵</option>
+                        <option value="向导" selected>向导（推荐）</option>
+                        <option value="普通人">普通人</option>
+                    </select>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>能力等级</label>
+                  <select id="b-reg-sentinel-level" class="text_pole">
+                    <option value="C">C级</option>
+                    <option value="B">B级</option>
+                    <option value="A">A级</option>
+                    <option value="S">S级</option>
+                    <option value="SS">SS级（极罕见）</option>
+                  </select>
+                </div>
+                <div class="settings_section flex-gap">
+                  <label>精神体动物形态（可留空由AI决定）</label>
+                  <input type="text" id="b-reg-spirit-animal" class="text_pole" placeholder="例如：雪豹、凤凰、深海乌贼...">
+                </div>
+                <div class="settings_section">
+                  <label><i class="fa-solid fa-robot"></i> AI将生成精神体、精神海与感应期特征</label>
+                </div>
+              </div>
+
               <div id="b-reg-nonhuman-repro-section" style="display: none;">
                 <div class="settings_section flex-gap">
                     <label for="b-reg-repro">繁衍方式</label>

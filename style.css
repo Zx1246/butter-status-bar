@@ -54,6 +54,15 @@
 }
 
 :root {
+    /* ----------------------------------------------------------------
+     * 【比例尺兜底】--u = 1 个"设计像素"，--cw = 画布宽度。
+     * 模态框内部会被 #butter-status-modal 用真实画布宽度覆盖；
+     * 模态框外面（例如悬浮眼）沿用这里的 1px 兜底值。
+     * 老浏览器若不支持 min()/aspect-ratio，也会退回这两个固定值。
+     * ---------------------------------------------------------------- */
+    --u: 1px;
+    --cw: 504px;
+
     /* 从图片吸取的配色方案 */
     --butter-frame-bg: #fdf7f8;
     --butter-frame-border-light: #ead8da;
@@ -109,15 +118,37 @@
 
 /*
  * ==========================================
+ * II-A. 根容器隔离  ★关键修复
+ * ==========================================
+ * 原因：如果不把根容器定死成 0 尺寸，它会以默认的 width:auto 撑满注入位置，
+ *       同时 pointer-events:auto 会拦截酒馆页面的交互 —— 于是出现
+ *       “整页被拖动 / 整页出现滑条 / 首页被撑开 / 功能栏被顶上移”。
+ * 注意：容器本身不接收事件，但插件自己的 UI 必须能点击，所以下面要放行子元素。
+ */
+#butter-root-container {
+    position: static !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+    z-index: 1;
+}
+
+#butter-root-container * {
+    pointer-events: auto;
+}
+
+/*
+ * ==========================================
  * II. 悬浮按钮“全视之眼”
  * ==========================================
  */
 #butter-floating-eye {
     position: fixed;
-    top: 150px;
-    right: 25px;
-    width: 60px;
-    height: 60px;
+    top: calc(150 * var(--u));
+    right: calc(25 * var(--u));
+    width: calc(60 * var(--u));
+    height: calc(60 * var(--u));
     border-radius: 50%;
     background-color: white;
     background-size: cover;
@@ -158,21 +189,60 @@
  * ==========================================
  */
 
+/*
+ * ★ 设计画布核心：一处定比例，全局面板按 var(--u) 等比缩放。
+ *   --cw 同时满足 ≤92vw、≤504px、≤88vh 换算宽 —— 任何分辨率下都完整可见、绝不溢出。
+ *   --u = 画布宽 / 504，即 1 个"设计像素"；内部所有尺寸都写成 calc(设计值 * var(--u))，
+ *   因此无论画布多大，元素之间的相对比例永远一致 → 彻底消除错位。
+ *   锁定 aspect-ratio = 504/563（= 画框原始比例基准），画框贴图不再被拉歪。
+ */
 #butter-status-modal {
-    display: none;
+    --cw: min(92vw, 504px, calc(88vh * 504 / 563));
+    --ch: calc(var(--cw) * 563 / 504);
+    --u: calc(var(--cw) / 504);
+
+    /* ══════════════════════════════════════════════════════════════
+     * ★★★ 定位：纯视口单位(vw/vh)显式计算，绝不用 top:50% / left:50%
+     *
+     * 坑：top / left 的百分比是相对【包含块】解析的。position:fixed 的
+     * 包含块本应是视口，但只要元素的任意祖先带了 transform / filter /
+     * perspective / contain / will-change / backdrop-filter，包含块就会被
+     * 「劫持」成那个祖先。此时 50% 会按祖先的尺寸（往往是 0×0）来算 →
+     * top 变成 0 → 面板直接吸附在屏幕最顶端，且因为一半被顶出屏幕外而
+     * 表现为「挪不动」。响应式预览工具（Responsively 等）为了缩放设备
+     * 框，恰恰会套一层 transform，这就是吸顶的来源。
+     *
+     * 而 vw / vh 永远相对【视口】计算，和包含块是谁无关；再减去自身
+     * 宽高的一半，结果就等于居中 —— 零依赖，任何分辨率都不会吸顶。
+     * 同时 transform 归零，使定位只由 left/top 决定，与 index.js 拖动时
+     * 写内联 left/top 的机制完全一致（拖动/关闭互不打架）。
+     * ══════════════════════════════════════════════════════════════ */
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 100000;
-    width: 504px;
-    max-width: 92vw;
-    height: 563px;
-    max-height: 85vh;
-    display: flex;
+    left: calc((100vw - var(--cw)) / 2);
+    top: calc((100vh - var(--ch)) / 2);
+    transform: none;
+
+    width: var(--cw);
+    height: var(--ch);
+
+    /* ⚠ 这里不能再出现第二个 display 覆盖它，否则模态框会常驻显示、把整页撑开 */
+    display: none;
     flex-direction: column;
     overflow: hidden;
     box-sizing: border-box;
+    z-index: 100000;
+}
+
+/* JS：点击“全视之眼”时添加（用 !important 压过 jQuery 的内联 display:block，保证 flex 布局） */
+#butter-status-modal.show {
+    display: flex !important;
+}
+
+/* JS：开始拖动后添加；此时由内联 left/top 接管定位 */
+#butter-status-modal.butter-dragged {
+    right: auto;
+    bottom: auto;
+    margin: 0;
 }
 
 #butter-root-container .butter-mobile-frame {
@@ -183,7 +253,7 @@
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
-    border-radius: 10px;
+    border-radius: calc(10 * var(--u));
     overflow: hidden;
     min-height: 0;
 }
@@ -238,7 +308,7 @@
     position: relative;
     z-index: 20;
     flex-shrink: 0;
-    height: 85px;
+    height: calc(85 * var(--u));
     cursor: grab;
 }
 
@@ -248,28 +318,28 @@
     transform: translateY(-50%);
     font-family: "Noto Serif SC", "Microsoft YaHei", serif;
     font-weight: 700;
-    font-size: 14px;
+    font-size: calc(14 * var(--u));
     color: var(--butter-text-light);
 }
 
 #bs-user-title {
-    left: 75px;
+    left: calc(75 * var(--u));
 }
 
 #bs-date-time {
-    right: 75px;
+    right: calc(75 * var(--u));
 }
 
 #butter-root-container .butter-content-grid {
     flex-grow: 1;
     display: grid;
-    grid-template-columns: 86px 1fr;
+    grid-template-columns: calc(86 * var(--u)) 1fr;
     grid-template-rows: 1fr auto;
     grid-template-areas:
         "sidebar main"
         "sidebar footer";
     overflow: hidden;
-    padding: 5px 5px 10px 12px;
+    padding: calc(5 * var(--u)) calc(5 * var(--u)) calc(10 * var(--u)) calc(12 * var(--u));
     min-height: 0;
 }
 
@@ -277,28 +347,28 @@
     grid-area: sidebar;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: calc(15 * var(--u));
     overflow-y: auto;
     align-items: center;
-    padding: 5px 1px 28px 5px;
-    border-bottom-left-radius: 90px;
+    padding: calc(5 * var(--u)) calc(1 * var(--u)) calc(28 * var(--u)) calc(5 * var(--u));
+    border-bottom-left-radius: calc(90 * var(--u));
 }
 
 #butter-root-container .butter-main-content {
     grid-area: main;
     overflow-y: auto;
-    padding: 5px 15px 5px 15px;
+    padding: calc(5 * var(--u)) calc(15 * var(--u)) calc(5 * var(--u)) calc(15 * var(--u));
 }
 
 #butter-root-container .butter-bottom-nav {
     grid-area: footer;
-    height: 92px;
+    height: calc(92 * var(--u));
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 15px 0px 0px 0px;
-    margin-bottom: 2px;
-    border-bottom-right-radius: 90px;
+    padding: calc(15 * var(--u)) 0px 0px 0px;
+    margin-bottom: calc(2 * var(--u));
+    border-bottom-right-radius: calc(90 * var(--u));
     overflow: hidden;
 }
 
@@ -335,17 +405,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
-    padding: 6px 0;
-    border-radius: 12px;
+    gap: calc(5 * var(--u));
+    padding: calc(6 * var(--u)) 0;
+    border-radius: calc(12 * var(--u));
     cursor: pointer;
     transition: background-color 0.2s ease;
     user-select: none;
 }
 
 .butter-tab-icon {
-    width: 48px;
-    height: 48px;
+    width: calc(48 * var(--u));
+    height: calc(48 * var(--u));
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -353,7 +423,7 @@
 }
 
 .butter-tab span {
-    font-size: 12px;
+    font-size: calc(12 * var(--u));
     color: var(--butter-text-light);
     font-weight: 500;
     font-family: "ZCOOL XiaoWei", serif;
@@ -377,16 +447,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: calc(4 * var(--u));
     cursor: pointer;
     position: relative;
-    width: 60px;
+    width: calc(60 * var(--u));
     user-select: none;
 }
 
 .butter-nav-icon-wrapper {
-    width: 46px;
-    height: 46px;
+    width: calc(46 * var(--u));
+    height: calc(46 * var(--u));
     border-radius: 50%;
     background-color: var(--butter-bottom-nav-icon-bg);
     border: 1px solid var(--butter-bottom-nav-icon-border);
@@ -409,7 +479,7 @@
 }
 
 .butter-nav-btn span {
-    font-size: 11px;
+    font-size: calc(11 * var(--u));
     color: var(--butter-text-light);
     font-weight: 500;
     font-family: "ZCOOL XiaoWei", serif;
@@ -439,7 +509,7 @@
 
 .butter-tab-content {
     display: none;
-    padding-top: 5px;
+    padding-top: calc(5 * var(--u));
 }
 
 #butter-tab-home {
@@ -448,10 +518,10 @@
 
 #butter-root-container .butter-content-title h4 {
     font-family: "ZCOOL XiaoWei", serif;
-    font-size: 16px;
+    font-size: calc(16 * var(--u));
     color: #b4737a;
     margin: 0;
-    letter-spacing: 1px;
+    letter-spacing: calc(1 * var(--u));
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -484,9 +554,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 0 5px;
-    margin-bottom: 20px;
+    gap: calc(12 * var(--u));
+    padding: 0 calc(5 * var(--u));
+    margin-bottom: calc(20 * var(--u));
     width: 100%;
 }
 
@@ -497,10 +567,10 @@
     flex-grow: 1;
 
     /* 🎛️ 微调旋钮：进度条液体的真实粗细 */
-    height: 18px; /* 👈 调小这个值，整个进度条液体就会变细 */
+    height: calc(18 * var(--u)); /* 👈 调小这个值，整个进度条液体就会变细 */
 
     /* 🌟 图二效果：让轨道两端变成胶囊圆角 */
-    border-radius: 10px; /* 👈 必须是 height 的一半（或者写 99px），才能变成两端半圆的胶囊形 */
+    border-radius: calc(10 * var(--u)); /* 👈 必须是 height 的一半（或者写 99px），才能变成两端半圆的胶囊形 */
 
     /* 🌟 图二效果：空轨道的凹陷质感底色 */
     background-color: #f2e8e8; /* 👈 进度条没满时，露出来的偏白粉色底色 */
@@ -523,10 +593,10 @@
 
     /* 🎛️ 微调旋钮：相框的缩放与包裹范围（负值代表向外扩大） */
     /* 如果发现相框包不住进度条，就把负数改大（比如 -10px）；如果相框太宽了，就改成正数或 0 */
-    top: -8px;
-    bottom: -8px;
+    top: calc(-8 * var(--u));
+    bottom: calc(-8 * var(--u));
     left: -12px; /* 👈 图一左边包不住，把这里的负数调大，相框就会往左边延伸去包住它 */
-    right: -8px;
+    right: calc(-8 * var(--u));
 
     /* --- 相框贴图设置 --- */
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_frame.png");
@@ -593,8 +663,8 @@
     ); /* 👈 永远让指针的中心，对准进度条液体的最右侧边缘 */
 
     /* 🎛️ 微调旋钮：指针的真实大小 */
-    width: 18px; /* 👈 调大/调小它来适配你的指针贴图 */
-    height: 23px; /* 👈 高度通常比轨道要高一点，营造出立体感 */
+    width: calc(18 * var(--u)); /* 👈 调大/调小它来适配你的指针贴图 */
+    height: calc(23 * var(--u)); /* 👈 高度通常比轨道要高一点，营造出立体感 */
 
     /* 引入你的滑块指针图片 */
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/lust_bar_icon.png");
@@ -609,7 +679,7 @@
  * 6. 标注文字
  * =================================================== */
 #butter-root-container .lust-text-value {
-    font-size: 14px; /* 稍微调大了字号配合粗一点的进度条 */
+    font-size: calc(14 * var(--u)); /* 稍微调大了字号配合粗一点的进度条 */
     color: var(--butter-text-dark);
     font-weight: bold; /* 加粗更有游戏 UI 的感觉 */
     white-space: nowrap;
@@ -619,22 +689,22 @@
 }
 .butter-womb-section {
     display: flex;
-    gap: 15px;
+    gap: calc(15 * var(--u));
     align-items: center;
     background: none;
     border: none;
     padding: 0;
     position: relative;
-    margin-bottom: 25px;
+    margin-bottom: calc(25 * var(--u));
 }
 
 #butter-root-container .butter-womb-section {
-    padding-bottom: 15px;
+    padding-bottom: calc(15 * var(--u));
 }
 
 .home-womb-img {
-    width: 165px;
-    height: 185px;
+    width: calc(165 * var(--u));
+    height: calc(185 * var(--u));
     flex-shrink: 0;
     position: relative;
     display: flex;
@@ -649,10 +719,10 @@
 .home-womb-img::before {
     content: "";
     position: absolute;
-    top: -8px;
-    left: -8px;
-    right: -8px;
-    bottom: -8px;
+    top: calc(-8 * var(--u));
+    left: calc(-8 * var(--u));
+    right: calc(-8 * var(--u));
+    bottom: calc(-8 * var(--u));
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/frame_womb.png");
     background-size: contain;
     background-repeat: no-repeat;
@@ -663,25 +733,25 @@
     position: relative;
     max-width: 75%;
     max-height: 75%;
-    top: 4px;
+    top: calc(4 * var(--u));
 }
 
 .home-womb-stats {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: calc(10 * var(--u));
 }
 
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: calc(8 * var(--u));
 }
 
 .stat-icon {
-    width: 16px;
-    height: 16px;
+    width: calc(16 * var(--u));
+    height: calc(16 * var(--u));
     flex-shrink: 0;
     background-size: contain;
     background-repeat: no-repeat;
@@ -694,12 +764,12 @@
 }
 
 .stat-text span {
-    font-size: 12px;
+    font-size: calc(12 * var(--u));
     color: var(--butter-text-light);
 }
 
 .stat-text b {
-    font-size: 13px;
+    font-size: calc(13 * var(--u));
     color: var(--butter-text-dark);
     font-weight: 500;
 }
@@ -707,8 +777,8 @@
 .butter-additional-stats {
     display: flex;
     justify-content: space-around;
-    font-size: 12px;
-    margin-top: 25px;
+    font-size: calc(12 * var(--u));
+    margin-top: calc(25 * var(--u));
     color: var(--butter-text-light);
 }
 
@@ -717,7 +787,7 @@
     > div:has(+ .butter-additional-stats),
 #butter-root-container .home-womb-stats + div,
 #butter-root-container .butter-additional-stats + div {
-    margin-top: 15px;
+    margin-top: calc(15 * var(--u));
 }
 
 .additional-stat-item b {
@@ -731,8 +801,8 @@
 /* 1. 瞄准【穴口/积乳状态栏 (.butter-additional-stats)】正下方的那个纯文字 div */
 #butter-root-container .butter-additional-stats + div,
 #butter-root-container .butter-additional-stats ~ div {
-    margin-top: 25px !important; /* 👈 核心修改：拉开与上方的间距，觉得不够可以改到 30px */
-    padding-top: 5px !important;
+    margin-top: calc(25 * var(--u)) !important; /* 👈 核心修改：拉开与上方的间距，觉得不够可以改到 30px */
+    padding-top: calc(5 * var(--u)) !important;
     color: var(
         --butter-danger-color
     ); /* 👈 核心修改：将原本的暗绿色强行覆盖为暗粉红 */
@@ -755,8 +825,8 @@
  */
 
 .bs-grid {
-    gap: 10px 12px;
-    margin-top: 20px;
+    gap: calc(10 * var(--u)) calc(12 * var(--u));
+    margin-top: calc(20 * var(--u));
 }
 
 .bs-grid.bs-grid-two-column {
@@ -768,24 +838,24 @@
 }
 
 .bs-g-item.stack {
-    padding: 10px;
-    border-radius: 8px;
+    padding: calc(10 * var(--u));
+    border-radius: calc(8 * var(--u));
     background: var(--butter-frame-bg);
     border: 1px solid var(--butter-frame-border-light);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 5px;
+    gap: calc(5 * var(--u));
 }
 
 .bs-g-item.stack > span {
-    font-size: 12px;
+    font-size: calc(12 * var(--u));
     color: var(--butter-text-light);
 }
 
 .bs-g-item.stack code {
-    font-size: 14px;
+    font-size: calc(14 * var(--u));
     color: var(--butter-text-dark);
     font-weight: 500;
     background: none;
@@ -795,8 +865,8 @@
 #butter-root-container .butter-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 15px 10px;
-    margin-top: 35px;
+    gap: calc(15 * var(--u)) calc(10 * var(--u));
+    margin-top: calc(35 * var(--u));
 }
 
 .butter-grid-item {
@@ -804,14 +874,14 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 8px;
+    gap: calc(8 * var(--u));
 }
 
 .butter-fill-box {
-    width: 65px;
-    height: 65px;
+    width: calc(65 * var(--u));
+    height: calc(65 * var(--u));
     border: 1px solid var(--butter-frame-border-dark);
-    border-radius: 8px;
+    border-radius: calc(8 * var(--u));
     position: relative;
     background-color: #f8e9ec;
     overflow: hidden;
@@ -836,20 +906,20 @@
 .butter-fill-icon {
     position: relative;
     z-index: 2;
-    font-size: 30px;
+    font-size: calc(30 * var(--u));
     color: rgba(255, 255, 255, 0.9);
     text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 #butter-root-container .butter-grid-item span {
-    font-size: 13px;
+    font-size: calc(13 * var(--u));
     font-weight: 500;
     color: var(--butter-text-light);
-    margin-top: 2px;
+    margin-top: calc(2 * var(--u));
 }
 
 .butter-grid-item small {
-    font-size: 14px;
+    font-size: calc(14 * var(--u));
     font-weight: bold;
     color: var(--butter-text-dark);
 }
@@ -859,29 +929,29 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: calc(20 * var(--u));
 }
 
 .virgin-icon {
-    width: 48px;
-    height: 48px;
+    width: calc(48 * var(--u));
+    height: calc(48 * var(--u));
     background-size: contain;
     background-repeat: no-repeat;
-    margin-bottom: 5px;
+    margin-bottom: calc(5 * var(--u));
 }
 
 h5.section-subtitle {
-    font-size: 14px;
+    font-size: calc(14 * var(--u));
     font-weight: 500;
     color: var(--butter-text-title);
-    margin-bottom: 10px;
+    margin-bottom: calc(10 * var(--u));
     text-align: center;
 }
 
 #butter-root-container code#bs-virgin-status.virgin {
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 13px;
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+    border-radius: calc(5 * var(--u));
+    font-size: calc(13 * var(--u));
     color: var(--butter-info-color);
     background-color: rgba(122, 162, 195, 0.1);
     border: 1px solid rgba(122, 162, 195, 0.4);
@@ -889,9 +959,9 @@ h5.section-subtitle {
 }
 
 #butter-root-container code#bs-virgin-status.not-virgin {
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 13px;
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+    border-radius: calc(5 * var(--u));
+    font-size: calc(13 * var(--u));
     color: var(--butter-danger-color);
     background-color: rgba(199, 107, 124, 0.1);
     border: 1px solid rgba(199, 107, 124, 0.4);
@@ -902,14 +972,14 @@ h5.section-subtitle {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 4px;
+    padding: calc(8 * var(--u)) calc(4 * var(--u));
     border-bottom: 1px dashed var(--butter-frame-border-light);
-    font-size: 15px;
+    font-size: calc(15 * var(--u));
 }
 
 .bs-data-pair.thick {
-    padding: 12px 8px;
-    font-size: 14px;
+    padding: calc(12 * var(--u)) calc(8 * var(--u));
+    font-size: calc(14 * var(--u));
     border-bottom: 1px solid var(--butter-frame-border-light);
 }
 
@@ -921,25 +991,25 @@ h5.section-subtitle {
 #butter-root-container .bs-data-pair span:last-child {
     font-family: "Cinzel", serif;
     font-weight: 700;
-    font-size: 15px;
+    font-size: calc(15 * var(--u));
     color: var(--butter-text-dark);
 }
 
 .dev-right-col {
-    padding-left: 20px;
+    padding-left: calc(20 * var(--u));
     border-left: 1px dashed var(--butter-frame-border-light);
 }
 
 #bs-children-container {
-    margin-top: 25px;
+    margin-top: calc(25 * var(--u));
     border-top: 1px solid var(--butter-frame-border-light);
-    padding-top: 20px;
+    padding-top: calc(20 * var(--u));
 }
 
 .bs-child-record {
     border-left: 3px solid var(--butter-info-color);
-    padding-left: 15px;
-    margin-bottom: 10px;
+    padding-left: calc(15 * var(--u));
+    margin-bottom: calc(10 * var(--u));
 }
 
 .bs-child-record.pregnant {
@@ -948,7 +1018,7 @@ h5.section-subtitle {
 
 .bs-child-record .bs-data-pair {
     border-bottom: none;
-    padding: 4px 0;
+    padding: calc(4 * var(--u)) 0;
 }
 
 .bs-child-record .bs-data-pair span:first-child {
@@ -962,32 +1032,32 @@ h5.section-subtitle {
  */
 
 #butter-root-container .settings_section {
-    margin-bottom: 15px;
+    margin-bottom: calc(15 * var(--u));
 }
 #butter-root-container .settings_section label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: calc(8 * var(--u));
     font-weight: 500;
     color: var(--butter-text-light);
-    font-size: 13px;
+    font-size: calc(13 * var(--u));
 }
 #butter-root-container .settings_section.flex-gap {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: calc(15 * var(--u));
     justify-content: space-between;
 }
 #butter-root-container .settings_section.flex-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: calc(10 * var(--u));
 }
 #butter-root-container .settings_section small {
     display: block;
-    font-size: 11px;
+    font-size: calc(11 * var(--u));
     color: var(--butter-text-light);
     opacity: 0.8;
-    margin-top: 5px;
+    margin-top: calc(5 * var(--u));
 }
 
 /* --- 1. 单行输入框（升级通用覆盖版：不依赖任何class，凡是容器内的input一律全控） --- */
@@ -998,9 +1068,9 @@ h5.section-subtitle {
     background: rgba(245, 235, 237, 0.6) !important; /* 强制粉色天鹅绒 */
     border: 1px solid #d3b8bb !important; /* 强制玫瑰金边框 */
     color: #6c5458 !important; /* 强制暗蔷薇木字 */
-    border-radius: 6px !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
+    border-radius: calc(6 * var(--u)) !important;
+    padding: calc(8 * var(--u)) calc(12 * var(--u)) !important;
+    font-size: calc(13 * var(--u)) !important;
     font-family: "Noto Serif SC", serif !important;
     box-shadow:
         inset 2px 2px 5px rgba(186, 150, 155, 0.2),
@@ -1025,6 +1095,72 @@ h5.section-subtitle {
         inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
 }
 
+/* ============================================================
+ * ★ 占位符（placeholder）颜色强控：脱离酒馆主题
+ * ------------------------------------------------------------
+ * 现象：输入框里的灰字（"留空默认使用系统user名" / "-- 选择预设 --"
+ *       / "预设命名 (如：魅魔_01)" 等）颜色跟随酒馆主题走，
+ *       换个深色主题就看不清。
+ * 原因：本插件 CSS 之前**完全没有 ::placeholder 规则**，
+ *       而酒馆主题（如 body.xxx textarea::placeholder { color: ... }）
+ *       用较高的选择器权重把颜色刷掉了。
+ * 解法：用带 !important 的明确色值压死。--butter-text-light(#8b7377)
+ *       是取自画框的暗蔷薇灰，浅底上清晰、深底上也能辨认。
+ *       用 opacity:1 屏蔽 Firefox 默认的 0.54 透明叠加。
+ * ============================================================ */
+#butter-root-container input::placeholder,
+#butter-root-container input.text_pole::placeholder,
+#butter-root-container input[type="text"]::placeholder,
+#butter-root-container textarea::placeholder,
+#butter-root-container textarea.text_pole::placeholder,
+#butter-root-container select::placeholder {
+    color: var(--butter-text-light) !important;
+    opacity: 1 !important;
+    font-family: "Noto Serif SC", serif !important;
+}
+/* 兼容旧内核（Edge/Chrome 57 前为 -webkit-、Firefox 19 前为 -moz-） */
+#butter-root-container input::-webkit-input-placeholder,
+#butter-root-container textarea::-webkit-input-placeholder {
+    color: var(--butter-text-light) !important;
+    opacity: 1 !important;
+}
+#butter-root-container input::-moz-placeholder,
+#butter-root-container textarea::-moz-placeholder {
+    color: var(--butter-text-light) !important;
+    opacity: 1 !important;
+}
+/* 下拉框里未被选中的 option 文本同样锁定，避免跟随主题 */
+#butter-root-container select:invalid,
+#butter-root-container select option {
+    color: var(--butter-text-dark);
+}
+
+/* ============================================================
+ * ★ 按钮文字颜色强控（全局，不再只在手机媒体查询里）
+ * ------------------------------------------------------------
+ * 现象："确认烙印" 等按钮的字色跟随酒馆主题变化。
+ * 原因：下面那套 `color: #fdf7f8 !important` 原本写在
+ *       @media (max-width:768px), (pointer:coarse) 的**花括号内部**，
+ *       桌面窗口压根不匹配该查询 → 规则从未生效。
+ * 解法：提到全局作用域，让桌面/手机都吃到。
+ *       纯 `color` 用 !important 是必要的——酒馆主题常用
+ *       `body.<theme> button { color: ... !important }` 这类高权重规则。
+ * ============================================================ */
+#butter-root-container .preset-loader-section .menu_button,
+#butter-root-container #user-register-submit,
+#butter-root-container .preset-save-section .menu_button,
+#butter-root-container #b-reg-submit-btn {
+    color: #fdf7f8 !important; /* 原版优雅的淡粉白，固定在深色渐变底上 */
+}
+#butter-root-container #b-reg-submit-btn,
+#butter-root-container #b-reg-submit-btn * {
+    color: #fdf7f8 !important; /* 兜底：连按钮内部的行内元素一并锁定 */
+}
+#butter-root-container #butter-tab-api .menu_button,
+#butter-root-container #butter-tab-api .menu_button * {
+    color: #ffffff !important; /* API 面板按钮固定纯白 */
+}
+
 /* --- 2. 多行输入框（升级通用覆盖版：强制锁定所有新老多行输入区域） --- */
 #butter-root-container textarea,
 #butter-root-container textarea.text_pole {
@@ -1032,9 +1168,9 @@ h5.section-subtitle {
     background: rgba(245, 235, 237, 0.6) !important;
     border: 1px solid #d3b8bb !important;
     color: #6c5458 !important;
-    border-radius: 6px !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
+    border-radius: calc(6 * var(--u)) !important;
+    padding: calc(8 * var(--u)) calc(12 * var(--u)) !important;
+    font-size: calc(13 * var(--u)) !important;
     font-family: "Noto Serif SC", serif !important;
     box-shadow:
         inset 2px 2px 5px rgba(186, 150, 155, 0.2),
@@ -1042,7 +1178,7 @@ h5.section-subtitle {
 
     /* 多行版型微调 */
     height: auto !important;
-    min-height: 80px !important;
+    min-height: calc(80 * var(--u)) !important;
     line-height: 1.5 !important;
     resize: vertical !important;
 
@@ -1076,17 +1212,17 @@ h5.section-subtitle {
     background-color: rgba(245, 235, 237, 0.6) !important;
     border: 1px solid #d3b8bb !important;
     color: #6c5458 !important;
-    border-radius: 6px !important;
+    border-radius: calc(6 * var(--u)) !important;
     font-family: "Noto Serif SC", serif !important;
-    font-size: 13px !important;
-    padding: 6px 30px 6px 12px !important;
+    font-size: calc(13 * var(--u)) !important;
+    padding: calc(6 * var(--u)) calc(30 * var(--u)) calc(6 * var(--u)) calc(12 * var(--u)) !important;
     cursor: pointer !important;
 
     /* 自定义古典小箭头 */
     background-image: url('data:image/svg+xml;utf8,<svg fill="%238b666d" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') !important;
     background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
-    background-size: 16px !important;
+    background-position: right calc(10 * var(--u)) center !important;
+    background-size: calc(16 * var(--u)) !important;
     box-shadow: inset 1px 1px 3px rgba(186, 150, 155, 0.1) !important;
 
     /* ⚡ 移除全开销全局动画 */
@@ -1111,8 +1247,8 @@ h5.section-subtitle {
 }
 
 #butter-root-container input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: calc(16 * var(--u));
+    height: calc(16 * var(--u));
     accent-color: var(--butter-lust-bar-fill);
     cursor: pointer;
     flex-shrink: 0;
@@ -1124,10 +1260,10 @@ h5.section-subtitle {
 #butter-root-container .menu_button {
     background-color: var(--butter-tab-active-text);
     color: white;
-    padding: 8px 15px;
-    font-size: 13px;
+    padding: calc(8 * var(--u)) calc(15 * var(--u));
+    font-size: calc(13 * var(--u));
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: calc(8 * var(--u));
     border: none;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -1142,8 +1278,8 @@ h5.section-subtitle {
     opacity: 0.7;
 }
 #butter-root-container .submit-button {
-    padding: 10px 30px;
-    font-size: 14px;
+    padding: calc(10 * var(--u)) calc(30 * var(--u));
+    font-size: calc(14 * var(--u));
 }
 
 /*
@@ -1155,9 +1291,9 @@ h5.section-subtitle {
 .centered-message {
     text-align: center;
     color: var(--butter-text-light);
-    padding: 40px 20px;
-    font-size: 13px;
-    border-radius: 8px;
+    padding: calc(40 * var(--u)) calc(20 * var(--u));
+    font-size: calc(13 * var(--u));
+    border-radius: calc(8 * var(--u));
     background: rgba(186, 150, 155, 0.05);
 }
 
@@ -1170,11 +1306,11 @@ h5.section-subtitle {
 
 /* 🎯 精准控制：将注入面板的提示文字调小、调淡 */
 #butter-root-container .butter-setting-description {
-    font-size: 11px; /* 👈 调小：从默认大小压缩至 11px */
+    font-size: calc(11 * var(--u)); /* 👈 调小：从默认大小压缩至 11px */
     color: #a48f92; /* 👈 调暗：改用低饱和度的优雅暮色，不再刺眼 */
     opacity: 0.85; /* 👈 辅助调暗：叠加轻微透明度，使其更具高级感 */
-    margin-top: 4px; /* 微调：与上方标题的间距 */
-    margin-bottom: 8px; /* 微调：与下方输入框的间距 */
+    margin-top: calc(4 * var(--u)); /* 微调：与上方标题的间距 */
+    margin-bottom: calc(8 * var(--u)); /* 微调：与下方输入框的间距 */
     line-height: 1.4; /* 优化行高，防止字小了之后粘连 */
 }
 #butter-tab-inject .butter-content-title::before {
@@ -1185,27 +1321,27 @@ h5.section-subtitle {
 #butter-tab-inject .bs-inject-group {
     background: rgba(245, 235, 237, 0.4);
     border: 1px dashed #d3b8bb;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
+    border-radius: calc(8 * var(--u));
+    padding: calc(15 * var(--u));
+    margin-bottom: calc(20 * var(--u));
 }
 
 .bs-wi-tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: calc(10 * var(--u));
+    margin-bottom: calc(15 * var(--u));
 }
 
 .bs-wi-tab-btn {
     flex: 1;
-    padding: 8px;
+    padding: calc(8 * var(--u));
     text-align: center;
     background: rgba(245, 235, 237, 0.6);
     border: 1px solid var(--butter-frame-border-light);
-    border-radius: 6px;
+    border-radius: calc(6 * var(--u));
     cursor: pointer;
     font-weight: 500;
-    font-size: 13px;
+    font-size: calc(13 * var(--u));
     transition:
         background-color 0.2s ease,
         border-color 0.2s ease;
@@ -1226,18 +1362,18 @@ h5.section-subtitle {
 }
 
 .bs-wi-list-container {
-    max-height: 150px;
+    max-height: calc(150 * var(--u));
     overflow-y: auto;
     background: rgba(255, 255, 255, 0.8);
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: calc(6 * var(--u));
+    padding: calc(8 * var(--u));
     border: 1px solid var(--butter-frame-border-light);
 }
 
 .bs-wi-item {
     display: flex;
     align-items: center;
-    padding: 8px 10px;
+    padding: calc(8 * var(--u)) calc(10 * var(--u));
     border-bottom: 1px dashed rgba(139, 90, 131, 0.1);
     transition: background-color 0.2s ease;
 }
@@ -1252,13 +1388,13 @@ h5.section-subtitle {
 
 .bs-wi-item input[type="checkbox"] {
     flex-shrink: 0;
-    margin-right: 15px;
+    margin-right: calc(15 * var(--u));
     accent-color: #521808;
 }
 
 .bs-wi-name {
     flex-grow: 1;
-    font-size: 13px;
+    font-size: calc(13 * var(--u));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1279,10 +1415,10 @@ h5.section-subtitle {
 #butter-tab-api .menu_button {
     background: linear-gradient(135deg, #6c82b3 0%, #56688f 100%);
     border-color: #56688f;
-    padding: 10px 22px;
-    font-size: 14px;
+    padding: calc(10 * var(--u)) calc(22 * var(--u));
+    font-size: calc(14 * var(--u));
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: calc(0.5 * var(--u));
     transition:
         transform 0.2s ease,
         box-shadow 0.2s ease,
@@ -1308,32 +1444,32 @@ h5.section-subtitle {
 
 .debug-textarea {
     width: 100%;
-    height: 110px;
+    height: calc(110 * var(--u));
     font-family: "Consolas", "Monaco", monospace;
-    font-size: 12px;
+    font-size: calc(12 * var(--u));
     background: rgba(18, 12, 24, 0.03);
     border: 1px solid var(--butter-frame-border-light);
-    border-radius: 6px;
+    border-radius: calc(6 * var(--u));
     color: var(--butter-text-dark);
-    padding: 8px;
+    padding: calc(8 * var(--u));
     box-sizing: border-box;
 }
 
 .debug-io-group {
     background: rgba(245, 235, 237, 0.4);
     border: 1px dashed var(--butter-frame-border-light);
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: calc(8 * var(--u));
+    padding: calc(15 * var(--u));
 }
 
 .debug-io-group h4 {
     text-align: center;
-    margin-bottom: 15px;
-    font-size: 14px;
+    margin-bottom: calc(15 * var(--u));
+    font-size: calc(14 * var(--u));
 }
 
 .debug-io-group label {
-    font-size: 11px;
+    font-size: calc(11 * var(--u));
     text-align: center;
     opacity: 0.7;
 }
@@ -1341,8 +1477,8 @@ h5.section-subtitle {
 /* 🔴 user注册面板 */
 .preset-loader-section {
     background: rgba(245, 235, 237, 0.4);
-    padding: 15px;
-    border-radius: 8px;
+    padding: calc(15 * var(--u));
+    border-radius: calc(8 * var(--u));
     border: 1px dashed #d3b8bb;
 }
 
@@ -1351,25 +1487,85 @@ h5.section-subtitle {
     font-weight: bold;
 }
 
+/*
+ * ------------------------------------------------------------
+ * 按钮皮肤：深色渐变底座（共用于「提取烙印 / 删除预设 / 保存预设 / 确认烙印」）
+ * ------------------------------------------------------------
+ * ⚠️ 这里只写"皮肤"，不再写 width / display / margin ——
+ *    尺寸交给下面 §A（并排小按钮）和 §B（独占整行大按钮）两套规则分别管，
+ *    否则「提取烙印」会被 80% 宽 + display:block 撑成一个巨大的方块。
+ */
 #butter-root-container .preset-loader-section .menu_button,
 #butter-root-container #user-register-submit,
 #butter-root-container .preset-save-section .menu_button {
     background: linear-gradient(135deg, #8b666d 0%, #6c4e54 100%);
     border: 1px solid #b4737a;
-    border-radius: 6px;
+    border-radius: calc(6 * var(--u));
     color: #fdf7f8;
-    padding: 12px 22px;
-    width: 80%;
-    margin: 0 auto;
-    display: block;
     font-family: "ZCOOL XiaoWei", serif;
     font-weight: 500;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* ⚡ 只过渡配色属性，不用 all —— 避免与布局动画互相触发 */
     transition:
         background-color 0.2s ease,
         box-shadow 0.2s ease,
         border-color 0.2s ease;
+}
+
+/* ============================================================
+ * §A. 并排小按钮：提取烙印 / 删除预设
+ * ------------------------------------------------------------
+ * 让它们在 flex 行里"按内容自适应"，不再撑满整行。
+ * flex-shrink:0 → 窄屏时不被 select 挤扁（宁可让 select 变窄）。
+ * ============================================================ */
+#butter-root-container .preset-loader-section .flex-container {
+    display: flex;
+    align-items: center;
+    gap: calc(8 * var(--u));
+}
+#butter-root-container .preset-loader-section .flex-container > select {
+    flex: 1 1 auto; /* select 吃掉剩余宽度 */
+    min-width: 0; /* 允许它收缩到比内容更窄，防止把按钮顶出去 */
+}
+#butter-root-container #b-reg-load-preset-btn,
+#butter-root-container #b-reg-delete-preset-btn {
+    flex: 0 0 auto; /* 绝不被压缩 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto; /* 🔑 覆盖 .menu_button 可能带来的宽度 */
+    height: calc(30 * var(--u)); /* 🔑 两个按钮锁同一高度，并排严格对齐 */
+    margin: 0; /* 🔑 覆盖 80% 方案里的 margin:0 auto */
+    padding: 0 calc(12 * var(--u));
+    font-size: calc(12 * var(--u));
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: normal;
+    box-sizing: border-box;
+}
+/* 删除按钮是纯图标，给个正方形，视觉上与「提取烙印」等高 */
+#butter-root-container #b-reg-delete-preset-btn {
+    min-width: calc(30 * var(--u));
+    /* 高度已在上面锁死 30u，这里只收窄横向内边距做成正方形 */
+    padding: 0 calc(7 * var(--u));
+}
+#butter-root-container #b-reg-delete-preset-btn i {
+    font-size: calc(13 * var(--u));
+    line-height: 1;
+}
+
+/* ============================================================
+ * §B. 独占整行的大按钮：保存预设 / 确认烙印
+ * ============================================================ */
+#butter-root-container .preset-save-section .menu_button,
+#butter-root-container #user-register-submit {
+    width: 80%;
+    max-width: calc(280 * var(--u));
+    margin: calc(6 * var(--u)) auto 0 auto;
+    display: block;
+    padding: calc(10 * var(--u)) calc(20 * var(--u));
+    font-size: calc(13 * var(--u));
 }
 
 #butter-root-container .preset-loader-section .menu_button:hover,
@@ -1381,28 +1577,33 @@ h5.section-subtitle {
 }
 
 #b-reg-obscene-section {
-    padding-left: 20px;
-    margin-top: 15px;
+    padding-left: calc(20 * var(--u));
+    margin-top: calc(15 * var(--u));
     border-left: 2px solid var(--butter-lust-bar-fill);
 }
 
+/* 确认烙印：原本已足够小，这里只把 padding 收一点，避免占满一屏 */
 #butter-root-container #b-reg-submit-btn {
-    font-size: 16px;
+    font-size: calc(15 * var(--u));
     font-weight: bold;
-    padding: 12px 40px;
-    width: 60%;
-    max-width: 280px;
+    padding: calc(10 * var(--u)) calc(34 * var(--u));
+    width: auto;
+    min-width: calc(180 * var(--u));
+    max-width: calc(280 * var(--u));
     font-family: "ZCOOL XiaoWei", serif;
-    letter-spacing: 2px;
+    letter-spacing: calc(2 * var(--u));
     line-height: normal;
-    transition: all 0.2s ease;
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .preset-save-section {
     background: rgba(245, 235, 237, 0.4);
     border: 1px dashed #d3b8bb;
-    padding: 15px;
-    border-radius: 8px;
+    padding: calc(15 * var(--u));
+    border-radius: calc(8 * var(--u));
     align-items: center;
 }
 
@@ -1412,7 +1613,7 @@ h5.section-subtitle {
 }
 
 .preset-save-section input[type="text"] {
-    margin-left: 10px;
+    margin-left: calc(10 * var(--u));
 }
 
 /*
@@ -1423,12 +1624,12 @@ h5.section-subtitle {
 .butter-calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-    padding: 2px;
+    gap: calc(3 * var(--u));
+    padding: calc(2 * var(--u));
     background: rgba(18, 12, 24, 0.6);
     border: 1px solid rgba(232, 200, 203, 0.2);
-    border-radius: 6px;
-    margin-top: 6px;
+    border-radius: calc(6 * var(--u));
+    margin-top: calc(6 * var(--u));
     max-width: 70%;
 }
 
@@ -1440,7 +1641,7 @@ h5.section-subtitle {
     border-radius: 50%;
     cursor: pointer;
     font-weight: 500;
-    font-size: 12px;
+    font-size: calc(12 * var(--u));
     color: #ead8da;
     background-color: transparent;
     border: 3px solid transparent;
@@ -1467,21 +1668,57 @@ h5.section-subtitle {
 /* ==========================================
  * XIII. 手机端响应式适配（图二全屏完整 + 图三精致排版）
  * ========================================== */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (pointer: coarse) {
     /* ----------------------------------------------------
-   * 1. 模态框外壳：采用【图二】的 100% 全屏尺寸，确保大画框边缘完整不被裁切
-   * 🚨 绝不加上 display: ，完美保留 JS 的正常开/关隐藏功能
+   * 1. 模态框外壳：固定宽高比画布 + 等比缩放
+   *    375 : 487 正是原 "100vw × 60vh" 在 375×812 上的比例，
+   *    所以在 375 宽的手机上与原效果逐像素一致，其余尺寸自动等比缩放，不再错位。
+   *
+   *    ★ 高度约束必须是 60vh，不能用 94vh：
+   *      --cw 取 min(100vw, 60vh 换算宽) 时，两条约束在"宽高比 = 375:812"的手机上
+   *      恰好相等（100vw == 46.2vh），所以手机端结果与原来逐像素相同；
+   *      而在平板等宽屏上会退化成"高度驱动"，面板恒为 60vh 高、中心恒定在 40vh，
+   *      与「图片一」的比例完全一致。若写成 94vh，平板会被宽度驱动 → 面板膨胀到
+   *      94vh 高（如 iPad 竖屏 834×1083），比例全变、内容还会被挤出屏幕。
+   *
+   *    🚨 这里绝不写 display —— 保留 JS 的开/关隐藏功能
    * ---------------------------------------------------- */
     #butter-root-container #butter-status-modal {
+        /* ══════════════════════════════════════════════════════════════
+         * ★★★ 尺寸：--cw = min(100vw, 60vh * 375/487)，比例恒为 375 : 487
+         *   · 宽度受 100vw 限制时 → 高 = --cw * 487/375（≤ 60vh）
+         *   · 宽度受 60vh 限制时 → 高 = 60vh
+         *   375 : 487 正是原 "100vw × 60vh" 在 375×812 上的比例，所以在
+         *   375 宽的手机上 --u 恰好 = 1px，渲染结果与原效果逐像素一致；
+         *   其余尺寸一律等比缩放，比例永远是 375:487，不可能错位。
+         *
+         * ★★★ 定位：纯视口单位 vw/vh，绝不用 top:50% / left:50%
+         *   top / left 的百分比是相对【包含块】解析的。只要任意祖先带了
+         *   transform / filter / perspective / contain / will-change，
+         *   position:fixed 的包含块就会被劫持成那个祖先（常常是 0×0），
+         *   于是 top:50% 被算成 0 → 面板「吸附屏幕顶部」；响应式预览工具
+         *   的缩放层正是这种污染源。vw / vh 永远相对视口计算，再减掉自身
+         *   宽高的一半就等于居中 —— 零依赖，任何分辨率都不会吸顶。
+         *   transform 归零后，定位只由 left/top 决定，与 index.js 拖动时
+         *   写内联 left/top 的机制完全一致。
+         *
+         *    🚨 这里绝不写 display —— 保留 JS 的开/关隐藏功能
+         * ══════════════════════════════════════════════════════════════ */
+        --cw: min(100vw, calc(60vh * 375 / 487));
+        --ch: calc(var(--cw) * 487 / 375);
+        --u: calc(var(--cw) / 375);
+
         position: fixed;
-        width: 100vw;
-        height: 60vh; /* 📐 整体高度：全屏的 80%，让整体面板变矮 */
-        top: 10vh; /* 📐 上下边距：保持垂直居中 */
-        left: 0;
+        left: calc((100vw - var(--cw)) / 2);
+        top: calc((100vh - var(--ch)) / 2);
         transform: none;
-        border-radius: 12px; /* 给变矮后的面板加一点精致圆角 */
-        display: flex;
-        flex-direction: column;
+
+        width: var(--cw);
+        height: var(--ch);
+        max-width: none;
+        max-height: none;
+
+        border-radius: calc(12 * var(--u)); /* 给面板加一点精致圆角 */
     }
 
     /* 强行让内部所有的装饰背景、内容包装器拉满全屏，呈现完美无缺的画框 */
@@ -1505,24 +1742,24 @@ h5.section-subtitle {
    * 2. 顶栏样式控制：【🌟核心修改：头衔一行，时间一行，纵向堆叠】
    * ---------------------------------------------------- */
     #butter-root-container .butter-top-bar {
-        height: 75px; /* 压低顶栏高度 */
+        height: calc(75 * var(--u)); /* 压低顶栏高度 */
         display: flex;
         flex-direction: column; /* 🌟 核心：改为纵向排列，强制分行 */
         justify-content: center; /* 🌟 核心：内容在顶栏内垂直居中 */
         align-items: center; /* 🌟 核心：居中对齐。如果想整体靠左，可以改为 flex-start 并加 padding */
-        padding-top: 17px !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
+        padding-top: calc(17 * var(--u)) !important; /* 📐 往下捎带微调，避开画框最顶部的花纹边缘 */
     }
     #butter-root-container .butter-top-bar span {
         position: static; /* 🌟 核心：解除原本电脑端的绝对定位(left/right) */
         transform: none; /* 🌟 核心：解除原本的居中偏移 */
-        font-size: 11px; /* 手机端字号 */
+        font-size: calc(11 * var(--u)); /* 手机端字号 */
         line-height: 1.4; /* 行高保证舒适舒适间距 */
         white-space: nowrap; /* 🌟 核心：单行不准换行，确保各自一行拉直 */
         max-width: 90vw;
         text-align: center;
     }
     #butter-root-container #bs-user-title {
-        margin-bottom: 2px; /* 📐 第一行（头衔）和第二行（时间）之间的上下间距 */
+        margin-bottom: calc(2 * var(--u)); /* 📐 第一行（头衔）和第二行（时间）之间的上下间距 */
     }
     #butter-root-container #bs-date-time {
         /* 自动顺延到第二行，不再受 right: 75px 限制 */
@@ -1534,12 +1771,15 @@ h5.section-subtitle {
    * ---------------------------------------------------- */
     #butter-root-container div.butter-content-grid {
         display: grid;
-        grid-template-columns: 55px 1fr; /* 左侧栏固定 55px 宽，右侧主区占满剩下所有空间 */
+        /* 左侧栏 62u（原 55u）：55u 装不下 "{user}概览" 这类较长标签，
+         * 配合 align-items:center + overflow-x:hidden 会被左右各裁掉一截；
+         * 62u 让标签完整可见，同时与「图片三」的左栏宽度比例一致。 */
+        grid-template-columns: calc(62 * var(--u)) 1fr;
         width: 100%;
         height: 100%;
         flex-grow: 1;
         min-height: 0; /* 防止 flex 弹性计算导致主区域溢出 */
-        padding: 5px 8px 8px 8px; /* 内边距控制，使网格完美缩进在古典画框内部 */
+        padding: calc(5 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)); /* 内边距控制，使网格完美缩进在古典画框内部 */
     }
 
     /* ----------------------------------------------------
@@ -1548,8 +1788,8 @@ h5.section-subtitle {
     #butter-root-container .butter-sidebar {
         display: flex;
         flex-direction: column; /* 坚守纵向排列 */
-        gap: 10px; /* 按钮间距 */
-        padding: 5px 1px 5px 1px;
+        gap: calc(8 * var(--u)); /* 按钮间距（原 10u，让 6 个标签在 60u 高的差异下仍不溢出） */
+        padding: calc(5 * var(--u)) calc(1 * var(--u)) calc(5 * var(--u)) calc(1 * var(--u));
         overflow-y: auto; /* 标签过多时允许侧边栏纵向滚动 */
         overflow-x: hidden;
         border-right: none;
@@ -1559,37 +1799,41 @@ h5.section-subtitle {
         display: none; /* 彻底隐藏侧边栏滚动条，保持画面干净 */
     }
     #butter-root-container .butter-tab {
-        padding: 4px 0;
-        gap: 2px;
+        padding: calc(4 * var(--u)) 0;
+        gap: calc(2 * var(--u));
         flex-direction: column;
     }
     #butter-root-container .butter-tab-icon {
-        width: 34px;
-        height: 34px;
+        width: calc(36 * var(--u));
+        height: calc(36 * var(--u));
     }
     #butter-root-container .butter-tab span {
-        font-size: 11px;
-        transform: scale(0.9); /* 强行微缩，使小字体在手机端精致利落 */
-        transform-origin: center top;
+        font-size: calc(11 * var(--u));
+        /* 去掉原来的 transform: scale(0.9)：scale 只改视觉、不改布局盒，
+         * 结果字变小了、盒还那么大，标签显得又小又挤（还更容易被 overflow-x 裁掉）。
+         * 直接用真实字号，视觉与布局一致。 */
+        transform: none;
         white-space: nowrap; /* 禁止换行撑乱布局 */
+        max-width: 100%;
     }
 
     /* ----------------------------------------------------
    * 5. 右侧主内容区顶部的“古典页面标题便签”
    * ---------------------------------------------------- */
     #butter-root-container #butter-page-title-tag {
-        top: 74px !important;
-        left: 68px !important; /* 对应 55px 的左侧边栏进行无缝对齐 */
-        width: 140px;
-        height: 38px;
-        font-size: 12px;
-        padding: 2px 25px 15px 15px;
+        top: calc(74 * var(--u)) !important;
+        /* 8u(网格左内边距) + 62u(左侧栏列宽) + 5u = 75u，与左栏右缘无缝对齐 */
+        left: calc(75 * var(--u)) !important;
+        width: calc(140 * var(--u));
+        height: calc(38 * var(--u));
+        font-size: calc(12 * var(--u));
+        padding: calc(2 * var(--u)) calc(25 * var(--u)) calc(15 * var(--u)) calc(15 * var(--u));
     }
     #butter-root-container .butter-tab-content {
-        padding-top: 35px; /* 空出顶部高度，防业务内容钻到悬浮标题标签下方 */
+        padding-top: calc(35 * var(--u)); /* 空出顶部高度，防业务内容钻到悬浮标题标签下方 */
     }
     #butter-root-container .butter-main-content {
-        padding: 5px 10px;
+        padding: calc(5 * var(--u)) calc(10 * var(--u));
         overflow-y: auto; /* 允许主面板内容独立上下滚动 */
         overflow-x: hidden;
     }
@@ -1598,37 +1842,37 @@ h5.section-subtitle {
    * 6. 右下角精致底栏与五个功能按钮（保留图三小字）
    * ---------------------------------------------------- */
     #butter-root-container .butter-bottom-nav {
-        height: 76px;
-        padding: 10px 0 0 0;
+        height: calc(76 * var(--u));
+        padding: calc(10 * var(--u)) 0 0 0;
         flex-shrink: 0; /* 严禁底部导航栏被上方高弹性内容挤扁 */
     }
     #butter-root-container .butter-nav-btn {
-        width: 40px;
+        width: calc(40 * var(--u));
     }
     #butter-root-container .butter-nav-btn span {
         display: block; /* 🚨 绝不隐藏！完整保留图三的底部分类说明文字 */
-        font-size: 11px;
+        font-size: calc(11 * var(--u));
         transform: scale(0.85);
         white-space: nowrap;
     }
     #butter-root-container .butter-nav-icon-wrapper {
-        width: 33px;
-        height: 33px;
+        width: calc(33 * var(--u));
+        height: calc(33 * var(--u));
     }
 
     /* ----------------------------------------------------
     * 7. 核心内部业务组件微调（欲望条、子宫图、表单）
     * ---------------------------------------------------- */
     #butter-root-container .butter-lust-container {
-        margin-bottom: 12px;
-        gap: 6px;
-        padding-left: 3px !important;
+        margin-bottom: calc(12 * var(--u));
+        gap: calc(6 * var(--u));
+        padding-left: calc(3 * var(--u)) !important;
     }
 
     /* 🌟 轨道底座：手机端只控制它自身的高度 */
     #butter-root-container .lust-bar-track {
         box-sizing: content-box !important;
-        height: 18px; /* 👈 建议手机端调到 16px~18px，24px 在手机上依然会显得有点太粗 */
+        height: calc(18 * var(--u)); /* 👈 建议手机端调到 16px~18px，24px 在手机上依然会显得有点太粗 */
     }
 
     /* 🌟 核心修正：把相框缩小的控制权，精准交给 ::before 伪元素 */
@@ -1637,20 +1881,20 @@ h5.section-subtitle {
 
         /* 🎛️ 手机端微调旋钮：如果发现相框两头太长把粉色液体逼紧了，
         可以把这里的负值稍微缩小一点（比如改成 -4px 或 -6px） */
-        top: -5px;
-        bottom: -5px;
-        left: -7px;
-        right: -5px;
+        top: calc(-5 * var(--u));
+        bottom: calc(-5 * var(--u));
+        left: calc(-7 * var(--u));
+        right: calc(-5 * var(--u));
     }
 
     /* 🌟 子宫区域与图片缩放（这部分你写得完全正确，完美保留） */
     #butter-root-container .butter-womb-section {
-        margin-bottom: 15px;
-        gap: 10px;
+        margin-bottom: calc(15 * var(--u));
+        gap: calc(10 * var(--u));
     }
     #butter-root-container .home-womb-img {
-        width: 110px;
-        height: 125px;
+        width: calc(110 * var(--u));
+        height: calc(125 * var(--u));
         flex-shrink: 0; /* 防止图片被弹性盒子挤压变形 */
     }
 
@@ -1666,24 +1910,24 @@ h5.section-subtitle {
     #butter-root-container input.text_pole,
     #butter-root-container input[type="text"].text_pole,
     #butter-root-container select {
-        padding: 6px 10px;
-        font-size: 12px;
+        padding: calc(6 * var(--u)) calc(10 * var(--u));
+        font-size: calc(12 * var(--u));
         width: 100%;
     }
 
     #butter-root-container select {
         box-sizing: border-box;
-        font-size: 11px; /* 保持精致微缩字号 */
+        font-size: calc(11 * var(--u)); /* 保持精致微缩字号 */
 
         /* 1. 强控行高：这是解决中文字体在手机上被切边缘的关键 */
         line-height: 1.5;
 
         /* 2. 释放高度：绝不锁死 height，让容器靠内容和 padding 自然撑开 */
         height: auto;
-        min-height: 28px; /* 给一个舒适的最小高度大盘 */
+        min-height: calc(28 * var(--u)); /* 给一个舒适的最小高度大盘 */
 
         /* 3. 优化内边距：上下留出足够的纵向空间（5px），右侧保留 24px 留给古典小箭头 */
-        padding: 5px 24px 5px 8px;
+        padding: calc(5 * var(--u)) calc(24 * var(--u)) calc(5 * var(--u)) calc(8 * var(--u));
 
         width: 100%;
         display: inline-block;
@@ -1696,15 +1940,15 @@ h5.section-subtitle {
     #butter-root-container #butter-floating-eye {
         position: fixed;
         /* 📐 1. 在这里控制悬浮按钮的整体大小（从原来的 55px 缩小到 38px） */
-        width: 45px !important;
-        height: 45px !important;
+        width: calc(45 * var(--u)) !important;
+        height: calc(45 * var(--u)) !important;
         /* 📐 2. 在这里控制小眼睛图标本身的大小，保持居中等比缩放 */
-        background-size: 42px 42px;
+        background-size: calc(42 * var(--u)) calc(42 * var(--u));
         background-repeat: no-repeat;
         background-position: center;
         /* 📐 3. 在这里控制它在手机屏幕上的悬浮位置 */
-        top: 20px; /* 距离手机屏幕顶部的距离（调大往下移） */
-        left: 20px; /* 距离手机屏幕左侧的距离（调大往右移） */
+        top: calc(20 * var(--u)); /* 距离手机屏幕顶部的距离（调大往下移） */
+        left: calc(20 * var(--u)); /* 距离手机屏幕左侧的距离（调大往右移） */
         touch-action: none;
     }
 
@@ -1736,8 +1980,8 @@ h5.section-subtitle {
         box-shadow: none;
 
         /* 2. 适当放大尺寸，更方便手机大拇指戳中 */
-        width: 18px;
-        height: 18px;
+        width: calc(18 * var(--u));
+        height: calc(18 * var(--u));
         display: inline-block;
         vertical-align: middle;
 
@@ -1757,28 +2001,28 @@ h5.section-subtitle {
  */
 #butter-root-container #butter-page-title-tag {
     position: absolute;
-    top: 80px;
-    left: 101px;
+    top: calc(80 * var(--u));
+    left: calc(101 * var(--u));
     z-index: 70;
-    width: 190px;
-    height: 50px;
+    width: calc(190 * var(--u));
+    height: calc(50 * var(--u));
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/page_title_bg.png");
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
     font-family: "Noto Serif SC", "Microsoft YaHei", serif;
     font-weight: 700;
-    font-size: 16px;
+    font-size: calc(16 * var(--u));
     color: #4a2e35;
     text-shadow: 1px 1px 0px rgba(255, 245, 245, 0.7);
     display: flex;
     align-items: center;
-    padding: 5px 45px 20px 25px;
+    padding: calc(5 * var(--u)) calc(45 * var(--u)) calc(20 * var(--u)) calc(25 * var(--u));
     pointer-events: none;
 }
 
 #butter-root-container .butter-tab-content {
-    padding-top: 45px;
+    padding-top: calc(45 * var(--u));
 }
 
 /*
@@ -1857,3 +2101,12 @@ h5.section-subtitle {
     background-image: url("/scripts/extensions/third-party/butter-status-bar/img/icon_virgin_status.png");
 }
 /* 🌟 核心修复：此处已安全结束，没有任何多余的 } */
+
+/* ==================================================
+ * XVI. 打开面板时锁住背景滚动
+ *  JS 在打开时会 body.addClass("butter-modal-open")，关闭时移除。
+ *  这样即使面板内容很高，也不会把酒馆页面带着一起上下拖。
+ * ================================================== */
+body.butter-modal-open {
+    overflow: hidden !important;
+}
