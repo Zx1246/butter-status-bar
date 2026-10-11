@@ -1729,7 +1729,7 @@ async function handleRegistrationSubmit() {
 
         context.showLoader();
         toastr.info("正在生成角色档案，只需一次调用...", "系统运行", {
-            timeOut: 10000,
+            timeOut: 3000,
         });
 
         // ====== 构建统一提示词 ======
