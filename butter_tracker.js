@@ -32,14 +32,14 @@ const SENTINEL_PERSONALITY_LIMIT = 150;
  * @returns {Promise<number>}
  */
 async function countTokens(text) {
-    if (!text) return 0;
-    try {
-        const n = await SillyTavern.getContext().getTokenCountAsync(text);
-        if (Number.isFinite(n) && n > 0) return n;
-    } catch (e) {
-        // 分词器不可用时静默降级
-    }
-    return Math.ceil(String(text).length);
+  if (!text) return 0;
+  try {
+    const n = await SillyTavern.getContext().getTokenCountAsync(text);
+    if (Number.isFinite(n) && n > 0) return n;
+  } catch (e) {
+    // 分词器不可用时静默降级
+  }
+  return Math.ceil(String(text).length);
 }
 
 /**
@@ -49,20 +49,20 @@ async function countTokens(text) {
  * @returns {Promise<string>}
  */
 async function clampToTokens(text, maxTokens) {
-    if (!text) return "";
-    const raw = String(text);
-    const count = await countTokens(raw);
-    if (count <= maxTokens) return raw;
+  if (!text) return "";
+  const raw = String(text);
+  const count = await countTokens(raw);
+  if (count <= maxTokens) return raw;
 
-    let cut = Math.max(20, Math.floor(raw.length * (maxTokens / count) * 0.92));
-    let out = raw.slice(0, cut);
-    let guard = 0;
-    while ((await countTokens(out)) > maxTokens && cut > 20 && guard++ < 8) {
-        cut = Math.floor(cut * 0.85);
-        out = raw.slice(0, cut);
-    }
-    out = out.trimEnd();
-    return out.endsWith("…") ? out : `${out}…`;
+  let cut = Math.max(20, Math.floor(raw.length * (maxTokens / count) * 0.92));
+  let out = raw.slice(0, cut);
+  let guard = 0;
+  while ((await countTokens(out)) > maxTokens && cut > 20 && guard++ < 8) {
+    cut = Math.floor(cut * 0.85);
+    out = raw.slice(0, cut);
+  }
+  out = out.trimEnd();
+  return out.endsWith("…") ? out : `${out}…`;
 }
 
 /**
@@ -72,23 +72,23 @@ async function clampToTokens(text, maxTokens) {
  * @returns {Promise<string[]>}
  */
 async function fitTotalBudget(parts, totalLimit) {
-    const counts = [];
-    for (const p of parts) counts.push(await countTokens(p));
-    let total = counts.reduce((a, b) => a + b, 0);
-    if (total <= totalLimit) return parts;
+  const counts = [];
+  for (const p of parts) counts.push(await countTokens(p));
+  let total = counts.reduce((a, b) => a + b, 0);
+  if (total <= totalLimit) return parts;
 
-    const result = [...parts];
-    for (let i = result.length - 1; i >= 0 && total > totalLimit; i--) {
-        const over = total - totalLimit;
-        const allowCut = counts[i] - 40; // 每块至少保留 40 token 的信息量
-        if (allowCut <= 0) continue;
-        const target = Math.max(40, counts[i] - Math.min(allowCut, over));
-        result[i] = await clampToTokens(result[i], target);
-        const newCount = await countTokens(result[i]);
-        total += newCount - counts[i];
-        counts[i] = newCount;
-    }
-    return result;
+  const result = [...parts];
+  for (let i = result.length - 1; i >= 0 && total > totalLimit; i--) {
+    const over = total - totalLimit;
+    const allowCut = counts[i] - 40; // 每块至少保留 40 token 的信息量
+    if (allowCut <= 0) continue;
+    const target = Math.max(40, counts[i] - Math.min(allowCut, over));
+    result[i] = await clampToTokens(result[i], target);
+    const newCount = await countTokens(result[i]);
+    total += newCount - counts[i];
+    counts[i] = newCount;
+  }
+  return result;
 }
 
 /**
@@ -97,33 +97,33 @@ async function fitTotalBudget(parts, totalLimit) {
  * @returns {RegExp|null} - 返回一个正则表达式对象，如果规则无效则返回 null。
  */
 function translateSimpleRuleToRegex(rule) {
-    if (!rule || typeof rule !== "string") return null;
+  if (!rule || typeof rule !== "string") return null;
 
-    const trimmedRule = rule.trim();
+  const trimmedRule = rule.trim();
 
-    // 匹配通用标签，如 <detail>, <status>
-    const tagMatch = trimmedRule.match(/^<(\w+)>$/);
-    if (tagMatch && tagMatch[1]) {
-        const tagName = tagMatch[1];
-        // 构建匹配 <tagName>...</tagName> 的正则表达式
-        return new RegExp(`<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>`, "gi");
-    }
+  // 匹配通用标签，如 <detail>, <status>
+  const tagMatch = trimmedRule.match(/^<(\w+)>$/);
+  if (tagMatch && tagMatch[1]) {
+    const tagName = tagMatch[1];
+    // 构建匹配 <tagName>...</tagName> 的正则表达式
+    return new RegExp(`<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>`, "gi");
+  }
 
-    // 匹配注释标签 <!-- ... -->
-    if (trimmedRule === "!--") {
-        return new RegExp("<!--[\\s\\S]*?-->", "g");
-    }
+  // 匹配注释标签 <!-- ... -->
+  if (trimmedRule === "!--") {
+    return new RegExp("<!--[\\s\\S]*?-->", "g");
+  }
 
-    // 如果不符合上述简单规则，则尝试将其作为标准正则表达式处理
-    try {
-        return new RegExp(trimmedRule, "g");
-    } catch (e) {
-        console.warn(
-            `[Butter Tracker] 无效的裁剪规则，已忽略: "${trimmedRule}"`,
-            e,
-        );
-        return null;
-    }
+  // 如果不符合上述简单规则，则尝试将其作为标准正则表达式处理
+  try {
+    return new RegExp(trimmedRule, "g");
+  } catch (e) {
+    console.warn(
+      `[Butter Tracker] 无效的裁剪规则，已忽略: "${trimmedRule}"`,
+      e,
+    );
+    return null;
+  }
 }
 
 const SETTINGS_KEY = "butterPluginSettings";
@@ -134,22 +134,22 @@ let isTrackingActive = false; // 防止并发调用的全局锁
  * 性器开发状态已移到独立函数
  */
 function translatePhysicalState(state) {
-    const descriptions = [];
-    const p = state.semi_fixed.pronoun || "她";
+  const descriptions = [];
+  const p = state.semi_fixed.pronoun || "她";
 
-    // 只保留代谢状态
-    const meta = state.dynamic.metabolism;
-    let metabolismDesc = `【代谢】饱腹:${meta.hunger}% 清洁:${meta.cleanliness}% 精力:${meta.energy}% 膀胱/肠道:${meta.excretion}%(越低越憋胀) 积乳:${meta.lactation}% 社交:${meta.social}%`;
-    descriptions.push(metabolismDesc);
+  // 只保留代谢状态
+  const meta = state.dynamic.metabolism;
+  let metabolismDesc = `【代谢】饱腹:${meta.hunger}% 清洁:${meta.cleanliness}% 精力:${meta.energy}% 膀胱/肠道:${meta.excretion}%(越低越憋胀) 积乳:${meta.lactation}% 社交:${meta.social}%`;
+  descriptions.push(metabolismDesc);
 
-    // 魅魔专属状态
-    if (state.fixed.race === "魅魔" && state.dynamic.succubus_status) {
-        descriptions.push(
-            `【魔力饥饿度】:${state.dynamic.succubus_status.hunger_percent}% (<10%将进入强制发情)`,
-        );
-    }
+  // 魅魔专属状态
+  if (state.fixed.race === "魅魔" && state.dynamic.succubus_status) {
+    descriptions.push(
+      `【魔力饥饿度】:${state.dynamic.succubus_status.hunger_percent}% (<10%将进入强制发情)`,
+    );
+  }
 
-    return descriptions.join(" | ");
+  return descriptions.join(" | ");
 }
 
 /**
@@ -157,87 +157,87 @@ function translatePhysicalState(state) {
  * 只在非孕期时调用
  */
 function getMenstrualPhasePrompt(state) {
-    const phase = state.dynamic.status.menstrual_phase;
-    const cycleDay = state.dynamic.status.cycle_day;
-    const avgCycle = state.fixed.cycle_base.average_cycle || 28;
-    const daysToNextPeriod = avgCycle - cycleDay;
+  const phase = state.dynamic.status.menstrual_phase;
+  const cycleDay = state.dynamic.status.cycle_day;
+  const avgCycle = state.fixed.cycle_base.average_cycle || 28;
+  const daysToNextPeriod = avgCycle - cycleDay;
 
-    if (phase === "排卵期") {
-        return "【排卵期·发情中】性欲旺盛，阴道分泌大量粘稠透明拉丝状爱液,穴肉敏感贪婪,渴望被插入填满,乳头肿胀,身体本能散发催情信息素诱惑交配对象";
-    } else if (phase === "生理期") {
-        return "【生理期·不适】子宫剥落出血,小腹坠痛抽搐,腰酸背痛,乳房胀痛,情绪暴躁易怒,疲惫嗜睡,性欲低迷,阴道排出经血不宜插入";
-    } else if (phase === "黄体期") {
-        if (daysToNextPeriod <= 5) {
-            return "【黄体期后期·躁动】体温升高,阴道敏感湿润,乳房发胀,情欲高涨身体饥渴,强烈渴求性交和被射精填满的满足感";
-        }
-        return "【黄体期·活力】精力充沛思维敏捷,工作效率高涨,心情愉悦积极向上,性欲平稳";
-    } else if (phase === "卵泡期") {
-        return "【卵泡期·恢复】经期刚过体力恢复中,心情平和,子宫内膜增厚,性欲逐渐回升";
+  if (phase === "排卵期") {
+    return "【排卵期·发情中】性欲旺盛，阴道分泌大量粘稠透明拉丝状爱液,穴肉敏感贪婪,渴望被插入填满,乳头肿胀,身体本能散发催情信息素诱惑交配对象";
+  } else if (phase === "生理期") {
+    return "【生理期·不适】子宫剥落出血,小腹坠痛抽搐,腰酸背痛,乳房胀痛,情绪暴躁易怒,疲惫嗜睡,性欲低迷,阴道排出经血不宜插入";
+  } else if (phase === "黄体期") {
+    if (daysToNextPeriod <= 5) {
+      return "【黄体期后期·躁动】体温升高,阴道敏感湿润,乳房发胀,情欲高涨身体饥渴,强烈渴求性交和被射精填满的满足感";
     }
+    return "【黄体期·活力】精力充沛思维敏捷,工作效率高涨,心情愉悦积极向上,性欲平稳";
+  } else if (phase === "卵泡期") {
+    return "【卵泡期·恢复】经期刚过体力恢复中,心情平和,子宫内膜增厚,性欲逐渐回升";
+  }
 
-    return "";
+  return "";
 }
 
 /**
  * 获取孕期阶段提示词（按5%进度细分，共20阶段）
  */
 function getPregnancyStagePrompt(state) {
-    if (!state.dynamic.status.is_pregnant) return "";
+  if (!state.dynamic.status.is_pregnant) return "";
 
-    const moment = SillyTavern.libs.moment;
-    const currentDate = moment(state.dynamic.time_tracker.story_date);
-    const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
-    const daysElapsed = currentDate.diff(pregStartDate, "days");
+  const moment = SillyTavern.libs.moment;
+  const currentDate = moment(state.dynamic.time_tracker.story_date);
+  const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
+  const daysElapsed = currentDate.diff(pregStartDate, "days");
 
-    // 获取总孕期天数
-    const totalMonths = state.semi_fixed.gestation_duration || 10;
-    const totalDays = totalMonths * 30;
+  // 获取总孕期天数
+  const totalMonths = state.semi_fixed.gestation_duration || 10;
+  const totalDays = totalMonths * 30;
 
-    // 计算孕期进度百分比
-    const progress = (daysElapsed / totalDays) * 100;
+  // 计算孕期进度百分比
+  const progress = (daysElapsed / totalDays) * 100;
 
-    // 根据5%进度细分返回对应提示词
-    if (progress < 5) {
-        return "【受孕初期·无感】受精卵刚着床,外表和感觉完全正常,身体尚未察觉怀孕,偶尔轻微疲倦但易被忽略";
-    } else if (progress < 10) {
-        return "【早孕反应】晨起恶心干呕,嗜睡乏力,乳房开始微微发胀刺痛,小腹依然平坦,尿频但易误认为普通不适";
-    } else if (progress < 15) {
-        return "【孕吐期·痛苦】孕吐严重食欲不振,极度疲倦嗜睡,乳头敏感胀痛乳晕加深,小腹微微隆起但衣物可遮掩,性欲低迷";
-    } else if (progress < 20) {
-        return "【早孕后期·煎熬】持续孕吐和反胃,尿频加剧,乳房明显增大变重刺痛感强,小腹微凸但仍不明显,情绪波动大易哭,性欲极低";
-    } else if (progress < 25) {
-        return "【过渡期·初显孕相】孕吐开始减轻,腹部开始微微凸起可见弧度,乳房持续胀大变软,乳头高度敏感,阴道分泌物增多,性欲缓慢回升";
-    } else if (progress < 30) {
-        return "【症状缓解期】孕吐基本消失胃口恢复,小腹隆起更明显紧身衣难遮,乳房丰满柔软开始分泌初乳,乳头勃起敏感渴望触碰,性欲逐渐苏醒";
-    } else if (progress < 35) {
-        return "【胎动初感】腹部明显鼓起呈小球状,感受到微弱胎动,精力恢复,乳房丰满柔软持续产初乳,乳头长期勃起,性欲回升阴道开始湿润,食欲旺盛";
-    } else if (progress < 40) {
-        return "【孕中期·显怀】孕肚明显凸起浑圆,胎动频繁可感,精力充沛,性欲强烈高涨,阴道敏感湿滑淫水增多,乳房饱满产乳量增加,渴望性爱和乳头刺激";
-    } else if (progress < 45) {
-        return "【性欲巅峰期】孕肚浑圆沉甸,胎动活跃,荷尔蒙激增导致性欲爆发,阴道异常敏感湿润淫水泛滥,乳房胀满溢乳,乳头极度敏感,强烈渴求性交和被抚摸";
-    } else if (progress < 50) {
-        return "【孕中期盛期·旺盛】孕肚高高隆起,胎动强劲,身体适应孕期状态,性欲持续高涨,阴道湿热紧致淫水充沛,乳房丰满产奶,乳首勃起渴望吸吮,皮肤润泽";
-    } else if (progress < 55) {
-        return "【负重渐增】孕肚继续增大开始感到沉重,胎动有力,腰部开始酸痛,性欲依然旺盛,阴道敏感多汁,乳房持续产奶偶尔溢出,需更频繁休息";
-    } else if (progress < 60) {
-        return "【孕中后期·转折】孕肚明显沉重影响行动,双腿开始轻微浮肿,腰酸背痛加剧,性欲依然高但体力开始跟不上,阴道湿润敏感,乳房胀满溢乳频繁";
-    } else if (progress < 65) {
-        return "【行动受限初期】孕肚巨大沉重,双腿水肿明显,腰背持续酸痛,弯腰困难,性欲矛盾地高涨但身体疲惫,阴道松软湿润淫水多,乳房肿胀溢乳,尿频加剧";
-    } else if (progress < 70) {
-        return "【疲惫期·力不从心】孕肚如抱大球沉重难耐,双腿严重水肿,腰酸背痛难以久站,行动迟缓,性欲高涨但体力不支,阴道敏感多汁,乳房胀痛溢乳不止";
-    } else if (progress < 75) {
-        return "【孕后期初·沉重】孕肚巨大压迫内脏,双腿肿胀行走困难,呼吸略感压迫,性欲依然存在但需温柔对待,阴道松软湿润淫液泛滥,乳房胀满随时喷乳,尿频严重";
-    } else if (progress < 80) {
-        return "【极度沉重期】孕肚达到巨大体积,双腿水肿严重难以久站,腰酸背痛剧烈,行动极为迟缓,阴道极度敏感湿润,子宫压迫膀胱频繁尿意,乳房胀痛溢乳频繁,身心疲惫";
-    } else if (progress < 85) {
-        return "【假性宫缩期】孕肚巨大腹部紧绷,时常出现假性宫缩阵痛,双腿肿胀如灌铅,腰背剧痛难忍,阴道分泌大量粘液,子宫开始为分娩做准备,乳房胀满溢乳,焦虑不安";
-    } else if (progress < 90) {
-        return "【临产准备·不安】孕肚达到极限随时可能分娩,宫缩越发频繁,子宫口开始软化,阴道大量分泌粘稠液体,双腿严重水肿几乎无法行走,乳房胀痛喷乳,紧张与期待交织";
-    } else if (progress < 95) {
-        return "【临盆倒计时·紧迫】孕肚巨大随时临盆,宫缩阵痛密集,子宫口持续软化扩张,阴道流出大量分泌物,双腿肿胀行动困难,乳房肿胀随时喷乳,内心焦虑恐惧,本能地寻求安全感";
-    } else {
-        return "【羊水将破·分娩在即】孕肚达到生理极限腹部紧绷,宫缩剧痛频繁,羊水随时可能破裂,子宫口松软扩张,阴道湿滑大量粘液流出,双腿肿胀无法站立,乳房胀满持续喷乳,恐惧与母性本能激烈冲突";
-    }
+  // 根据5%进度细分返回对应提示词
+  if (progress < 5) {
+    return "【受孕初期·无感】受精卵刚着床,外表和感觉完全正常,身体尚未察觉怀孕,偶尔轻微疲倦但易被忽略";
+  } else if (progress < 10) {
+    return "【早孕反应】晨起恶心干呕,嗜睡乏力,乳房开始微微发胀刺痛,小腹依然平坦,尿频但易误认为普通不适";
+  } else if (progress < 15) {
+    return "【孕吐期·痛苦】孕吐严重食欲不振,极度疲倦嗜睡,乳头敏感胀痛乳晕加深,小腹微微隆起但衣物可遮掩,性欲低迷";
+  } else if (progress < 20) {
+    return "【早孕后期·煎熬】持续孕吐和反胃,尿频加剧,乳房明显增大变重刺痛感强,小腹微凸但仍不明显,情绪波动大易哭,性欲极低";
+  } else if (progress < 25) {
+    return "【过渡期·初显孕相】孕吐开始减轻,腹部开始微微凸起可见弧度,乳房持续胀大变软,乳头高度敏感,阴道分泌物增多,性欲缓慢回升";
+  } else if (progress < 30) {
+    return "【症状缓解期】孕吐基本消失胃口恢复,小腹隆起更明显紧身衣难遮,乳房丰满柔软开始分泌初乳,乳头勃起敏感渴望触碰,性欲逐渐苏醒";
+  } else if (progress < 35) {
+    return "【胎动初感】腹部明显鼓起呈小球状,感受到微弱胎动,精力恢复,乳房丰满柔软持续产初乳,乳头长期勃起,性欲回升阴道开始湿润,食欲旺盛";
+  } else if (progress < 40) {
+    return "【孕中期·显怀】孕肚明显凸起浑圆,胎动频繁可感,精力充沛,性欲强烈高涨,阴道敏感湿滑淫水增多,乳房饱满产乳量增加,渴望性爱和乳头刺激";
+  } else if (progress < 45) {
+    return "【性欲巅峰期】孕肚浑圆沉甸,胎动活跃,荷尔蒙激增导致性欲爆发,阴道异常敏感湿润淫水泛滥,乳房胀满溢乳,乳头极度敏感,强烈渴求性交和被抚摸";
+  } else if (progress < 50) {
+    return "【孕中期盛期·旺盛】孕肚高高隆起,胎动强劲,身体适应孕期状态,性欲持续高涨,阴道湿热紧致淫水充沛,乳房丰满产奶,乳首勃起渴望吸吮,皮肤润泽";
+  } else if (progress < 55) {
+    return "【负重渐增】孕肚继续增大开始感到沉重,胎动有力,腰部开始酸痛,性欲依然旺盛,阴道敏感多汁,乳房持续产奶偶尔溢出,需更频繁休息";
+  } else if (progress < 60) {
+    return "【孕中后期·转折】孕肚明显沉重影响行动,双腿开始轻微浮肿,腰酸背痛加剧,性欲依然高但体力开始跟不上,阴道湿润敏感,乳房胀满溢乳频繁";
+  } else if (progress < 65) {
+    return "【行动受限初期】孕肚巨大沉重,双腿水肿明显,腰背持续酸痛,弯腰困难,性欲矛盾地高涨但身体疲惫,阴道松软湿润淫水多,乳房肿胀溢乳,尿频加剧";
+  } else if (progress < 70) {
+    return "【疲惫期·力不从心】孕肚如抱大球沉重难耐,双腿严重水肿,腰酸背痛难以久站,行动迟缓,性欲高涨但体力不支,阴道敏感多汁,乳房胀痛溢乳不止";
+  } else if (progress < 75) {
+    return "【孕后期初·沉重】孕肚巨大压迫内脏,双腿肿胀行走困难,呼吸略感压迫,性欲依然存在但需温柔对待,阴道松软湿润淫液泛滥,乳房胀满随时喷乳,尿频严重";
+  } else if (progress < 80) {
+    return "【极度沉重期】孕肚达到巨大体积,双腿水肿严重难以久站,腰酸背痛剧烈,行动极为迟缓,阴道极度敏感湿润,子宫压迫膀胱频繁尿意,乳房胀痛溢乳频繁,身心疲惫";
+  } else if (progress < 85) {
+    return "【假性宫缩期】孕肚巨大腹部紧绷,时常出现假性宫缩阵痛,双腿肿胀如灌铅,腰背剧痛难忍,阴道分泌大量粘液,子宫开始为分娩做准备,乳房胀满溢乳,焦虑不安";
+  } else if (progress < 90) {
+    return "【临产准备·不安】孕肚达到极限随时可能分娩,宫缩越发频繁,子宫口开始软化,阴道大量分泌粘稠液体,双腿严重水肿几乎无法行走,乳房胀痛喷乳,紧张与期待交织";
+  } else if (progress < 95) {
+    return "【临盆倒计时·紧迫】孕肚巨大随时临盆,宫缩阵痛密集,子宫口持续软化扩张,阴道流出大量分泌物,双腿肿胀行动困难,乳房肿胀随时喷乳,内心焦虑恐惧,本能地寻求安全感";
+  } else {
+    return "【羊水将破·分娩在即】孕肚达到生理极限腹部紧绷,宫缩剧痛频繁,羊水随时可能破裂,子宫口松软扩张,阴道湿滑大量粘液流出,双腿肿胀无法站立,乳房胀满持续喷乳,恐惧与母性本能激烈冲突";
+  }
 }
 /**
  * 获取生殖器官术语（子宫 vs 生殖腔）
@@ -245,157 +245,238 @@ function getPregnancyStagePrompt(state) {
  * @returns {string} - "子宫" 或 "生殖腔"
  */
 function getOrganTerm(state) {
-    const useReproductiveCavity =
-        state.fixed.race === "兽人" ||
-        ["ABO", "天乾地坤", "哨向"].includes(
-            state.semi_fixed.secondary_gender_type,
-        );
-    return useReproductiveCavity ? "生殖腔" : "子宫";
+  const useReproductiveCavity =
+    state.fixed.race === "兽人" ||
+    ["ABO", "天乾地坤", "哨向"].includes(
+      state.semi_fixed.secondary_gender_type,
+    );
+  return useReproductiveCavity ? "生殖腔" : "子宫";
 }
 
 /**
- * 获取子宫/生殖腔开发状态描述
+ * 获取子宫/生殖腔开发状态描述（8阶段，以sens.cervix为驱动）
  */
 function getCervixDevelopmentDesc(state) {
-    const cervix = state.dynamic.sensitivity.cervix || 0;
-    const isOvulation = state.dynamic.status.menstrual_phase === "排卵期";
-    const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
-    const isEstrus = isOvulation || isForcedEstrus;
+  const cervix = state.dynamic.sensitivity.cervix || 0;
+  const isOvulation = state.dynamic.status.menstrual_phase === "排卵期";
+  const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
+  const isEstrus = isOvulation || isForcedEstrus;
+  const organName = getOrganTerm(state);
 
-    // 使用统一的术语获取函数
-    const organName = getOrganTerm(state);
+  let desc = "";
 
-    let desc = "";
-    if (cervix < 10) {
-        desc = `${organName}口紧闭坚硬,被触碰时剧痛抗拒,无法承受深入插入`;
-    } else if (cervix < 40) {
-        desc = `${organName}口开始学会放松,被顶弄时酸胀刺痛但已能忍受,偶尔会从深处涌出快感`;
-    } else if (cervix < 70) {
-        desc = `${organName}口已被调教得柔软,能吞吃龟头深入,被顶开时产生酸麻快感,宫腔开始渴求填充`;
-    } else if (cervix < 90) {
-        desc = `${organName}口湿软可轻松吞入,被捅入宫腔时淫荡痉挛,${organName}深处已成为新的性感带,渴望被精液直接灌满`;
-    } else {
-        desc = `${organName}口彻底沦为淫穴,主动收缩吸附肉棒,宫腔深处极度敏感,被贯穿时能直接达到宫交高潮,成为专属肉便器`;
-    }
+  if (cervix < 10) {
+    desc = `${organName}口紧闭坚硬，触碰时条件反射地收缩抵抗，被顶弄时只有撕裂般的剧痛，完全无法接受深入`;
+  } else if (cervix < 30) {
+    desc = `${organName}口仍紧，顶弄时酸胀刺痛剧烈，却隐约夹杂着说不清的深层麻意，身体在抗拒与困惑间挣扎`;
+  } else if (cervix < 60) {
+    desc = `${organName}口开始被一次次撞击调教得稍微柔软，疼痛感中已能分辨出一缕从深处涌起的异质快感`;
+  } else if (cervix < 100) {
+    desc = `${organName}口渐渐懂得在被顶时收缩迎合，被龟头蹭到时会湿润地轻颤，深处的酸胀已盖不住那股被触到禁区的强烈酥麻`;
+  } else if (cervix < 160) {
+    desc = `${organName}口已被调教得柔软可吞，被龟头顶开时会发出细密的蠕动，${organName}腔里分泌出粘稠的润液，内里开始主动渴求被填入`;
+  } else if (cervix < 250) {
+    desc = `${organName}口极度敏感，轻轻一顶便让全身颤抖，腔壁会自发地包裹收缩，想要把侵入之物永远困在${organName}最深处`;
+  } else if (cervix < 380) {
+    desc = `${organName}口彻底沦陷，被灌入精液时会痉挛着紧缩将精液吸入更深，宫腔已成为专属的精液容器，被贯穿到底时能引发失控的宫交高潮`;
+  } else {
+    desc = `${organName}口主动开合吸附，仅靠龟头轻触宫口就能让身体痉挛抽搐，腔壁对精液的渴望已刻入本能——每一次被顶入都会让意识涌起绵长的白热高潮，彻底沦为肉便器的核心`;
+  }
 
-    // 发情期加成
-    if (isEstrus) {
-        desc += `(发情期)宫口异常柔软湿润,本能地渴望被贯穿直射精卵`;
-    }
+  if (isEstrus) {
+    desc += `；发情期${organName}口格外湿烫柔软，会本能地开合诱引，渴望被直接灌满精液`;
+  }
 
-    return desc;
+  return desc;
 }
 
 /**
- * 【核心重构】获取性器开发状态描述（考虑破处状态和经验值）
+ * 【核心重构】获取性器开发状态描述（以敏感度为核心驱动，6-10阶段）
  */
 function getSexualDevelopmentDesc(state) {
-    const exp = state.dynamic.experience;
-    const sens = state.dynamic.sensitivity;
-    const isVirgin = state.dynamic.status.is_virgin;
-    const descriptions = [];
+  const exp = state.dynamic.experience;
+  const sens = state.dynamic.sensitivity;
+  const isVirgin = state.dynamic.status.is_virgin;
+  const descriptions = [];
 
-    // 1. 阴道开发描述（考虑处女状态）
-    if (isVirgin) {
-        descriptions.push("阴道(处女):处女膜完整紧锁,首次插入会撕裂剧痛出血");
+  // ==============================
+  // 1. 阴道开发描述（8阶段，以sens.genital为主驱动）
+  // ==============================
+  if (isVirgin) {
+    descriptions.push(
+      "阴道(处女):处女膜完整紧锁，穴口紧实粉嫩从未被撑开，强行插入会撕裂剧痛出血",
+    );
+  } else {
+    const genital = sens.genital || 0;
+    if (genital < 20) {
+      descriptions.push(
+        "阴道(破处·生涩):处女膜刚破，穴口紧涩红肿，插入时刺痛难忍，爱液稀少，身体尚未学会接受",
+      );
+    } else if (genital < 50) {
+      descriptions.push(
+        "阴道(初启·适应):穴肉开始学会放松，湿润度勉强，抽插时摩擦感强烈，偶有酸胀快感从深处涌出",
+      );
+    } else if (genital < 100) {
+      descriptions.push(
+        "阴道(开发·觉醒):穴肉渐渐懂得迎合，能主动分泌爱液润滑，被顶到深处时会不自觉地夹紧，快感开始盖过涩意",
+      );
+    } else if (genital < 160) {
+      descriptions.push(
+        "阴道(成熟·湿热):穴腔常年湿润，爱液充沛粘腻，被插入时穴肉会颤着收缩吸吮，渴望被更深更狠地填满",
+      );
+    } else if (genital < 250) {
+      descriptions.push(
+        "阴道(淫化·贪婪):穴肉高度敏感，稍被拨弄便淫水泛滥，内壁会主动蠕动榨紧侵入之物，浅插都能涌出强烈快感",
+      );
+    } else if (genital < 350) {
+      descriptions.push(
+        "阴道(堕落·淫穴):穴口随时微微开合，像在无声索求，爱液绵绵不绝沿大腿内侧滑落，单靠手指进出便能颤抖高潮",
+      );
+    } else if (genital < 450) {
+      descriptions.push(
+        "阴道(名器·榨精):穴腔已被彻底调教成极品肉壶，内壁灵敏地包裹每一寸侵入，能感知龟头的微小脉动，用收缩痉挛榨尽每一滴精液",
+      );
     } else {
-        const pussy = exp.pussy || 0;
-        if (pussy < 50) {
-            descriptions.push(
-                "阴道(破处):处女膜已破,穴口紧涩生疏,插入时仍感紧绷刺痛,爱液分泌少",
-            );
-        } else if (pussy < 150) {
-            descriptions.push(
-                "阴道(适应):穴肉学会放松吞吐,能主动分泌爱液润滑,开始享受抽插快感",
-            );
-        } else if (pussy < 300) {
-            descriptions.push(
-                "阴道(淫化):穴肉湿热贪婪,会主动收缩吮吸肉棒,爱液充沛,渴望被狠狠贯穿",
-            );
-        } else {
-            descriptions.push(
-                "阴道(名器):已被调教成淫荡肉穴,穴肉极度敏感会自主蠕动榨精,仅靠插入就能连续高潮",
-            );
-        }
+      descriptions.push(
+        "阴道(至宝·肉便器):穴肉对任何刺激都饥渴回应，仅靠摩擦衣物便会湿透颤抖，连续插入中能不断迭起高潮，沦为专为射精而生的极品肉穴",
+      );
     }
+  }
 
-    // 2. 后庭开发描述
-    const anal = exp.anal || 0;
-    if (anal === 0) {
-        descriptions.push(
-            "后庭(紧闭):肛门完全未经开发,括约肌紧锁,强行插入会撕裂剧痛",
-        );
-    } else if (anal < 50) {
-        descriptions.push(
-            "后庭(初启):括约肌开始学会放松,插入时仍酸胀刺痛,需大量润滑",
-        );
-    } else if (anal < 150) {
-        descriptions.push(
-            "后庭(开拓):肠道已适应异物,能放松吞入,酸胀中带来快感",
-        );
-    } else if (anal < 300) {
-        descriptions.push(
-            "后庭(淫穴):肠壁敏感湿滑,会主动收缩夹紧,深处被顶弄时产生强烈快感",
-        );
-    } else {
-        descriptions.push(
-            "后庭(失禁):后穴彻底沦陷,随时敞开迎接侵犯,肠道深处成为敏感性器",
-        );
-    }
+  // ==============================
+  // 2. 后庭开发描述（8阶段，以sens.butt为主驱动）
+  // ==============================
+  const butt = sens.butt || 0;
+  const anal = exp.anal || 0;
+  if (anal === 0 && butt < 5) {
+    descriptions.push(
+      "后庭(紧闭·未开):肛门括约肌完全未经触碰，一点刺激便本能地收紧，强行插入会撕裂剧痛",
+    );
+  } else if (butt < 30) {
+    descriptions.push(
+      "后庭(初探·生疼):括约肌开始被强行撑开，酸胀刺痛交织，需大量润滑才能勉强进入，深处隐约有难言的胀感",
+    );
+  } else if (butt < 70) {
+    descriptions.push(
+      "后庭(适应·酸胀):肠道开始接受异物撑开的感觉，进入时酸胀感逐渐带出隐隐快意，括约肌的抵抗软化了",
+    );
+  } else if (butt < 120) {
+    descriptions.push(
+      "后庭(开拓·发现):肠壁内壁快感点被发掘，抽插时产生不同于阴道的深层酥麻，身体开始不自觉地向后顶迎",
+    );
+  } else if (butt < 200) {
+    descriptions.push(
+      "后庭(驯化·渴求):肠道敏感度大幅提升，括约肌会主动收缩夹紧，空洞感会让身体下意识地想要被填满",
+    );
+  } else if (butt < 300) {
+    descriptions.push(
+      "后庭(淫穴·失守):肠壁高度湿滑敏感，深处被顶弄时产生媲美前穴的强烈高潮，已无法分清哪里更渴望被使用",
+    );
+  } else if (butt < 420) {
+    descriptions.push(
+      "后庭(堕落·双穴):后穴与前穴同等开发，两孔都能独立达到高潮，被同时使用时快感叠加到难以承受，肠壁会自行分泌润液迎接",
+    );
+  } else {
+    descriptions.push(
+      "后庭(失禁·彻底):后穴括约肌长期被撑松，空洞时会无意识地收缩寻找填充，仅靠手指插入肠道就能让全身颤抖痉挛，彻底沦为第二性器",
+    );
+  }
 
-    // 3. 口腔开发描述
-    const oral = exp.oral || 0;
-    if (oral < 30) {
-        descriptions.push("口腔(青涩):深喉会干呕,舌头笨拙,口交技巧生疏");
-    } else if (oral < 100) {
-        descriptions.push(
-            "口腔(学习):开始掌握吞吐技巧,能忍受深喉,舌头灵活取悦",
-        );
-    } else if (oral < 200) {
-        descriptions.push(
-            "口腔(熟练):喉咙柔软能深度吞咽,口交技巧娴熟,渴望被精液灌喉",
-        );
-    } else {
-        descriptions.push(
-            "口腔(淫器):咽喉彻底被开发,视口交为享受,主动舔舐吸吮榨精,吞精成癖",
-        );
-    }
+  // ==============================
+  // 3. 口腔开发描述（6阶段，以sens.oral为主驱动）
+  // ==============================
+  const oral = sens.oral || 0;
+  if (oral < 20) {
+    descriptions.push(
+      "口腔(生涩·青涩):深喉会干呕，舌头笨拙无措，含住时齿关不由自主地轻颤，口交技巧近乎为零",
+    );
+  } else if (oral < 60) {
+    descriptions.push(
+      "口腔(学习·摸索):开始掌握呼吸节奏，能忍受轻度深喉，舌尖灵活地探索，唾液泛滥沿嘴角溢出",
+    );
+  } else if (oral < 130) {
+    descriptions.push(
+      "口腔(熟练·吞咽):咽喉放软能够深度吞纳，舌头娴熟地卷绕取悦，口交时会下意识地发出湿润的吮吸声",
+    );
+  } else if (oral < 250) {
+    descriptions.push(
+      "口腔(渴求·上瘾):喉咙已完全适应深喉冲击，主动用喉肌收缩吸吮，品尝前端渗出的液体时舌尖会颤抖，开始渴望被灌喉",
+    );
+  } else if (oral < 400) {
+    descriptions.push(
+      "口腔(淫器·精奴):口腔被彻底开发为第二性器，吞精时眼眶泛红却本能地吞咽，无需引导便能用喉道榨出射精，口交时下体同步湿透",
+    );
+  } else {
+    descriptions.push(
+      "口腔(至臻·深喉奴):咽喉彻底失去抵抗反射，可轻松接受完整深喉，吞精成癖——只要液体灌入喉道，下体便会同步痉挛高潮，口与穴已在神经上连线",
+    );
+  }
 
-    // 4. 乳房开发描述
-    const breast = exp.breast || 0;
-    if (breast < 50) {
-        descriptions.push("乳房(蓓蕾):乳头敏感度低,揉捏时快感微弱伴随羞耻");
-    } else if (breast < 150) {
-        descriptions.push(
-            "乳房(觉醒):乳头开始敏感,被吸吮揉捏时产生快感,挺起胸膛渴求爱抚",
-        );
-    } else if (breast < 300) {
-        descriptions.push(
-            "乳房(敏感):乳房成为性感带,乳头高度敏感,粗暴揉捏可引发高潮",
-        );
-    } else {
-        descriptions.push(
-            "乳房(淫具):乳房彻底沦为性器,仅通过乳交和乳头刺激就能达到乳首高潮",
-        );
-    }
+  // ==============================
+  // 4. 乳房开发描述（7阶段，以sens.breast为主驱动）
+  // ==============================
+  const breast = sens.breast || 0;
+  if (breast < 20) {
+    descriptions.push(
+      "乳房(蓓蕾·钝感):乳头几乎无感，揉捏时仅有微弱的羞耻，快感稀薄",
+    );
+  } else if (breast < 60) {
+    descriptions.push(
+      "乳房(觉醒·初敏):乳头开始变得敏感，轻触时有轻微的酥麻，被吸吮时会不由自主地绷紧身体",
+    );
+  } else if (breast < 120) {
+    descriptions.push(
+      "乳房(开发·渴触):乳头持续保持轻微勃起，被拨弄时发出细碎的喘息，揉捏乳房会让下体同步湿润",
+    );
+  } else if (breast < 200) {
+    descriptions.push(
+      "乳房(敏感·胀痛):乳头高度敏感长期半勃，稍微摩擦衣物便有酥麻感，粗暴揉捏能引发整个胸腔的快感共鸣",
+    );
+  } else if (breast < 300) {
+    descriptions.push(
+      "乳房(淫化·乳首高潮):乳房成为独立性感带，被含住乳头吸吮时能单独达到高潮，乳尖上附着的快感与下体连线",
+    );
+  } else if (breast < 430) {
+    descriptions.push(
+      "乳房(堕落·自溢):乳腺极度敏感，兴奋时乳头会不自觉地分泌少量液体，掐捏乳尖时快感直窜脊背，乳交时能感受到媲美插入的满足感",
+    );
+  } else {
+    descriptions.push(
+      "乳房(至淫·乳便器):双乳被调教成独立的极品性器，任何接触都能引发持续快感，乳尖高潮与阴道高潮相互叠加，被同时使用时快感会叠升到断片边缘",
+    );
+  }
 
-    // 5. 手部技巧开发描述
-    const handjob = exp.handjob || 0;
-    if (handjob < 30) {
-        descriptions.push("手技(生涩):力度没轻没重,手法笨拙,套弄技巧欠缺");
-    } else if (handjob < 100) {
-        descriptions.push("手技(学习):开始掌握节奏,手指灵活,能让对方舒适");
-    } else if (handjob < 200) {
-        descriptions.push(
-            "手技(熟练):精通套弄技巧,能精准把握对方反应,手法娴熟",
-        );
-    } else {
-        descriptions.push(
-            "手技(大师):完美的手指控制,可随意引导对方高潮或控高,手淫艺术家",
-        );
-    }
+  // ==============================
+  // 5. 手部技巧开发描述（6阶段，以经验值为驱动）
+  // ==============================
+  const handjob = exp.handjob || 0;
+  if (handjob < 15) {
+    descriptions.push(
+      "手技(生涩·笨拙):力道没有轻重，节奏混乱，套弄时方向感欠缺",
+    );
+  } else if (handjob < 50) {
+    descriptions.push(
+      "手技(摸索·初学):开始感知对方的反应，握力和节奏渐渐稳定，能带来基础的舒适感",
+    );
+  } else if (handjob < 120) {
+    descriptions.push(
+      "手技(掌握·灵活):手指灵活，能随着对方起伏调整力度，配合拇指摩擦冠状沟的技巧已经娴熟",
+    );
+  } else if (handjob < 220) {
+    descriptions.push(
+      "手技(精通·读心):精准把握对方濒临射精的临界点，可以随意延迟或引导高潮，手中仿佛装了感应器",
+    );
+  } else if (handjob < 380) {
+    descriptions.push(
+      "手技(大师·榨精):完美的掌心温度与节律，双手配合轮番榨取，能让对方在失控颤抖中反复射精",
+    );
+  } else {
+    descriptions.push(
+      "手技(至极·手淫艺):仅凭指腹的摩擦便能制造连续高潮，对方的每一处敏感都在掌心之中，随意延长或缩短快感如同调琴",
+    );
+  }
 
-    return descriptions.join(" | ");
+  return descriptions.join(" | ");
 }
 
 /**
@@ -404,342 +485,341 @@ function getSexualDevelopmentDesc(state) {
  * @returns {string} - The lactation status description string, or an empty string.
  */
 function getLactationDescription(state) {
-    const lacSet = state.semi_fixed.lactation_setting || "孕后哺乳期产乳";
-    const breastSens = state.dynamic.sensitivity.breast || 0;
-    const isPregnant = state.dynamic.status.is_pregnant;
-    const hasChildren = state.dynamic.relationships.children_list?.length > 0;
-    const isOvulating = state.dynamic.status.menstrual_phase === "排卵期";
-    const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
-    const lacVal = state.dynamic.metabolism.lactation || 0;
+  const lacSet = state.semi_fixed.lactation_setting || "孕后哺乳期产乳";
+  const breastSens = state.dynamic.sensitivity.breast || 0;
+  const isPregnant = state.dynamic.status.is_pregnant;
+  const hasChildren = state.dynamic.relationships.children_list?.length > 0;
+  const isOvulating = state.dynamic.status.menstrual_phase === "排卵期";
+  const isForcedEstrus = state.dynamic.succubus_status?.is_forced_estrus;
+  const lacVal = state.dynamic.metabolism.lactation || 0;
 
-    // 计算孕期进度（如果怀孕）
-    let pregnancyProgress = 0;
-    if (isPregnant) {
-        const moment = SillyTavern.libs.moment;
-        const currentDate = moment(state.dynamic.time_tracker.story_date);
-        const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
-        const daysElapsed = currentDate.diff(pregStartDate, "days");
-        const totalMonths = state.semi_fixed.gestation_duration || 10;
-        const totalDays = totalMonths * 30;
-        pregnancyProgress = (daysElapsed / totalDays) * 100;
-    }
+  // 计算孕期进度（如果怀孕）
+  let pregnancyProgress = 0;
+  if (isPregnant) {
+    const moment = SillyTavern.libs.moment;
+    const currentDate = moment(state.dynamic.time_tracker.story_date);
+    const pregStartDate = moment(state.dynamic.status.pregnancy_start_date);
+    const daysElapsed = currentDate.diff(pregStartDate, "days");
+    const totalMonths = state.semi_fixed.gestation_duration || 10;
+    const totalDays = totalMonths * 30;
+    pregnancyProgress = (daysElapsed / totalDays) * 100;
+  }
 
-    let canLactate = false;
-    let lactationReason = "";
+  let canLactate = false;
+  let lactationReason = "";
 
-    // 判断是否可以产乳
-    if (lacSet === "持续产乳") {
-        // 【修正】持续产乳模式也遵循孕期和高潮规则
-        canLactate = true;
-        lactationReason = "持续产乳";
-    } else if (lacSet === "随胸部开发度产乳" && breastSens >= 100) {
-        canLactate = true;
-        lactationReason = "胸部开发";
-    } else if (lacSet === "孕后哺乳期产乳" && (isPregnant || hasChildren)) {
-        canLactate = true;
-        lactationReason = "孕期/哺乳期";
-    } else if (lacSet === "发情期产乳" && (isOvulating || isForcedEstrus)) {
-        canLactate = true;
-        lactationReason = "发情期";
-    } else if (lacSet === "高潮后产乳") {
-        canLactate = true;
-        lactationReason = "高潮刺激";
-    } else if (lacSet === "不产乳") {
-        return "";
-    }
+  // 判断是否可以产乳
+  if (lacSet === "持续产乳") {
+    // 【修正】持续产乳模式也遵循孕期和高潮规则
+    canLactate = true;
+    lactationReason = "持续产乳";
+  } else if (lacSet === "随胸部开发度产乳" && breastSens >= 100) {
+    canLactate = true;
+    lactationReason = "胸部开发";
+  } else if (lacSet === "孕后哺乳期产乳" && (isPregnant || hasChildren)) {
+    canLactate = true;
+    lactationReason = "孕期/哺乳期";
+  } else if (lacSet === "发情期产乳" && (isOvulating || isForcedEstrus)) {
+    canLactate = true;
+    lactationReason = "发情期";
+  } else if (lacSet === "高潮后产乳") {
+    canLactate = true;
+    lactationReason = "高潮刺激";
+  } else if (lacSet === "不产乳") {
+    return "";
+  }
 
-    if (!canLactate) return "";
+  if (!canLactate) return "";
 
-    // 根据孕期阶段和积乳量生成描述
-    let lacDesc = "";
+  // 根据孕期阶段和积乳量生成描述
+  let lacDesc = "";
 
-    if (isPregnant) {
-        // 孕期产乳描述（更细致）
-        if (pregnancyProgress < 25) {
-            // 孕早期：不产奶或极少量
-            if (lacVal > 0) {
-                lacDesc = "乳房胀痛但尚未产乳,乳腺准备中";
-            } else {
-                lacDesc = "孕早期,未产乳";
-            }
-        } else if (pregnancyProgress < 50) {
-            // 孕中期前期：初乳
-            if (lacVal > 80) {
-                lacDesc = "初乳充盈,乳头轻触即溢出透明乳汁";
-            } else if (lacVal > 50) {
-                lacDesc = "可挤出少量粘稠初乳";
-            } else if (lacVal > 20) {
-                lacDesc = "乳头偶有乳珠渗出";
-            } else {
-                lacDesc = "开始分泌初乳";
-            }
-        } else if (pregnancyProgress < 70) {
-            // 孕中期：产奶增加
-            if (lacVal > 90) {
-                lacDesc = "乳房胀满,乳汁不断溢出浸湿衣物,乳头长期勃起";
-            } else if (lacVal > 70) {
-                lacDesc = "乳房饱胀沉重,轻压即喷射乳汁";
-            } else if (lacVal > 40) {
-                lacDesc = "可挤出大量温热乳汁";
-            } else if (lacVal > 10) {
-                lacDesc = "乳房产奶中,乳头湿润";
-            } else {
-                lacDesc = "乳房被吸空,恢复中";
-            }
-        } else {
-            // 孕后期：大量产奶
-            if (lacVal > 90) {
-                lacDesc = "乳房极度肿胀,乳汁不受控制地持续喷涌,衣物被浸透";
-            } else if (lacVal > 70) {
-                lacDesc = "乳房胀满到疼痛,轻触即喷射乳汁";
-            } else if (lacVal > 40) {
-                lacDesc = "产奶旺盛,挤压射出大量乳汁";
-            } else if (lacVal > 10) {
-                lacDesc = "持续产乳,乳头湿润滴乳";
-            } else {
-                lacDesc = "刚被吸空,乳头敏感";
-            }
-        }
+  if (isPregnant) {
+    // 孕期产乳描述（更细致）
+    if (pregnancyProgress < 25) {
+      // 孕早期：不产奶或极少量
+      if (lacVal > 0) {
+        lacDesc = "乳房胀痛但尚未产乳,乳腺准备中";
+      } else {
+        lacDesc = "孕早期,未产乳";
+      }
+    } else if (pregnancyProgress < 50) {
+      // 孕中期前期：初乳
+      if (lacVal > 80) {
+        lacDesc = "初乳充盈,乳头轻触即溢出透明乳汁";
+      } else if (lacVal > 50) {
+        lacDesc = "可挤出少量粘稠初乳";
+      } else if (lacVal > 20) {
+        lacDesc = "乳头偶有乳珠渗出";
+      } else {
+        lacDesc = "开始分泌初乳";
+      }
+    } else if (pregnancyProgress < 70) {
+      // 孕中期：产奶增加
+      if (lacVal > 90) {
+        lacDesc = "乳房胀满,乳汁不断溢出浸湿衣物,乳头长期勃起";
+      } else if (lacVal > 70) {
+        lacDesc = "乳房饱胀沉重,轻压即喷射乳汁";
+      } else if (lacVal > 40) {
+        lacDesc = "可挤出大量温热乳汁";
+      } else if (lacVal > 10) {
+        lacDesc = "乳房产奶中,乳头湿润";
+      } else {
+        lacDesc = "乳房被吸空,恢复中";
+      }
     } else {
-        // 非孕期产乳描述（色情向，同步感官体验）
-        if (lacVal > 90) {
-            lacDesc =
-                "乳房肿胀到极限，乳汁不受控制地从两枚红肿乳头持续喷涌，每一次呼吸都能感受到乳腺的酸胀与快感交织；若此时被吸吮，会立刻因过度敏感而失控高潮";
-        } else if (lacVal > 70) {
-            lacDesc =
-                "乳房胀满如球，沉甸甸地坠着，轻轻一碰乳头便射出乳汁；乳头长期勃起、摩擦衣物都会有酥麻感，稍加揉捏会伴随呻吟";
-        } else if (lacVal > 50) {
-            lacDesc =
-                "乳房饱胀，乳晕深色肿大，用手掌轻按即有乳汁从乳头渗出；被揉捏时胸口热流涌动，腰腹会不自觉地收紧";
-        } else if (lacVal > 30) {
-            lacDesc =
-                "乳房微微发胀，乳头比平时更敏感；挤压时会渗出几滴温热乳汁，被触碰有隐隐的酥感";
-        } else if (lacVal > 10) {
-            lacDesc =
-                "乳腺轻微充盈，乳头轻挤有乳珠悬挂；乳房略比平时坚实，轻揉有胀感";
-        } else {
-            lacDesc =
-                "乳房刚被吸空，乳头依然湿润红肿，极度敏感，轻触就会颤抖，乳腺在慢慢恢复积液";
-        }
+      // 孕后期：大量产奶
+      if (lacVal > 90) {
+        lacDesc = "乳房极度肿胀,乳汁不受控制地持续喷涌,衣物被浸透";
+      } else if (lacVal > 70) {
+        lacDesc = "乳房胀满到疼痛,轻触即喷射乳汁";
+      } else if (lacVal > 40) {
+        lacDesc = "产奶旺盛,挤压射出大量乳汁";
+      } else if (lacVal > 10) {
+        lacDesc = "持续产乳,乳头湿润滴乳";
+      } else {
+        lacDesc = "刚被吸空,乳头敏感";
+      }
     }
+  } else {
+    // 非孕期产乳描述（色情向，同步感官体验）
+    if (lacVal > 90) {
+      lacDesc =
+        "乳房肿胀到极限，乳汁不受控制地从两枚红肿乳头持续喷涌，每一次呼吸都能感受到乳腺的酸胀与快感交织；若此时被吸吮，会立刻因过度敏感而失控高潮";
+    } else if (lacVal > 70) {
+      lacDesc =
+        "乳房胀满如球，沉甸甸地坠着，轻轻一碰乳头便射出乳汁；乳头长期勃起、摩擦衣物都会有酥麻感，稍加揉捏会伴随呻吟";
+    } else if (lacVal > 50) {
+      lacDesc =
+        "乳房饱胀，乳晕深色肿大，用手掌轻按即有乳汁从乳头渗出；被揉捏时胸口热流涌动，腰腹会不自觉地收紧";
+    } else if (lacVal > 30) {
+      lacDesc =
+        "乳房微微发胀，乳头比平时更敏感；挤压时会渗出几滴温热乳汁，被触碰有隐隐的酥感";
+    } else if (lacVal > 10) {
+      lacDesc =
+        "乳腺轻微充盈，乳头轻挤有乳珠悬挂；乳房略比平时坚实，轻揉有胀感";
+    } else {
+      lacDesc =
+        "乳房刚被吸空，乳头依然湿润红肿，极度敏感，轻触就会颤抖，乳腺在慢慢恢复积液";
+    }
+  }
 
-    return `\n[泌乳状态(${lactationReason}): ${lacDesc}]`;
+  return `\n[泌乳状态(${lactationReason}): ${lacDesc}]`;
 }
 
 // 【架构终极版】使用 setExtensionPrompt 的高级形式，实现精准的D2深度注入
 export async function injectButterSystemPrompt() {
-    const context = SillyTavern.getContext();
-    const state = getButterState();
+  const context = SillyTavern.getContext();
+  const state = getButterState();
 
-    // 1. 安全检查：如果当前没有肉体档案，则清空注入并退出
-    if (!state) {
-        // 使用空字符串来清空该扩展的提示词槽
-        context.setExtensionPrompt(PROMPT_KEY, "");
-        updateDebugPanelIO("", "N/A (已移除)");
-        console.log("[Butter Tracker] 无肉体档案，状态提示已通过API清空。");
-        return;
+  // 1. 安全检查：如果当前没有肉体档案，则清空注入并退出
+  if (!state) {
+    // 使用空字符串来清空该扩展的提示词槽
+    context.setExtensionPrompt(PROMPT_KEY, "");
+    updateDebugPanelIO("", "N/A (已移除)");
+    console.log("[Butter Tracker] 无肉体档案，状态提示已通过API清空。");
+    return;
+  }
+  const p = state.semi_fixed.pronoun || "她";
+  const moment = SillyTavern.libs.moment;
+
+  // --- 2. 数据准备：计算所有需要注入的动态变量 ---
+
+  // 年龄计算
+  let ageString = "未知年龄。";
+  if (state.fixed.birthday) {
+    try {
+      const birthDate = moment(state.fixed.birthday, "YYYY-MM-DD");
+      const currentDate = moment(
+        state.dynamic.time_tracker.story_date,
+        "YYYY-MM-DD",
+      );
+      if (birthDate.isValid() && currentDate.isValid()) {
+        const age = currentDate.diff(birthDate, "years");
+        ageString = `${age}岁 (生日: ${state.fixed.birthday})`;
+      }
+    } catch (e) {
+      console.error("[Butter Tracker] 年龄计算失败", e);
     }
-    const p = state.semi_fixed.pronoun || "她";
-    const moment = SillyTavern.libs.moment;
+  }
 
-    // --- 2. 数据准备：计算所有需要注入的动态变量 ---
+  // 小腹状态描述 - 孕期与非孕期分离逻辑
+  let abdomenDesc = "";
+  const isPregnant = state.dynamic.status.is_pregnant;
+  const reproductionType = state.semi_fixed.reproduction_type || "胎生";
 
-    // 年龄计算
-    let ageString = "未知年龄。";
-    if (state.fixed.birthday) {
-        try {
-            const birthDate = moment(state.fixed.birthday, "YYYY-MM-DD");
-            const currentDate = moment(
-                state.dynamic.time_tracker.story_date,
-                "YYYY-MM-DD",
-            );
-            if (birthDate.isValid() && currentDate.isValid()) {
-                const age = currentDate.diff(birthDate, "years");
-                ageString = `${age}岁 (生日: ${state.fixed.birthday})`;
-            }
-        } catch (e) {
-            console.error("[Butter Tracker] 年龄计算失败", e);
-        }
+  if (isPregnant && reproductionType === "胎生") {
+    // 孕期：隐藏精液腹部，显示孕肚（通过孕期提示词体现，这里留空）
+    abdomenDesc = "";
+  } else {
+    // 非孕期：显示精液腹部
+    let wombVolume = state.dynamic.womb.semen_volume;
+    if (wombVolume > 90)
+      abdomenDesc =
+        "小腹被大量精液撑得极度高耸，呈现出如同孕三月般的浑圆鼓胀。";
+    else if (wombVolume > 50)
+      abdomenDesc = "宫腔内灌满浊液，下腹部明显鼓胀，轮廓分明。";
+    else if (wombVolume > 20)
+      abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
+    else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
+    else abdomenDesc = "小腹:平坦紧实";
+  }
+
+  // 泌乳状态描述
+  const lactationDescription = getLactationDescription(state).trim();
+
+  // 灵魂契约描述
+  const contracts = state.dynamic.relationships.soul_contract || [];
+  const soulContractDesc =
+    contracts.length > 0
+      ? `已和【${contracts.join("、")}】建立了灵魂锁链`
+      : "未建立灵魂契约。";
+
+  // 身体适应度（纯洁/淫乱）描述
+  const physicalDescriptions = translatePhysicalState(state);
+
+  // ==========【层A】用户档案层·魅魔/自设生理档案（不受配额限制）==========
+  let personaAddon = "";
+  if (state.semi_fixed.generated_persona) {
+    personaAddon = `[绝对生理/种族机能档案]\n${state.semi_fixed.generated_persona}\n\n`;
+  }
+
+  // ==========【注入控制开关】==========
+  // 从"特殊设定"页读取勾选状态；若元素不存在则默认开启（向后兼容）
+  const _raceCtrl = $("#bs-inject-race-features");
+  const _secCtrl = $("#bs-inject-secondary-features");
+  const injectRace = _raceCtrl.length ? _raceCtrl.is(":checked") : true;
+  const injectSecondary = _secCtrl.length ? _secCtrl.is(":checked") : true;
+
+  // ==========【层B】三块受配额管辖的内容 ==========
+  const beastCat =
+    state.semi_fixed.beast_category || state.semi_fixed.beast_race || "";
+  const beastSub = state.semi_fixed.beast_subrace || "";
+  const isBeast =
+    injectRace &&
+    state.fixed.race === "兽人" &&
+    beastCat &&
+    beastCat !== "无" &&
+    beastCat !== "随机";
+
+  // ----- 块①：兽人♀特征（常驻） + 发情期特供（仅发情期）-----
+  let beastFeatureBlock = "";
+  if (isBeast) {
+    beastFeatureBlock = beastRaceNSFW.getRaceFeatures(beastCat);
+    if (state.dynamic.beast_status?.is_in_major_heat) {
+      beastFeatureBlock += `\n${beastRaceNSFW.heatLore[beastCat] || ""}`;
     }
+  }
 
-    // 小腹状态描述 - 孕期与非孕期分离逻辑
-    let abdomenDesc = "";
-    const isPregnant = state.dynamic.status.is_pregnant;
-    const reproductionType = state.semi_fixed.reproduction_type || "胎生";
+  // ----- 块②：兽人种族习性（AI生成，膨胀最快，优先削）-----
+  let beastHabitBlock = "";
+  if (isBeast && state.semi_fixed.beast_features) {
+    const subraceLabel = beastSub
+      ? `${beastCat}族·${beastSub}`
+      : `${beastCat}族`;
+    beastHabitBlock = `[${subraceLabel}种族习性]\n${state.semi_fixed.beast_features}`;
+  }
 
-    if (isPregnant && reproductionType === "胎生") {
-        // 孕期：隐藏精液腹部，显示孕肚（通过孕期提示词体现，这里留空）
-        abdomenDesc = "";
-    } else {
-        // 非孕期：显示精液腹部
-        let wombVolume = state.dynamic.womb.semen_volume;
-        if (wombVolume > 90)
-            abdomenDesc =
-                "小腹被大量精液撑得极度高耸，呈现出如同孕三月般的浑圆鼓胀。";
-        else if (wombVolume > 50)
-            abdomenDesc = "宫腔内灌满浊液，下腹部明显鼓胀，轮廓分明。";
-        else if (wombVolume > 20)
-            abdomenDesc = "子宫被精液撑开，小腹呈现出微微的隆起。";
-        else if (wombVolume > 0) abdomenDesc = "阴道深处存有少量精液。";
-        else abdomenDesc = "小腹:平坦紧实";
-    }
-
-    // 泌乳状态描述
-    const lactationDescription = getLactationDescription(state).trim();
-
-    // 灵魂契约描述
-    const contracts = state.dynamic.relationships.soul_contract || [];
-    const soulContractDesc =
-        contracts.length > 0
-            ? `已和【${contracts.join("、")}】建立了灵魂锁链`
-            : "未建立灵魂契约。";
-
-    // 身体适应度（纯洁/淫乱）描述
-    const physicalDescriptions = translatePhysicalState(state);
-
-    // ==========【层A】用户档案层·魅魔/自设生理档案（不受配额限制）==========
-    let personaAddon = "";
-    if (state.semi_fixed.generated_persona) {
-        personaAddon = `[绝对生理/种族机能档案]\n${state.semi_fixed.generated_persona}\n\n`;
-    }
-
-    // ==========【注入控制开关】==========
-    // 从"特殊设定"页读取勾选状态；若元素不存在则默认开启（向后兼容）
-    const _raceCtrl = $("#bs-inject-race-features");
-    const _secCtrl = $("#bs-inject-secondary-features");
-    const injectRace = _raceCtrl.length ? _raceCtrl.is(":checked") : true;
-    const injectSecondary = _secCtrl.length ? _secCtrl.is(":checked") : true;
-
-    // ==========【层B】三块受配额管辖的内容 ==========
-    const beastCat =
-        state.semi_fixed.beast_category || state.semi_fixed.beast_race || "";
-    const beastSub = state.semi_fixed.beast_subrace || "";
-    const isBeast =
-        injectRace &&
-        state.fixed.race === "兽人" &&
-        beastCat &&
-        beastCat !== "无" &&
-        beastCat !== "随机";
-
-    // ----- 块①：兽人♀特征（常驻） + 发情期特供（仅发情期）-----
-    let beastFeatureBlock = "";
-    if (isBeast) {
-        beastFeatureBlock = beastRaceNSFW.getRaceFeatures(beastCat);
-        if (state.dynamic.beast_status?.is_in_major_heat) {
-            beastFeatureBlock += `\n${beastRaceNSFW.heatLore[beastCat] || ""}`;
-        }
-    }
-
-    // ----- 块②：兽人种族习性（AI生成，膨胀最快，优先削）-----
-    let beastHabitBlock = "";
-    if (isBeast && state.semi_fixed.beast_features) {
-        const subraceLabel = beastSub
-            ? `${beastCat}族·${beastSub}`
-            : `${beastCat}族`;
-        beastHabitBlock = `[${subraceLabel}种族习性]\n${state.semi_fixed.beast_features}`;
-    }
-
-    // ----- 块③：第二性别（用户专属，零世界观科普）-----
-    let secondaryBlock = "";
-    const secType = state.semi_fixed.secondary_gender_type;
-    if (injectSecondary && secType !== "无") {
-        const secGender = state.semi_fixed.secondary_gender || "";
-        const secSt = state.dynamic.secondary_status;
-        const termMark = secType === "天乾地坤" ? "烙印" : "标记";
-
-        // 特征描述：为空时不再阻断后续信息素/标记注入
-        if (state.semi_fixed.secondary_gender_features) {
-            secondaryBlock += `[${secType}·${secGender}特征]\n${state.semi_fixed.secondary_gender_features}\n`;
-        }
-
-        // ABO / 天乾地坤：信息素单独强调
-        if (secType === "ABO" || secType === "天乾地坤") {
-            const isOm = secGender === "Omega" || secGender.includes("坤");
-            const scentWord = secType === "天乾地坤" ? "体香" : "信息素";
-            const scent =
-                state.semi_fixed.abo_config?.pheromone_scent || "未定义";
-            secondaryBlock += `【${scentWord}】${scentWord}『${scent}』，腺体位于${isOm ? "颈侧与耳后" : "颈后"}。靠近、交合、情绪剧变时必须描写${scentWord}的扩散与腺体发热发胀，以及它如何侵蚀理智。\n`;
-        }
-
-        // 标记状态
-        if (secSt.permanent_mark) {
-            secondaryBlock += `【永久${termMark}】来自'${secSt.permanent_mark.source}'，气息：${secSt.permanent_mark.scent_note || "未知"}\n`;
-        }
-        if (secSt.temporary_marks?.length > 0) {
-            secondaryBlock += `【临时${termMark}】${secSt.temporary_marks.map((m) => m.source).join("、")}的气息残留在身上\n`;
-        }
-        if (secType === "哨向" && secSt.is_bonded) {
-            secondaryBlock += `【精神结合】与'${secSt.bond_partner}'的结合深度${secSt.bond_depth}/100\n`;
-        }
-    }
-
-    // ==========【层C】配额执行：各自 200，合计 500 ==========
-    const [beastFeatureFinal, beastHabitFinal, secondaryFinal] =
-        await fitTotalBudget(
-            [beastHabitBlock, beastFeatureBlock, secondaryBlock], // 顺序=削的顺序
-            TOTAL_LIMIT,
-        );
-    personaAddon += `${beastFeatureFinal}\n${beastHabitFinal}\n${secondaryFinal}\n`;
-
-    // ----- 块④：哨向精神体 / 精神海（独立于第二性别特征，不参与配额，永不被裁）-----
-    if (injectSecondary && secType === "哨向") {
-        const cfg = state.semi_fixed.sentinel_guide_config || {};
-        if (cfg.spirit_animal) {
-            personaAddon += `【精神体】${cfg.spirit_animal}`;
-            if (cfg.spirit_animal_desc) {
-                personaAddon += `——${cfg.spirit_animal_desc}`;
-            }
-            personaAddon += `\n`;
-        }
-        if (cfg.spirit_animal_personality) {
-            personaAddon += `【精神体性格】${cfg.spirit_animal_personality}\n`;
-        }
-        if (cfg.spiritual_sea_desc) {
-            personaAddon += `【精神海】${cfg.spiritual_sea_desc}\n`;
-        }
-        personaAddon += `【精神体描写要求】精神体是独立个体，须有自己的情绪与反应，不得只作背景摆设\n`;
-    }
-
-    // ====================【核心新增】====================
-    // 新增一个变量来描述当前的避孕套状态。
-    const condomStatusDesc = state.dynamic.status.is_wearing_condom
-        ? "【正在佩戴避孕套】"
-        : "【无套/未佩戴】";
-    // ===================================================
-
-    // --- 3. 模板构建：分阶段注入，避免冲突 ---
-
-    // 阶段A：生理/孕期状态（互斥）
-    let stagePrompt = "";
-    if (isPregnant) {
-        stagePrompt = getPregnancyStagePrompt(state);
-    } else {
-        stagePrompt = getMenstrualPhasePrompt(state);
-    }
-
-    // 阶段B：性器开发状态（独立）
-    const developmentDesc = getSexualDevelopmentDesc(state);
-
-    // 阶段C：子宫开发状态（独立）
-    const cervixDesc = getCervixDevelopmentDesc(state);
-
-    // 阶段D：代谢状态（来自旧函数）
-    const metabolismDesc = translatePhysicalState(state);
-
-    // 阶段E：第二性别发情期状态（独立）
-    let secondaryHeatDesc = "";
-    // secType 已经在前面声明过了，这里直接复用
+  // ----- 块③：第二性别（用户专属，零世界观科普）-----
+  let secondaryBlock = "";
+  const secType = state.semi_fixed.secondary_gender_type;
+  if (injectSecondary && secType !== "无") {
+    const secGender = state.semi_fixed.secondary_gender || "";
     const secSt = state.dynamic.secondary_status;
-    if (secType !== "无" && secSt.is_in_heat) {
-        const termHeat = secType === "哨向" ? "感应期" : "发情期";
-        const suppressNote = secSt.suppressant_taken
-            ? "(服药中,症状减轻)"
-            : "(未服药,症状完整)";
-        secondaryHeatDesc = `【${secType}·${termHeat}中${suppressNote}】理智下滑,生殖腔持续自润,本能极度渴求被标记和交配`;
+    const termMark = secType === "天乾地坤" ? "烙印" : "标记";
+
+    // 特征描述：为空时不再阻断后续信息素/标记注入
+    if (state.semi_fixed.secondary_gender_features) {
+      secondaryBlock += `[${secType}·${secGender}特征]\n${state.semi_fixed.secondary_gender_features}\n`;
     }
 
-    // 组装最终提示词
-    const finalPrompt = `
+    // ABO / 天乾地坤：信息素单独强调
+    if (secType === "ABO" || secType === "天乾地坤") {
+      const isOm = secGender === "Omega" || secGender.includes("坤");
+      const scentWord = secType === "天乾地坤" ? "体香" : "信息素";
+      const scent = state.semi_fixed.abo_config?.pheromone_scent || "未定义";
+      secondaryBlock += `【${scentWord}】${scentWord}『${scent}』，腺体位于${isOm ? "颈侧与耳后" : "颈后"}。靠近、交合、情绪剧变时必须描写${scentWord}的扩散与腺体发热发胀，以及它如何侵蚀理智。\n`;
+    }
+
+    // 标记状态
+    if (secSt.permanent_mark) {
+      secondaryBlock += `【永久${termMark}】来自'${secSt.permanent_mark.source}'，气息：${secSt.permanent_mark.scent_note || "未知"}\n`;
+    }
+    if (secSt.temporary_marks?.length > 0) {
+      secondaryBlock += `【临时${termMark}】${secSt.temporary_marks.map((m) => m.source).join("、")}的气息残留在身上\n`;
+    }
+    if (secType === "哨向" && secSt.is_bonded) {
+      secondaryBlock += `【精神结合】与'${secSt.bond_partner}'的结合深度${secSt.bond_depth}/100\n`;
+    }
+  }
+
+  // ==========【层C】配额执行：各自 200，合计 500 ==========
+  const [beastFeatureFinal, beastHabitFinal, secondaryFinal] =
+    await fitTotalBudget(
+      [beastHabitBlock, beastFeatureBlock, secondaryBlock], // 顺序=削的顺序
+      TOTAL_LIMIT,
+    );
+  personaAddon += `${beastFeatureFinal}\n${beastHabitFinal}\n${secondaryFinal}\n`;
+
+  // ----- 块④：哨向精神体 / 精神海（独立于第二性别特征，不参与配额，永不被裁）-----
+  if (injectSecondary && secType === "哨向") {
+    const cfg = state.semi_fixed.sentinel_guide_config || {};
+    if (cfg.spirit_animal) {
+      personaAddon += `【精神体】${cfg.spirit_animal}`;
+      if (cfg.spirit_animal_desc) {
+        personaAddon += `——${cfg.spirit_animal_desc}`;
+      }
+      personaAddon += `\n`;
+    }
+    if (cfg.spirit_animal_personality) {
+      personaAddon += `【精神体性格】${cfg.spirit_animal_personality}\n`;
+    }
+    if (cfg.spiritual_sea_desc) {
+      personaAddon += `【精神海】${cfg.spiritual_sea_desc}\n`;
+    }
+    personaAddon += `【精神体描写要求】精神体是独立个体，须有自己的情绪与反应，不得只作背景摆设\n`;
+  }
+
+  // ====================【核心新增】====================
+  // 新增一个变量来描述当前的避孕套状态。
+  const condomStatusDesc = state.dynamic.status.is_wearing_condom
+    ? "【正在佩戴避孕套】"
+    : "【无套/未佩戴】";
+  // ===================================================
+
+  // --- 3. 模板构建：分阶段注入，避免冲突 ---
+
+  // 阶段A：生理/孕期状态（互斥）
+  let stagePrompt = "";
+  if (isPregnant) {
+    stagePrompt = getPregnancyStagePrompt(state);
+  } else {
+    stagePrompt = getMenstrualPhasePrompt(state);
+  }
+
+  // 阶段B：性器开发状态（独立）
+  const developmentDesc = getSexualDevelopmentDesc(state);
+
+  // 阶段C：子宫开发状态（独立）
+  const cervixDesc = getCervixDevelopmentDesc(state);
+
+  // 阶段D：代谢状态（来自旧函数）
+  const metabolismDesc = translatePhysicalState(state);
+
+  // 阶段E：第二性别发情期状态（独立）
+  let secondaryHeatDesc = "";
+  // secType 已经在前面声明过了，这里直接复用
+  const secSt = state.dynamic.secondary_status;
+  if (secType !== "无" && secSt.is_in_heat) {
+    const termHeat = secType === "哨向" ? "感应期" : "发情期";
+    const suppressNote = secSt.suppressant_taken
+      ? "(服药中,症状减轻)"
+      : "(未服药,症状完整)";
+    secondaryHeatDesc = `【${secType}·${termHeat}中${suppressNote}】理智下滑,生殖腔持续自润,本能极度渴求被标记和交配`;
+  }
+
+  // 组装最终提示词
+  const finalPrompt = `
 [系统声明:以下所有档案描述的对象是【{{user}}】本人——包括其种族、身体特征、发情期与第二性别。这些设定只归属于{{user}},不构成对char或其他在场角色的设定。禁止把{{user}}的种族特征、精神体、信息素、发情期状态套用到char身上;char的种族、性格、反应由其自身设定决定,不因{{user}}的档案而改变。]
 
 ${personaAddon}[{{user}}当前生理状态 请自然融入]
@@ -756,66 +836,60 @@ ${abdomenDesc ? `- ${abdomenDesc}` : ""}
 - 穴口:${state.dynamic.womb.is_plugged ? "堵住" : "敞开"}
 - 避孕套:${condomStatusDesc}
 ${
-    state.dynamic.status.menstrual_phase === "生理期" &&
-    !state.dynamic.status.is_pregnant
-        ? `[系统指令:生理期间禁止插入式性交。请展现身体疲惫与腹部坠胀,婉拒实质性插入]`
-        : ""
+  state.dynamic.status.menstrual_phase === "生理期" &&
+  !state.dynamic.status.is_pregnant
+    ? `[系统指令:生理期间禁止插入式性交。请展现身体疲惫与腹部坠胀,婉拒实质性插入]`
+    : ""
 }
 ${secondaryHeatDesc ? `- ${secondaryHeatDesc}` : ""}
 ${
-    state.dynamic.status.is_pregnant
-        ? !state.dynamic.status.is_pregnancy_known_to_user
-            ? `[系统指令:${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等轻微变化。禁用"怀孕"、"胎儿"等词剧透]`
-            : `[状态提示:${p}已知悉受孕,请合理展现该阶段的心理与生理特征]`
-        : ""
+  state.dynamic.status.is_pregnant
+    ? !state.dynamic.status.is_pregnancy_known_to_user
+      ? `[系统指令:${p}已怀孕但【绝对不知情】。只能描写嗜睡、反胃、小腹微胖等轻微变化。禁用"怀孕"、"胎儿"等词剧透]`
+      : `[状态提示:${p}已知悉受孕,请合理展现该阶段的心理与生理特征]`
+    : ""
 }
 ${
-    state.fixed.race === "魅魔" &&
-    state.dynamic.succubus_status &&
-    (state.dynamic.succubus_status.hunger_percent < 10 ||
-        state.dynamic.succubus_status.is_forced_estrus)
-        ? `[状态提示:魔力濒临枯竭。生理本能将压倒理智,产生强烈的体液渴求]`
-        : ""
+  state.fixed.race === "魅魔" &&
+  state.dynamic.succubus_status &&
+  (state.dynamic.succubus_status.hunger_percent < 10 ||
+    state.dynamic.succubus_status.is_forced_estrus)
+    ? `[状态提示:魔力濒临枯竭。生理本能将压倒理智,产生强烈的体液渴求]`
+    : ""
 }
 `.trim();
 
-    try {
-        // --- 终极战略定位与动态链接 ---
+  try {
+    // --- 终极战略定位与动态链接 ---
 
-        // 1. 从插件的全局设置中，读取您在UI上配置的 "送入分析的消息数"
-        const pluginSettings = context.extensionSettings[SETTINGS_KEY] || {};
+    // 1. 从插件的全局设置中，读取您在UI上配置的 "送入分析的消息数"
+    const pluginSettings = context.extensionSettings[SETTINGS_KEY] || {};
 
-        // 2. 使用参考插件的成熟逻辑，计算出最终的上下文大小：
-        //    - Number(pluginSettings.apiHistoryCount): 将设置值转为数字。
-        //    - || 12: 如果设置无效或为0，则使用默认值 12。
-        //    - Math.max(2, ...): 确保最终结果至少为 2，防止意外错误。
-        const contextSize = Math.max(
-            2,
-            Number(pluginSettings.apiHistoryCount) || 12,
-        );
+    // 2. 使用参考插件的成熟逻辑，计算出最终的上下文大小：
+    //    - Number(pluginSettings.apiHistoryCount): 将设置值转为数字。
+    //    - || 12: 如果设置无效或为0，则使用默认值 12。
+    //    - Math.max(2, ...): 确保最终结果至少为 2，防止意外错误。
+    const contextSize = Math.max(
+      2,
+      Number(pluginSettings.apiHistoryCount) || 12,
+    );
 
-        // 3. 将计算出的动态 contextSize，作为第四个参数传入API。
-        //    注入深度依然是我们选定的战略位置 4。
-        context.setExtensionPrompt(
-            PROMPT_KEY,
-            finalPrompt,
-            1,
-            contextSize,
-            false,
-        );
+    // 3. 将计算出的动态 contextSize，作为第四个参数传入API。
+    //    注入深度依然是我们选定的战略位置 4。
+    context.setExtensionPrompt(PROMPT_KEY, finalPrompt, 1, contextSize, false);
 
-        // 4. 更新Debug面板，以反映我们最新的战略位置
-        updateDebugPanelIO(finalPrompt, `API注入 (depth=1)`);
-        console.log(
-            `[Butter Tracker] 已将生理状态注入到 Depth=1，影响范围为最新的 ${contextSize} 条消息。`,
-        );
-    } catch (e) {
-        console.error(
-            "[Butter Tracker] 执行 setExtensionPrompt 时发生致命错误:",
-            e,
-        );
-        toastr.error("状态注入失败，请检查F12控制台。", "系统异常");
-    }
+    // 4. 更新Debug面板，以反映我们最新的战略位置
+    updateDebugPanelIO(finalPrompt, `API注入 (depth=1)`);
+    console.log(
+      `[Butter Tracker] 已将生理状态注入到 Depth=1，影响范围为最新的 ${contextSize} 条消息。`,
+    );
+  } catch (e) {
+    console.error(
+      "[Butter Tracker] 执行 setExtensionPrompt 时发生致命错误:",
+      e,
+    );
+    toastr.error("状态注入失败，请检查F12控制台。", "系统异常");
+  }
 }
 
 /**
@@ -824,17 +898,17 @@ ${
  * @param {string} locationInfo - The injection location info (e.g., depth or position).
  */
 export async function updateDebugPanelIO(promptContent, locationInfo) {
-    const context = SillyTavern.getContext();
-    try {
-        const tokenCost = await context.getTokenCountAsync(promptContent);
-        $("#bs-debug-token-count").text(tokenCost);
-        $("#bs-debug-prompt-content").val(promptContent);
-        $("#bs-debug-depth").val(locationInfo);
-    } catch (e) {
-        console.warn("[Butter Tracker] 全视之眼Token测算失败", e);
-        $("#bs-debug-prompt-content").val(promptContent);
-        $("#bs-debug-depth").val(locationInfo);
-    }
+  const context = SillyTavern.getContext();
+  try {
+    const tokenCost = await context.getTokenCountAsync(promptContent);
+    $("#bs-debug-token-count").text(tokenCost);
+    $("#bs-debug-prompt-content").val(promptContent);
+    $("#bs-debug-depth").val(locationInfo);
+  } catch (e) {
+    console.warn("[Butter Tracker] 全视之眼Token测算失败", e);
+    $("#bs-debug-prompt-content").val(promptContent);
+    $("#bs-debug-depth").val(locationInfo);
+  }
 }
 
 // ==========================================
@@ -848,39 +922,38 @@ export async function updateDebugPanelIO(promptContent, locationInfo) {
  * @returns {Array} An array of tool call objects.
  */
 function safelyExtractToolCalls(rawAnswerContent) {
-    if (!rawAnswerContent) return [];
+  if (!rawAnswerContent) return [];
 
-    // 优先处理已是对象的标准格式
-    if (
-        typeof rawAnswerContent === "object" &&
-        Array.isArray(rawAnswerContent.tool_calls)
-    ) {
-        return rawAnswerContent.tool_calls;
+  // 优先处理已是对象的标准格式
+  if (
+    typeof rawAnswerContent === "object" &&
+    Array.isArray(rawAnswerContent.tool_calls)
+  ) {
+    return rawAnswerContent.tool_calls;
+  }
+
+  // 尝试将字符串解析为JSON
+  try {
+    let textResult = String(rawAnswerContent);
+    // 提取被 ```json ... ``` 包裹的内容
+    const fencedMatch = textResult.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (fencedMatch && fencedMatch[1]) {
+      textResult = fencedMatch[1];
     }
 
-    // 尝试将字符串解析为JSON
-    try {
-        let textResult = String(rawAnswerContent);
-        // 提取被 ```json ... ``` 包裹的内容
-        const fencedMatch = textResult.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
-        if (fencedMatch && fencedMatch[1]) {
-            textResult = fencedMatch[1];
-        }
+    const parsed = JSON.parse(textResult);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.tool_calls)) return parsed.tool_calls;
+  } catch (e) {
+    console.warn(
+      "[Butter Tracker] AI返回的工具调用格式解析失败。",
+      e,
+      "原始回复:",
+      rawAnswerContent,
+    );
+  }
 
-        const parsed = JSON.parse(textResult);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed && Array.isArray(parsed.tool_calls))
-            return parsed.tool_calls;
-    } catch (e) {
-        console.warn(
-            "[Butter Tracker] AI返回的工具调用格式解析失败。",
-            e,
-            "原始回复:",
-            rawAnswerContent,
-        );
-    }
-
-    return [];
+  return [];
 }
 
 /**
@@ -890,69 +963,65 @@ function safelyExtractToolCalls(rawAnswerContent) {
  * @returns {Promise<string>} A formatted string of active world lore, or an empty string.
  */
 async function extractFilteredWorldLore(recentText, context) {
-    const settings = context.extensionSettings[SETTINGS_KEY] || {};
-    const mode = settings.wiMode || "normal";
-    if (mode === "disabled") return ""; // 如果设置为禁用，则直接返回空
+  const settings = context.extensionSettings[SETTINGS_KEY] || {};
+  const mode = settings.wiMode || "normal";
+  if (mode === "disabled") return ""; // 如果设置为禁用，则直接返回空
 
-    const blacklist = settings.wiBlacklist || [];
-    const whitelist = settings.wiWhitelist || [];
+  const blacklist = settings.wiBlacklist || [];
+  const whitelist = settings.wiWhitelist || [];
 
-    try {
-        // 【核心改造】直接从 context 中获取世界书信息
-        const worldInfo = await context.getWorldInfoPrompt();
+  try {
+    // 【核心改造】直接从 context 中获取世界书信息
+    const worldInfo = await context.getWorldInfoPrompt();
 
-        if (!worldInfo || !worldInfo.entries) {
-            console.log(
-                "[Butter Tracker] 未从 context.getWorldInfoPrompt() 获取到任何世界书条目。",
-            );
-            return "";
-        }
-
-        const allEntries = worldInfo.entries;
-        if (allEntries.length === 0) return "";
-
-        // 现在 L784–L804 的 filter 改为同时检查条目白/黑名单
-        const entryWhitelist = settings.wiEntryWhitelist || [];
-        const entryBlacklist = settings.wiEntryBlacklist || [];
-
-        const activeEntries = allEntries.filter((entry) => {
-            if (!entry || !entry.uid) return false;
-
-            // normal 模式：支持整书黑名单 + 单条目黑名单
-            if (mode === "normal") {
-                // 整书过滤
-                const bookName = entry.world || entry.book_name || "";
-                if (bookName && blacklist.includes(bookName)) return false;
-                // 条目过滤
-                if (entryBlacklist.includes(String(entry.uid))) return false;
-            }
-            // reference 模式：只发白名单条目
-            else if (mode === "reference") {
-                return entryWhitelist.includes(String(entry.uid));
-            }
-
-            if (entry.constant) return true;
-            if (Array.isArray(entry.key) && recentText) {
-                return entry.key.some(
-                    (kw) =>
-                        kw &&
-                        recentText.toLowerCase().includes(kw.toLowerCase()),
-                );
-            }
-            return false;
-        });
-
-        if (activeEntries.length > 0) {
-            const loreContent = activeEntries
-                .map((e) => e.content)
-                .join("\n\n");
-            return `<World_Lore>\n[相关世界设定参考]:\n${loreContent}\n</World_Lore>\n\n`;
-        }
-    } catch (e) {
-        console.error("[Butter Tracker] 主动抓取世界书失败:", e);
+    if (!worldInfo || !worldInfo.entries) {
+      console.log(
+        "[Butter Tracker] 未从 context.getWorldInfoPrompt() 获取到任何世界书条目。",
+      );
+      return "";
     }
 
-    return "";
+    const allEntries = worldInfo.entries;
+    if (allEntries.length === 0) return "";
+
+    // 现在 L784–L804 的 filter 改为同时检查条目白/黑名单
+    const entryWhitelist = settings.wiEntryWhitelist || [];
+    const entryBlacklist = settings.wiEntryBlacklist || [];
+
+    const activeEntries = allEntries.filter((entry) => {
+      if (!entry || !entry.uid) return false;
+
+      // normal 模式：支持整书黑名单 + 单条目黑名单
+      if (mode === "normal") {
+        // 整书过滤
+        const bookName = entry.world || entry.book_name || "";
+        if (bookName && blacklist.includes(bookName)) return false;
+        // 条目过滤
+        if (entryBlacklist.includes(String(entry.uid))) return false;
+      }
+      // reference 模式：只发白名单条目
+      else if (mode === "reference") {
+        return entryWhitelist.includes(String(entry.uid));
+      }
+
+      if (entry.constant) return true;
+      if (Array.isArray(entry.key) && recentText) {
+        return entry.key.some(
+          (kw) => kw && recentText.toLowerCase().includes(kw.toLowerCase()),
+        );
+      }
+      return false;
+    });
+
+    if (activeEntries.length > 0) {
+      const loreContent = activeEntries.map((e) => e.content).join("\n\n");
+      return `<World_Lore>\n[相关世界设定参考]:\n${loreContent}\n</World_Lore>\n\n`;
+    }
+  } catch (e) {
+    console.error("[Butter Tracker] 主动抓取世界书失败:", e);
+  }
+
+  return "";
 }
 
 /**
@@ -961,37 +1030,37 @@ async function extractFilteredWorldLore(recentText, context) {
  * @returns {string} The system prompt from the selected preset, or an empty string.
  */
 function getPresetWrapper(context) {
-    const settings = context.extensionSettings[SETTINGS_KEY] || {};
-    const presetName = settings.injectPreset;
+  const settings = context.extensionSettings[SETTINGS_KEY] || {};
+  const presetName = settings.injectPreset;
 
-    // 如果未选择特定预设，则返回空
-    if (!presetName || presetName === "") {
-        return "";
-    }
-
-    try {
-        // 【核心改造】直接、可靠地从 PresetManager 获取预设
-        const presetManager = context.getPresetManager();
-        if (!presetManager) {
-            console.warn("[Butter Tracker] 无法获取到 PresetManager 实例。");
-            return "";
-        }
-
-        // 使用 PresetManager 的标准方法来查找预设
-        const preset = presetManager.presets.find((p) => p.name === presetName);
-
-        if (preset && preset.system_prompt) {
-            return `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
-        } else {
-            console.warn(
-                `[Butter Tracker] 预设 '${presetName}' 被选中，但未找到或其中不含 'system_prompt'。`,
-            );
-        }
-    } catch (e) {
-        console.error(`[Butter Tracker] 获取预设 '${presetName}' 失败`, e);
-    }
-
+  // 如果未选择特定预设，则返回空
+  if (!presetName || presetName === "") {
     return "";
+  }
+
+  try {
+    // 【核心改造】直接、可靠地从 PresetManager 获取预设
+    const presetManager = context.getPresetManager();
+    if (!presetManager) {
+      console.warn("[Butter Tracker] 无法获取到 PresetManager 实例。");
+      return "";
+    }
+
+    // 使用 PresetManager 的标准方法来查找预设
+    const preset = presetManager.presets.find((p) => p.name === presetName);
+
+    if (preset && preset.system_prompt) {
+      return `[系统预设覆盖: 请遵循以下人格与世界观]\n${preset.system_prompt}\n\n`;
+    } else {
+      console.warn(
+        `[Butter Tracker] 预设 '${presetName}' 被选中，但未找到或其中不含 'system_prompt'。`,
+      );
+    }
+  } catch (e) {
+    console.error(`[Butter Tracker] 获取预设 '${presetName}' 失败`, e);
+  }
+
+  return "";
 }
 
 /**
@@ -999,258 +1068,237 @@ function getPresetWrapper(context) {
  * @param {string|null} forcedCheckText - Optional text to force analysis on, bypassing history scrape.
  */
 export async function runButterTrackingEngine(forcedCheckText = null) {
-    if (isTrackingActive) {
-        console.warn(
-            "[Butter Tracker] 追踪器正在运行，本次调用被忽略以防止并发冲突。",
-        );
+  if (isTrackingActive) {
+    console.warn(
+      "[Butter Tracker] 追踪器正在运行，本次调用被忽略以防止并发冲突。",
+    );
+    return;
+  }
+
+  const context = SillyTavern.getContext();
+  const pluginSettings = context.extensionSettings[SETTINGS_KEY] || {};
+
+  if (!pluginSettings.enablePlugin) return;
+
+  let state = getButterState();
+  if (!state) return;
+
+  isTrackingActive = true;
+  console.log("[Butter Tracker] 引擎已点火并上锁。");
+
+  // ====================【核心修改点 1/3】====================
+  // 在追踪开始时，显示一个“正在发送”的提示。
+  toastr.info("正在发送对话记录进行后台分析...", "追踪引擎启动", {
+    timeOut: 3000,
+  });
+  // =======================================================
+
+  const oldStateSnapshot = JSON.parse(JSON.stringify(state));
+
+  try {
+    state.dynamic.time_tracker.last_update_timestamp = Date.now();
+    saveButterState(state);
+
+    let recentChatText = forcedCheckText;
+    if (!recentChatText) {
+      const chatHistory = context.chat;
+      if (!Array.isArray(chatHistory) || chatHistory.length < 1) {
+        console.log("[Butter Tracker] 聊天记录过少，本次追踪跳过。");
+        isTrackingActive = false;
         return;
+      }
+      const historyCount = pluginSettings.apiHistoryCount || 10;
+      recentChatText = chatHistory
+        .slice(-historyCount)
+        .map((m) => {
+          const name = m.is_user ? context.name1 || "You" : m.name || "AI";
+          return `${name}: ${m.mes}`;
+        })
+        .join("\n");
     }
-
-    const context = SillyTavern.getContext();
-    const pluginSettings = context.extensionSettings[SETTINGS_KEY] || {};
-
-    if (!pluginSettings.enablePlugin) return;
-
-    let state = getButterState();
-    if (!state) return;
-
-    isTrackingActive = true;
-    console.log("[Butter Tracker] 引擎已点火并上锁。");
-
-    // ====================【核心修改点 1/3】====================
-    // 在追踪开始时，显示一个“正在发送”的提示。
-    toastr.info("正在发送对话记录进行后台分析...", "追踪引擎启动", {
-        timeOut: 3000,
-    });
-    // =======================================================
-
-    const oldStateSnapshot = JSON.parse(JSON.stringify(state));
 
     try {
-        state.dynamic.time_tracker.last_update_timestamp = Date.now();
-        saveButterState(state);
+      const moment = SillyTavern.libs.moment;
+      let timeUpdated = false;
 
-        let recentChatText = forcedCheckText;
-        if (!recentChatText) {
-            const chatHistory = context.chat;
-            if (!Array.isArray(chatHistory) || chatHistory.length < 1) {
-                console.log("[Butter Tracker] 聊天记录过少，本次追踪跳过。");
-                isTrackingActive = false;
-                return;
-            }
-            const historyCount = pluginSettings.apiHistoryCount || 10;
-            recentChatText = chatHistory
-                .slice(-historyCount)
-                .map((m) => {
-                    const name = m.is_user
-                        ? context.name1 || "You"
-                        : m.name || "AI";
-                    return `${name}: ${m.mes}`;
-                })
-                .join("\n");
+      const relativeTimeRegex =
+        /(?:过去|过|过了|after|pass(?:ed)?)\s*(\d{1,2})\s*(?:天|day)/i;
+      const relativeMatch = recentChatText.match(relativeTimeRegex);
+
+      if (relativeMatch && relativeMatch[1]) {
+        const daysToAdvance = parseInt(relativeMatch[1], 10);
+        if (daysToAdvance > 0) {
+          console.log(
+            `[Butter Tracker] 侦测到相对时间推进: ${daysToAdvance} 天。`,
+          );
+          await advanceDay(daysToAdvance);
+          state = getButterState();
+          timeUpdated = true;
         }
+      }
 
-        try {
-            const moment = SillyTavern.libs.moment;
-            let timeUpdated = false;
+      if (!timeUpdated) {
+        const absoluteDateTimeRegex =
+          /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日\s]*.*?(\d{1,2}):(\d{1,2})/;
+        const absoluteMatch = recentChatText.match(absoluteDateTimeRegex);
 
-            const relativeTimeRegex =
-                /(?:过去|过|过了|after|pass(?:ed)?)\s*(\d{1,2})\s*(?:天|day)/i;
-            const relativeMatch = recentChatText.match(relativeTimeRegex);
+        if (absoluteMatch) {
+          const [, year, month, day, hour, minute] = absoluteMatch;
+          const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+          const newTimeStr = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
 
-            if (relativeMatch && relativeMatch[1]) {
-                const daysToAdvance = parseInt(relativeMatch[1], 10);
-                if (daysToAdvance > 0) {
-                    console.log(
-                        `[Butter Tracker] 侦测到相对时间推进: ${daysToAdvance} 天。`,
-                    );
-                    await advanceDay(daysToAdvance);
-                    state = getButterState();
-                    timeUpdated = true;
-                }
-            }
-
-            if (!timeUpdated) {
-                const absoluteDateTimeRegex =
-                    /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日\s]*.*?(\d{1,2}):(\d{1,2})/;
-                const absoluteMatch = recentChatText.match(
-                    absoluteDateTimeRegex,
-                );
-
-                if (absoluteMatch) {
-                    const [, year, month, day, hour, minute] = absoluteMatch;
-                    const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-                    const newTimeStr = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
-
-                    if (
-                        newDateStr !== state.dynamic.time_tracker.story_date ||
-                        newTimeStr !== state.dynamic.time_tracker.time
-                    ) {
-                        console.log(
-                            `[Butter Tracker] 侦测到绝对时间同步指令: ${newDateStr} ${newTimeStr}`,
-                        );
-                        await setDateTime(newDateStr, newTimeStr);
-                        state = getButterState();
-                        timeUpdated = true;
-                    }
-                }
-            }
-
-            if (!timeUpdated) {
-                const dateOnlyRegex =
-                    /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日]?/g;
-                let lastMatch = null;
-                let dateOnlyMatch;
-                while (
-                    (dateOnlyMatch = dateOnlyRegex.exec(recentChatText)) !==
-                    null
-                ) {
-                    lastMatch = dateOnlyMatch;
-                }
-
-                if (lastMatch) {
-                    const [, year, month, day] = lastMatch;
-                    const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-
-                    if (newDateStr !== state.dynamic.time_tracker.story_date) {
-                        console.log(
-                            `[Butter Tracker] 侦测到仅日期同步指令: ${newDateStr}`,
-                        );
-                        await setDateTime(
-                            newDateStr,
-                            state.dynamic.time_tracker.time,
-                        );
-                        state = getButterState();
-                        timeUpdated = true;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("[Butter Tracker] 自动日期侦测与设定失败:", e);
-        }
-
-        if (pluginSettings.apiRegexFilter) {
-            try {
-                const regexRules = pluginSettings.apiRegexFilter
-                    .split("\n")
-                    .filter((rule) => rule.trim() !== "");
-
-                regexRules.forEach((ruleStr) => {
-                    const regex = translateSimpleRuleToRegex(ruleStr);
-                    if (regex) {
-                        recentChatText = recentChatText.replace(regex, "");
-                    }
-                });
-            } catch (e) {
-                console.error("[Butter Tracker] 正则表达式裁剪执行时出错:", e);
-            }
-        }
-
-        let elapsedHours = 0;
-        try {
-            const moment = SillyTavern.libs.moment;
-            const oldDateTimeStr = `${oldStateSnapshot.dynamic.time_tracker.story_date} ${oldStateSnapshot.dynamic.time_tracker.time}`;
-            const newDateTimeStr = `${state.dynamic.time_tracker.story_date} ${state.dynamic.time_tracker.time}`;
-
-            const oldMoment = moment(oldDateTimeStr, "YYYY-MM-DD HH:mm");
-            const newMoment = moment(newDateTimeStr, "YYYY-MM-DD HH:mm");
-
-            if (oldMoment.isValid() && newMoment.isValid()) {
-                elapsedHours = newMoment.diff(oldMoment, "hours", true);
-            }
-        } catch (e) {
-            console.error("[Butter Tracker] 剧情时间差计算失败:", e);
-        }
-
-        if (elapsedHours > 0.1) {
-            const timeLapseLog = `\n\n[System Time-Lapse Log: Based on the narrative, approximately ${elapsedHours.toFixed(1)} hours have passed.]`;
-            recentChatText += timeLapseLog;
+          if (
+            newDateStr !== state.dynamic.time_tracker.story_date ||
+            newTimeStr !== state.dynamic.time_tracker.time
+          ) {
             console.log(
-                `[Butter Tracker] 精确计算出剧情时间流逝: ${elapsedHours.toFixed(1)} 小时。`,
+              `[Butter Tracker] 侦测到绝对时间同步指令: ${newDateStr} ${newTimeStr}`,
             );
+            await setDateTime(newDateStr, newTimeStr);
+            state = getButterState();
+            timeUpdated = true;
+          }
+        }
+      }
+
+      if (!timeUpdated) {
+        const dateOnlyRegex =
+          /(\d{4})[.\-/年]\s*(\d{1,2})[.\-/月]\s*(\d{1,2})[日]?/g;
+        let lastMatch = null;
+        let dateOnlyMatch;
+        while ((dateOnlyMatch = dateOnlyRegex.exec(recentChatText)) !== null) {
+          lastMatch = dateOnlyMatch;
         }
 
-        const isFirstRun = !state.dynamic.status.is_initial_state_calibrated;
-        if (isFirstRun) {
-            console.log(
-                "[Butter Tracker] 检测到首次运行，将执行初始状态校准。",
-            );
+        if (lastMatch) {
+          const [, year, month, day] = lastMatch;
+          const newDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+
+          if (newDateStr !== state.dynamic.time_tracker.story_date) {
+            console.log(`[Butter Tracker] 侦测到仅日期同步指令: ${newDateStr}`);
+            await setDateTime(newDateStr, state.dynamic.time_tracker.time);
+            state = getButterState();
+            timeUpdated = true;
+          }
         }
-
-        const prompt = await buildAnalysisPrompt(
-            state,
-            recentChatText,
-            context,
-            isFirstRun,
-        );
-
-        let rawApiResponse;
-        if (
-            pluginSettings.useExternalCustomFetch &&
-            pluginSettings.apiKey &&
-            pluginSettings.apiUrl
-        ) {
-            rawApiResponse = await callExternalApi(prompt, pluginSettings);
-        } else {
-            rawApiResponse = await context.generateRaw({
-                prompt: prompt,
-            });
-        }
-
-        $("#bs-debug-api-input").val(prompt);
-        $("#bs-debug-api-output").val(
-            typeof rawApiResponse === "object"
-                ? JSON.stringify(rawApiResponse, null, 2)
-                : rawApiResponse,
-        );
-
-        const toolCalls = safelyExtractToolCalls(rawApiResponse);
-
-        // ====================【核心修改点 2/3】====================
-        // 在解析完AI的回复后，根据是否有工具调用来显示不同的结束提示。
-        if (toolCalls.length > 0) {
-            // 如果有工具调用，说明填表成功
-            toastr.success("分析完成，状态已根据AI指令自动更新。", "填表结束");
-            for (const call of toolCalls) {
-                const functionName = call.name || call.function?.name;
-                const args = call.arguments || call.function?.arguments;
-                if (functionName && args) {
-                    await handleToolExecution(functionName, args);
-                }
-            }
-            if (isFirstRun) {
-                let updatedState = getButterState();
-                if (updatedState) {
-                    updatedState.dynamic.status.is_initial_state_calibrated = true;
-                    saveButterState(updatedState);
-                    console.log(
-                        "[Butter Tracker] 初始状态校准完成，旗标已更新。",
-                    );
-                }
-            }
-            await injectButterSystemPrompt();
-            context.eventSource.emit("BUTTER_DATA_UPDATED");
-        } else {
-            // 如果没有工具调用，说明AI认为无需填表
-            toastr.info("分析完成，AI判断当前无需更新状态。", "追踪结束");
-            console.log(
-                "[Butter Tracker] AI分析完成，但未返回任何工具调用指令。",
-            );
-        }
-        // =======================================================
-    } catch (error) {
-        console.error("[Butter Tracker] 引擎运行期间发生致命错误:", error);
-        // ====================【核心修改点 3/3】====================
-        // 在捕获到错误时，显示一个失败的提示。
-        toastr.error(
-            "后台分析失败，请按F12在控制台查看错误详情。",
-            "追踪引擎异常",
-        );
-        // =======================================================
-    } finally {
-        isTrackingActive = false;
-        console.log("[Butter Tracker] 追踪器运行结束，锁已释放。");
+      }
+    } catch (e) {
+      console.error("[Butter Tracker] 自动日期侦测与设定失败:", e);
     }
+
+    if (pluginSettings.apiRegexFilter) {
+      try {
+        const regexRules = pluginSettings.apiRegexFilter
+          .split("\n")
+          .filter((rule) => rule.trim() !== "");
+
+        regexRules.forEach((ruleStr) => {
+          const regex = translateSimpleRuleToRegex(ruleStr);
+          if (regex) {
+            recentChatText = recentChatText.replace(regex, "");
+          }
+        });
+      } catch (e) {
+        console.error("[Butter Tracker] 正则表达式裁剪执行时出错:", e);
+      }
+    }
+
+    let elapsedHours = 0;
+    try {
+      const moment = SillyTavern.libs.moment;
+      const oldDateTimeStr = `${oldStateSnapshot.dynamic.time_tracker.story_date} ${oldStateSnapshot.dynamic.time_tracker.time}`;
+      const newDateTimeStr = `${state.dynamic.time_tracker.story_date} ${state.dynamic.time_tracker.time}`;
+
+      const oldMoment = moment(oldDateTimeStr, "YYYY-MM-DD HH:mm");
+      const newMoment = moment(newDateTimeStr, "YYYY-MM-DD HH:mm");
+
+      if (oldMoment.isValid() && newMoment.isValid()) {
+        elapsedHours = newMoment.diff(oldMoment, "hours", true);
+      }
+    } catch (e) {
+      console.error("[Butter Tracker] 剧情时间差计算失败:", e);
+    }
+
+    if (elapsedHours > 0.1) {
+      const timeLapseLog = `\n\n[System Time-Lapse Log: Based on the narrative, approximately ${elapsedHours.toFixed(1)} hours have passed.]`;
+      recentChatText += timeLapseLog;
+      console.log(
+        `[Butter Tracker] 精确计算出剧情时间流逝: ${elapsedHours.toFixed(1)} 小时。`,
+      );
+    }
+
+    const isFirstRun = !state.dynamic.status.is_initial_state_calibrated;
+    if (isFirstRun) {
+      console.log("[Butter Tracker] 检测到首次运行，将执行初始状态校准。");
+    }
+
+    const prompt = await buildAnalysisPrompt(
+      state,
+      recentChatText,
+      context,
+      isFirstRun,
+    );
+
+    let rawApiResponse;
+    if (
+      pluginSettings.useExternalCustomFetch &&
+      pluginSettings.apiKey &&
+      pluginSettings.apiUrl
+    ) {
+      rawApiResponse = await callExternalApi(prompt, pluginSettings);
+    } else {
+      rawApiResponse = await context.generateRaw({
+        prompt: prompt,
+      });
+    }
+
+    $("#bs-debug-api-input").val(prompt);
+    $("#bs-debug-api-output").val(
+      typeof rawApiResponse === "object"
+        ? JSON.stringify(rawApiResponse, null, 2)
+        : rawApiResponse,
+    );
+
+    const toolCalls = safelyExtractToolCalls(rawApiResponse);
+
+    // ====================【核心修改点 2/3】====================
+    // 在解析完AI的回复后，根据是否有工具调用来显示不同的结束提示。
+    if (toolCalls.length > 0) {
+      // 如果有工具调用，说明填表成功
+      toastr.success("分析完成，状态已根据AI指令自动更新。", "填表结束");
+      for (const call of toolCalls) {
+        const functionName = call.name || call.function?.name;
+        const args = call.arguments || call.function?.arguments;
+        if (functionName && args) {
+          await handleToolExecution(functionName, args);
+        }
+      }
+      if (isFirstRun) {
+        let updatedState = getButterState();
+        if (updatedState) {
+          updatedState.dynamic.status.is_initial_state_calibrated = true;
+          saveButterState(updatedState);
+          console.log("[Butter Tracker] 初始状态校准完成，旗标已更新。");
+        }
+      }
+      await injectButterSystemPrompt();
+      context.eventSource.emit("BUTTER_DATA_UPDATED");
+    } else {
+      // 如果没有工具调用，说明AI认为无需填表
+      toastr.info("分析完成，AI判断当前无需更新状态。", "追踪结束");
+      console.log("[Butter Tracker] AI分析完成，但未返回任何工具调用指令。");
+    }
+    // =======================================================
+  } catch (error) {
+    console.error("[Butter Tracker] 引擎运行期间发生致命错误:", error);
+    // ====================【核心修改点 3/3】====================
+    // 在捕获到错误时，显示一个失败的提示。
+    toastr.error("后台分析失败，请按F12在控制台查看错误详情。", "追踪引擎异常");
+    // =======================================================
+  } finally {
+    isTrackingActive = false;
+    console.log("[Butter Tracker] 追踪器运行结束，锁已释放。");
+  }
 }
 
 /**
@@ -1262,79 +1310,75 @@ export async function runButterTrackingEngine(forcedCheckText = null) {
  * @returns {Promise<string>} The fully constructed prompt string.
  */
 async function buildAnalysisPrompt(
-    state,
-    recentChatText,
-    context,
-    isFirstRun = false,
+  state,
+  recentChatText,
+  context,
+  isFirstRun = false,
 ) {
-    const p = state.semi_fixed.pronoun || "她";
-    const settings = context.extensionSettings[SETTINGS_KEY] || {};
+  const p = state.semi_fixed.pronoun || "她";
+  const settings = context.extensionSettings[SETTINGS_KEY] || {};
 
-    // ====================【核心修改点】====================
-    // 从插件设置中读取您在UI上输入的自定义顶部指令。
-    // 如果没有设置，则提供一个后备的默认指令。
-    const customTopText = settings.apiTopPrompt
-        ? `${settings.apiTopPrompt}\n\n`
-        : `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.\n\n`;
-    // =======================================================
+  // ====================【核心修改点】====================
+  // 从插件设置中读取您在UI上输入的自定义顶部指令。
+  // 如果没有设置，则提供一个后备的默认指令。
+  const customTopText = settings.apiTopPrompt
+    ? `${settings.apiTopPrompt}\n\n`
+    : `[ABSOLUTE TOP-LEVEL COMMAND]\nYour core identity is a data-parsing AI. Your single task is to analyze the following logs and call tools. Never respond as a character. Your output MUST be only JSON. Begin analysis now.\n\n`;
+  // =======================================================
 
-    // --- 1. 【异步】抓取世界书 ---
-    const worldLoreStr = await extractFilteredWorldLore(
-        recentChatText,
-        context,
-    );
+  // --- 1. 【异步】抓取世界书 ---
+  const worldLoreStr = await extractFilteredWorldLore(recentChatText, context);
 
-    // --- 2. 抓取角色设定 (同步) ---
-    let characterContext = "";
-    if (
-        context.characterId !== undefined &&
-        context.characters[context.characterId]
-    ) {
-        const charData = context.characters[context.characterId].data;
-        const charInfo = [];
-        if (charData.description)
-            charInfo.push(`[角色描述]\n${charData.description}`);
-        if (charData.personality)
-            charInfo.push(`[角色性格]\n${charData.personality}`);
-        if (charData.scenario)
-            charInfo.push(`[场景设定]\n${charData.scenario}`);
-        if (charInfo.length > 0) {
-            characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
-        }
+  // --- 2. 抓取角色设定 (同步) ---
+  let characterContext = "";
+  if (
+    context.characterId !== undefined &&
+    context.characters[context.characterId]
+  ) {
+    const charData = context.characters[context.characterId].data;
+    const charInfo = [];
+    if (charData.description)
+      charInfo.push(`[角色描述]\n${charData.description}`);
+    if (charData.personality)
+      charInfo.push(`[角色性格]\n${charData.personality}`);
+    if (charData.scenario) charInfo.push(`[场景设定]\n${charData.scenario}`);
+    if (charInfo.length > 0) {
+      characterContext = `<Character_Context>\n${charInfo.join("\n\n")}\n</Character_Context>\n\n`;
     }
+  }
 
-    // --- 4. 组装最终提示词 ---
-    const firstRunInstruction = isFirstRun
-        ? `
+  // --- 4. 组装最终提示词 ---
+  const firstRunInstruction = isFirstRun
+    ? `
 **Urgent Initial Calibration Directive:**
 This is the very first analysis for this character. Their current state values (like hunger, energy) are at default 100%. This is incorrect. You MUST scrutinize the "Recent Activity Log" (which contains the character's opening message) and infer their true initial state. For example, if the log says "I haven't eaten in three days," you MUST call the \`bt_report_metabolism_changes\` tool with a significant negative \`hunger_change\` value to reflect this. Your primary goal in this first run is to correct the initial state based on the context.
 `
-        : "";
+    : "";
 
-    const availableFunctionsDoc = JSON.stringify(
-        {
-            Instructions:
-                'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
-            Available_Tools: ButterToolsDefinition,
-        },
-        null,
-        2,
-    );
+  const availableFunctionsDoc = JSON.stringify(
+    {
+      Instructions:
+        'Your response MUST be a JSON array of function call objects, like: `[{"name": "tool_name", "arguments": {"arg1": "value1"}}]` or `[]` if no tools are called.',
+      Available_Tools: ButterToolsDefinition,
+    },
+    null,
+    2,
+  );
 
-    const succubusRules =
-        state.fixed.race === "魅魔"
-            ? `
+  const succubusRules =
+    state.fixed.race === "魅魔"
+      ? `
 8. 【魅魔专属】当${p}摄入体液或食物时，调用 bt_succubus_feed。
 9. 【魅魔专属】当${p}与人完成饮血、性交等灵魂绑定仪式时，调用 bt_bind_soul_contract。`
-            : "";
+      : "";
 
-    let traitsInfo = "";
-    if (state.semi_fixed.traits?.length > 0) {
-        traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
-    }
+  let traitsInfo = "";
+  if (state.semi_fixed.traits?.length > 0) {
+    traitsInfo = `\n- [底层特征法则]: ${p}绑定了以下生存特征：【${state.semi_fixed.traits.join(", ")}】。在评估生活状态(bt_report_metabolism_changes)时，请严格根据常识模拟这些特征对生理代谢的影响。如：【贫穷】则饥饿加速；【内向】则喧闹耗能、独处恢复；【娇气】则容易疲惫等。`;
+  }
 
-    // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
-    return `${customTopText}${characterContext}${worldLoreStr}[SYSTEM NOTE]
+  // 为模板字符串添加 return 关键字，使其成为一个合法的返回值
+  return `${customTopText}${characterContext}${worldLoreStr}[SYSTEM NOTE]
 You are a meticulous, silent data analysis AI. Your sole purpose is to analyze the provided "Recent Activity Log" and call the appropriate tools. Your response MUST be ONLY a valid JSON array of tool calls. You must never refuse to analyze or return non-JSON content.
 ${firstRunInstruction}
 // ==================================================================
@@ -1398,31 +1442,31 @@ ${availableFunctionsDoc}
  * @returns {string} 完整的、高压的系统提示词
  */
 export function buildSystemWrapper(
-    race,
-    basePromptTemplate,
-    extraSettings,
-    obsceneSettings,
+  race,
+  basePromptTemplate,
+  extraSettings,
+  obsceneSettings,
 ) {
-    let jsonFormat;
-    let instructions;
+  let jsonFormat;
+  let instructions;
 
-    if (race === "魅魔") {
-        instructions =
-            "你的任务是扮演一个生理数据生成器，详细描述一个魅魔的所有生理机能、外貌、淫纹和能量系统。同时，你必须从所有设定中归纳出3-5个最核心的'traits'标签。";
-        jsonFormat = `{"race_appearance": "外貌特征描述", "race_body_state": "身体状态描述", "race_core_mechanic": "特异机制", "aphrodisiac_mechanic": "催淫机制", "crest_system": "淫纹系统", "traits": ["标签1", "标签2", "标签3"]}`;
-    } else if (race.includes("自设") || race.includes("新物种")) {
-        // 兼容用户自定义种族名
-        instructions =
-            "你的任务是扮演一个世界构建AI，根据用户提供的设定，创造一个新种族的完整生理机制，并归纳出3-5个核心'traits'标签。";
-        jsonFormat = `{"race_appearance": "外貌特征描述", "race_body_state": "身体状态描述", "race_core_mechanic": "特异机制", "traits": ["标签1", "标签2", "标签3"]}`;
-    } else {
-        // 人类或其他简单种族
-        instructions =
-            "你的任务是扮演一个精准的人格分析师。你只需要分析用户提供的补充人设，并从中提炼出3-5个最核心、最能概括其性格和命运的'traits'（特征）标签。不要添加任何与生理、种族相关的描述。";
-        jsonFormat = `{"traits": ["标签1", "标签2", "标签3"]}`;
-    }
+  if (race === "魅魔") {
+    instructions =
+      "你的任务是扮演一个生理数据生成器，详细描述一个魅魔的所有生理机能、外貌、淫纹和能量系统。同时，你必须从所有设定中归纳出3-5个最核心的'traits'标签。";
+    jsonFormat = `{"race_appearance": "外貌特征描述", "race_body_state": "身体状态描述", "race_core_mechanic": "特异机制", "aphrodisiac_mechanic": "催淫机制", "crest_system": "淫纹系统", "traits": ["标签1", "标签2", "标签3"]}`;
+  } else if (race.includes("自设") || race.includes("新物种")) {
+    // 兼容用户自定义种族名
+    instructions =
+      "你的任务是扮演一个世界构建AI，根据用户提供的设定，创造一个新种族的完整生理机制，并归纳出3-5个核心'traits'标签。";
+    jsonFormat = `{"race_appearance": "外貌特征描述", "race_body_state": "身体状态描述", "race_core_mechanic": "特异机制", "traits": ["标签1", "标签2", "标签3"]}`;
+  } else {
+    // 人类或其他简单种族
+    instructions =
+      "你的任务是扮演一个精准的人格分析师。你只需要分析用户提供的补充人设，并从中提炼出3-5个最核心、最能概括其性格和命运的'traits'（特征）标签。不要添加任何与生理、种族相关的描述。";
+    jsonFormat = `{"traits": ["标签1", "标签2", "标签3"]}`;
+  }
 
-    const wrapper = `[ABSOLUTE SYSTEM DIRECTIVE]
+  const wrapper = `[ABSOLUTE SYSTEM DIRECTIVE]
 ${instructions}
 【ULTIMATE RULE】:
 - Your entire response, from the very first character to the very last, MUST be a single, raw, valid JSON object.
@@ -1436,7 +1480,7 @@ ${jsonFormat}
 - Deep Reproductive/Obscene Settings (if any): ${obsceneSettings || "None"}
 - Base Guide: ${basePromptTemplate}
 `;
-    return wrapper;
+  return wrapper;
 }
 
 /**
@@ -1446,70 +1490,70 @@ ${jsonFormat}
  * @returns {Promise<string|object>} - The raw response from the API.
  */
 export async function callExternalApi(prompt, apiConfig) {
-    try {
-        const isStream = apiConfig.apiStream === true;
-        const apiUrl = apiConfig.apiUrl.endsWith("/v1")
-            ? apiConfig.apiUrl
-            : `${apiConfig.apiUrl}/v1`;
+  try {
+    const isStream = apiConfig.apiStream === true;
+    const apiUrl = apiConfig.apiUrl.endsWith("/v1")
+      ? apiConfig.apiUrl
+      : `${apiConfig.apiUrl}/v1`;
 
-        const res = await fetch(`${apiUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${apiConfig.apiKey}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: apiConfig.apiModelName || "gpt-4o-mini",
-                temperature: 0.1,
-                stream: isStream,
-                messages: [{ role: "user", content: prompt }],
-                // OpenAI-compatible function calling / tool use format
-                tools: ButterToolsDefinition.map((tool) => ({
-                    type: "function",
-                    function: tool,
-                })),
-                tool_choice: "auto",
-            }),
-        });
+    const res = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiConfig.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: apiConfig.apiModelName || "gpt-4o-mini",
+        temperature: 0.1,
+        stream: isStream,
+        messages: [{ role: "user", content: prompt }],
+        // OpenAI-compatible function calling / tool use format
+        tools: ButterToolsDefinition.map((tool) => ({
+          type: "function",
+          function: tool,
+        })),
+        tool_choice: "auto",
+      }),
+    });
 
-        if (!res.ok) {
-            throw new Error(`External API returned status: ${res.status}`);
-        }
-
-        if (!isStream) {
-            const data = await res.json();
-            return data.choices?.[0]?.message ?? "[]";
-        } else {
-            // Streamed response handling
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let fullText = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk
-                    .split("\n")
-                    .filter((line) => line.trim().startsWith("data:"));
-
-                for (const line of lines) {
-                    if (line.includes("[DONE]")) continue;
-                    try {
-                        const jsonStr = line.replace("data: ", "");
-                        const parsed = JSON.parse(jsonStr);
-                        fullText += parsed.choices?.[0]?.delta?.content ?? "";
-                    } catch (e) {
-                        // Ignore parsing errors for incomplete chunks
-                    }
-                }
-            }
-            return fullText;
-        }
-    } catch (error) {
-        console.error("[Butter Tracker] External API call failed:", error);
-        toastr.error(`外部API调用失败: ${error.message}`, "Tracker 引擎错误");
-        return "[]"; // Return empty array on failure
+    if (!res.ok) {
+      throw new Error(`External API returned status: ${res.status}`);
     }
+
+    if (!isStream) {
+      const data = await res.json();
+      return data.choices?.[0]?.message ?? "[]";
+    } else {
+      // Streamed response handling
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk
+          .split("\n")
+          .filter((line) => line.trim().startsWith("data:"));
+
+        for (const line of lines) {
+          if (line.includes("[DONE]")) continue;
+          try {
+            const jsonStr = line.replace("data: ", "");
+            const parsed = JSON.parse(jsonStr);
+            fullText += parsed.choices?.[0]?.delta?.content ?? "";
+          } catch (e) {
+            // Ignore parsing errors for incomplete chunks
+          }
+        }
+      }
+      return fullText;
+    }
+  } catch (error) {
+    console.error("[Butter Tracker] External API call failed:", error);
+    toastr.error(`外部API调用失败: ${error.message}`, "Tracker 引擎错误");
+    return "[]"; // Return empty array on failure
+  }
 }
